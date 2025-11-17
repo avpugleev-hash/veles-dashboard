@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дашборд | ООО "ТК ВЕЛЕС"</title>
+    <style>
+        :root {
+  /* Primitive Color Tokens */
+  --color-white: rgba(255, 255, 255, 1);
+  --color-black: rgba(0, 0, 0, 1);
+  --color-cream-50: rgba(252, 252, 249, 1);
+  --color-cream-100: rgba(255, 255, 253, 1);
+  --color-gray-200: rgba(245, 245, 245, 1);
+  --color-gray-300: rgba(167, 169, 169, 1);
+  --color-gray-400: rgba(119, 124, 124, 1);
+  --color-slate-500: rgba(98, 108, 113, 1);
+  --color-brown-600: rgba(94, 82, 64, 1);
+  --color-charcoal-700: rgba(31, 33, 33, 1);
+  --color-charcoal-800: rgba(38, 40, 40, 1);
+  --color-slate-900: rgba(19, 52, 59, 1);
+  --color-teal-300: rgba(50, 184, 198, 1);
+  --color-teal-400: rgba(45, 166, 178, 1);
+  --color-teal-500: rgba(33, 128, 141, 1);
+  --color-teal-600: rgba(29, 116, 128, 1);
+  --color-teal-700: rgba(26, 104, 115, 1);
+  --color-teal-800: rgba(41, 150, 161, 1);
+  --color-red-400: rgba(255, 84, 89, 1);
+  --color-red-500: rgba(192, 21, 47, 1);
+  --color-orange-400: rgba(230, 129, 97, 1);
+  --color-orange-500: rgba(168, 75, 47, 1);
+
+  /* Custom dashboard colors */
+  --navy-primary: #1a2a4a;
+  --navy-dark: #0f1a2e;
+  --gold-accent: #d4a574;
+  --gray-secondary: #4a5568;
+  --success-green: #20b2aa;
+  --warning-orange: #e8622b;
+  --bg-light: #f7f8fa;
+  --bg-card: #ffffff;
+  --text-primary: #1a2a4a;
+  --text-secondary: #6b7280;
+  --border-color: #e5e7eb;
+
+  /* RGB versions for opacity control */
+  --color-brown-600-rgb: 94, 82, 64;
+  --color-teal-500-rgb: 33, 128, 141;
+  --color-slate-900-rgb: 19, 52, 59;
+  --color-slate-500-rgb: 98, 108, 113;
+  --color-red-500-rgb: 192, 21, 47;
+  --color-red-400-rgb: 255, 84, 89;
+  --color-orange-500-rgb: 168, 75, 47;
+  --color-orange-400-rgb: 230, 129, 97;
+
+  /* Background color tokens (Light Mode) */
+  --color-bg-1: rgba(59, 130, 246, 0.08);
+  --color-bg-2: rgba(245, 158, 11, 0.08);
+  --color-bg-3: rgba(34, 197, 94, 0.08);
+  --color-bg-4: rgba(239, 68, 68, 0.08);
+  --color-bg-5: rgba(147, 51, 234, 0.08);
+  --color-bg-6: rgba(249, 115, 22, 0.08);
+  --color-bg-7: rgba(236, 72, 153, 0.08);
+  --color-bg-8: rgba(6, 182, 212, 0.08);
+
+  /* Semantic Color Tokens (Light Mode) */
+  --color-background: var(--color-cream-50);
+  --color-surface: var(--color-cream-100);
+  --color-text: var(--color-slate-900);
+  --color-text-secondary: var(--color-slate-500);
+  --color-primary: var(--color-teal-500);
+  --color-primary-hover: var(--color-teal-600);
+  --color-primary-active: var(--color-teal-700);
+  --color-secondary: rgba(var(--color-brown-600-rgb), 0.12);
+  --color-secondary-hover: rgba(var(--color-brown-600-rgb), 0.2);
+  --color-secondary-active: rgba(var(--color-brown-600-rgb), 0.25);
+  --color-border: rgba(var(--color-brown-600-rgb), 0.2);
+  --color-btn-primary-text: var(--color-cream-50);
+  --color-card-border: rgba(var(--color-brown-600-rgb), 0.12);
+  --color-card-border-inner: rgba(var(--color-brown-600-rgb), 0.12);
+  --color-error: var(--color-red-500);
+  --color-success: var(--color-teal-500);
+  --color-warning: var(--color-orange-500);
+  --color-info: var(--color-slate-500);
+  --color-focus-ring: rgba(var(--color-teal-500-rgb), 0.4);
+  --color-select-caret: rgba(var(--color-slate-900-rgb), 0.8);
+
+  /* Common style patterns */
+  --focus-ring: 0 0 0 3px var(--color-focus-ring);
+  --focus-outline: 2px solid var(--color-primary);
+  --status-bg-opacity: 0.15;
+  --status-border-opacity: 0.25;
+
+  /* Typography */
+  --font-family-base: "FKGroteskNeue", "Geist", "Inter", -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-family-mono: "Berkeley Mono", ui-monospace, SFMono-Regular, Menlo,
+    Monaco, Consolas, monospace;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 14px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 20px;
+  --font-size-3xl: 24px;
+  --font-size-4xl: 30px;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 550;
+  --font-weight-bold: 600;
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --letter-spacing-tight: -0.01em;
+
+  /* Spacing */
+  --space-0: 0;
+  --space-1: 1px;
+  --space-2: 2px;
+  --space-4: 4px;
+  --space-6: 6px;
+  --space-8: 8px;
+  --space-10: 10px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-20: 20px;
+  --space-24: 24px;
+  --space-32: 32px;
+
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-base: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.02);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.04),
+    0 2px 4px -1px rgba(0, 0, 0, 0.02);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.04),
+    0 4px 6px -2px rgba(0, 0, 0, 0.02);
+  --shadow-inset-sm: inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.03);
+
+  /* Animation */
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --ease-standard: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Layout */
+  --container-sm: 640px;
+  --container-md: 768px;
+  --container-lg: 1024px;
+  --container-xl: 1280px;
+}
+
+@font-face {
+  font-family: 'FKGroteskNeue';
+  src: url('https://r2cdn.perplexity.ai/fonts/FKGroteskNeue.woff2')
+    format('woff2');
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-family-base);
+    background: var(--bg-light);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+.dashboard-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: var(--space-24);
+}
+
+/* Header */
+.dashboard-header {
+    background: var(--navy-primary);
+    color: white;
+    padding: var(--space-24) var(--space-32);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-32);
+    box-shadow: 0 4px 12px rgba(26, 42, 74, 0.15);
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-16);
+}
+
+.company-info h1 {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    margin-bottom: var(--space-4);
+    letter-spacing: var(--letter-spacing-tight);
+}
+
+.company-info .subtitle {
+    font-size: var(--font-size-base);
+    opacity: 0.85;
+    font-weight: var(--font-weight-normal);
+}
+
+.header-right {
+    text-align: right;
+}
+
+.current-datetime {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-semibold);
+    margin-bottom: var(--space-4);
+}
+
+.last-update {
+    font-size: var(--font-size-sm);
+    opacity: 0.75;
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    justify-content: flex-end;
+}
+
+.refresh-btn {
+    background: var(--gold-accent);
+    color: var(--navy-primary);
+    border: none;
+    padding: var(--space-8) var(--space-20);
+    border-radius: var(--radius-base);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    cursor: pointer;
+    transition: all var(--duration-normal) var(--ease-standard);
+    margin-top: var(--space-8);
+}
+
+.refresh-btn:hover {
+    background: #c89860;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(212, 165, 116, 0.3);
+}
+
+/* Metrics Grid */
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: var(--space-24);
+    margin-bottom: var(--space-32);
+}
+
+.metric-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    padding: var(--space-24);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid var(--border-color);
+    transition: all var(--duration-normal) var(--ease-standard);
+}
+
+.metric-card:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-12);
+    margin-bottom: var(--space-20);
+    padding-bottom: var(--space-16);
+    border-bottom: 2px solid var(--border-color);
+}
+
+.card-icon {
+    font-size: 32px;
+}
+
+.card-title {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    color: var(--navy-primary);
+    letter-spacing: 0.5px;
+}
+
+.card-body {
+    margin-bottom: var(--space-16);
+}
+
+.main-metric {
+    font-size: 42px;
+    font-weight: var(--font-weight-bold);
+    color: var(--navy-primary);
+    margin-bottom: var(--space-8);
+    line-height: 1;
+}
+
+.metric-label {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    font-weight: var(--font-weight-medium);
+    margin-bottom: var(--space-16);
+}
+
+.progress-section {
+    margin: var(--space-16) 0;
+}
+
+.progress-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-8);
+}
+
+.progress-label {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-primary);
+}
+
+.progress-value {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    color: var(--success-green);
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--border-color);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--success-green), var(--gold-accent));
+    border-radius: var(--radius-full);
+    transition: width 0.6s var(--ease-standard);
+}
+
+.secondary-metrics {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-12);
+    margin-top: var(--space-16);
+    padding-top: var(--space-16);
+    border-top: 1px solid var(--border-color);
+}
+
+.secondary-metric {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: var(--font-size-sm);
+}
+
+.secondary-metric-label {
+    color: var(--text-secondary);
+    font-weight: var(--font-weight-medium);
+}
+
+.secondary-metric-value {
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+}
+
+/* Debt card specific */
+.debt-amount {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-12);
+}
+
+.debt-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.debt-label {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    font-weight: var(--font-weight-medium);
+}
+
+.debt-value {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+}
+
+.debt-value.total {
+    color: var(--navy-primary);
+}
+
+.debt-value.overdue {
+    color: var(--warning-orange);
+}
+
+.progress-fill.warning {
+    background: linear-gradient(90deg, var(--warning-orange), #ff9a62);
+}
+
+/* Repairs card specific */
+.repair-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-16);
+}
+
+.repair-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-12);
+    background: var(--bg-light);
+    border-radius: var(--radius-base);
+    border-left: 4px solid var(--navy-primary);
+}
+
+.repair-item:nth-child(1) {
+    border-left-color: var(--success-green);
+}
+
+.repair-item:nth-child(2) {
+    border-left-color: var(--warning-orange);
+}
+
+.repair-item:nth-child(3) {
+    border-left-color: var(--gold-accent);
+}
+
+.repair-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.repair-type {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    color: var(--navy-primary);
+}
+
+.repair-description {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.repair-stats {
+    text-align: right;
+}
+
+.repair-count {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--navy-primary);
+}
+
+.repair-percent {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+}
+
+/* Chart Section */
+.chart-section {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    padding: var(--space-24);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid var(--border-color);
+}
+
+.chart-header {
+    margin-bottom: var(--space-24);
+    padding-bottom: var(--space-16);
+    border-bottom: 2px solid var(--border-color);
+}
+
+.chart-title {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--navy-primary);
+}
+
+.chart-container {
+    height: 300px;
+    position: relative;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: var(--space-16);
+    }
+
+    .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .header-right {
+        text-align: left;
+        width: 100%;
+    }
+
+    .last-update {
+        justify-content: flex-start;
+    }
+
+    .metrics-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .main-metric {
+        font-size: 36px;
+    }
+
+    .company-info h1 {
+        font-size: var(--font-size-2xl);
+    }
+}
+
+@media (max-width: 480px) {
+    .dashboard-header {
+        padding: var(--space-16);
+    }
+
+    .metric-card {
+        padding: var(--space-16);
+    }
+
+    .main-metric {
+        font-size: 32px;
+    }
+}
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-content">
+                <div class="company-info">
+                    <h1>ООО "Транспортная Компания 'ВЕЛЕС'"</h1>
+                    <p class="subtitle">Операционный дашборд</p>
+                </div>
+                <div class="header-right">
+                    <div class="current-datetime" id="currentDateTime">—</div>
+                    <div class="last-update">
+                        <span>⏱</span>
+                        <span>Обновлено: <span id="lastUpdate">—</span></span>
+                    </div>
+                    <button class="refresh-btn" onclick="refreshData()">🔄 Обновить данные</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Metrics Grid -->
+        <div class="metrics-grid">
+            <!-- Card 1: Loading -->
+            <div class="metric-card">
+                <div class="card-header">
+                    <div class="card-icon">📦</div>
+                    <h2 class="card-title">ПОГРУЗКА</h2>
+                </div>
+                <div class="card-body">
+                    <div class="main-metric" id="loadedWagonsMonth">—</div>
+                    <div class="metric-label">Погружено вагонов (месяц)</div>
+                    
+                    <div class="progress-section">
+                        <div class="progress-info">
+                            <span class="progress-label">Выполнение плана</span>
+                            <span class="progress-value" id="progressPercent">—</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="secondary-metrics">
+                        <div class="secondary-metric">
+                            <span class="secondary-metric-label">План на месяц:</span>
+                            <span class="secondary-metric-value" id="planMonth">—</span>
+                        </div>
+                        <div class="secondary-metric">
+                            <span class="secondary-metric-label">Вчера погружено:</span>
+                            <span class="secondary-metric-value" id="loadedYesterday">—</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2: Receivables -->
+            <div class="metric-card">
+                <div class="card-header">
+                    <div class="card-icon">💳</div>
+                    <h2 class="card-title">ЗАДОЛЖЕННОСТЬ</h2>
+                </div>
+                <div class="card-body">
+                    <div class="debt-amount">
+                        <div class="debt-item">
+                            <span class="debt-label">Общая задолженность:</span>
+                            <span class="debt-value total" id="totalDebt">—</span>
+                        </div>
+                        <div class="debt-item">
+                            <span class="debt-label">Просроченная:</span>
+                            <span class="debt-value overdue" id="overdueDebt">—</span>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-section">
+                        <div class="progress-info">
+                            <span class="progress-label">Доля просроченной</span>
+                            <span class="progress-value" id="overduePercent" style="color: var(--warning-orange);">—</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill warning" id="overdueProgressFill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3: Repairs -->
+            <div class="metric-card">
+                <div class="card-header">
+                    <div class="card-icon">🔧</div>
+                    <h2 class="card-title">РЕМОНТЫ</h2>
+                </div>
+                <div class="card-body">
+                    <div class="repair-breakdown">
+                        <div class="repair-item">
+                            <div class="repair-info">
+                                <div class="repair-type">ТР</div>
+                                <div class="repair-description">Текущий ремонт</div>
+                            </div>
+                            <div class="repair-stats">
+                                <div class="repair-count" id="repairTR">—</div>
+                                <div class="repair-percent" id="repairTRPercent">—</div>
+                            </div>
+                        </div>
+                        
+                        <div class="repair-item">
+                            <div class="repair-info">
+                                <div class="repair-type">КР</div>
+                                <div class="repair-description">Капитальный ремонт</div>
+                            </div>
+                            <div class="repair-stats">
+                                <div class="repair-count" id="repairKR">—</div>
+                                <div class="repair-percent" id="repairKRPercent">—</div>
+                            </div>
+                        </div>
+                        
+                        <div class="repair-item">
+                            <div class="repair-info">
+                                <div class="repair-type">ТОР</div>
+                                <div class="repair-description">Техническое обслуживание</div>
+                            </div>
+                            <div class="repair-stats">
+                                <div class="repair-count" id="repairTOR">—</div>
+                                <div class="repair-percent" id="repairTORPercent">—</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="secondary-metrics">
+                        <div class="secondary-metric">
+                            <span class="secondary-metric-label">Всего вагонов в парке:</span>
+                            <span class="secondary-metric-value" id="fleetTotal">—</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart Section -->
+        <div class="chart-section">
+            <div class="chart-header">
+                <h3 class="chart-title">Динамика погрузки за последние 7 дней</h3>
+            </div>
+            <div class="chart-container">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Dashboard data
+        const dashboardData = {
+            loading: {
+                loaded_wagons_month: 35420,
+                planned_wagons_today: 1590,
+                loaded_wagons_yesterday: 1555,
+                progress_percent: 91,
+                plan_month: 38850
+            },
+            receivables: {
+                total_debt: 320435670,
+                overdue_debt: 80654321,
+                overdue_percent: 25
+            },
+            repairs: {
+                tr_count: 32,
+                tr_percent: 16,
+                kr_count: 45,
+                kr_percent: 23,
+                tor_count: 2,
+                tor_percent: 1,
+                fleet_total: 2000
+            },
+            daily_trend: [
+                { day: 1, wagons: 1420 },
+                { day: 2, wagons: 1490 },
+                { day: 3, wagons: 1510 },
+                { day: 4, wagons: 1485 },
+                { day: 5, wagons: 1555 },
+                { day: 6, wagons: 1542 },
+                { day: 7, wagons: 1568 }
+            ],
+            last_update: "2025-11-18 10:35:42"
+        };
+
+        // Format number with spaces (Russian format)
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+        }
+
+        // Format currency in millions
+        function formatCurrency(amount) {
+            const millions = (amount / 1000000).toFixed(1);
+            return `${millions} млн. р.`;
+        }
+
+        // Update current date and time
+        function updateDateTime() {
+            const now = new Date();
+            const options = {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            };
+            document.getElementById('currentDateTime').textContent = 
+                now.toLocaleDateString('ru-RU', options);
+        }
+
+        // Populate dashboard data
+        function populateDashboard() {
+            // Loading metrics
+            document.getElementById('loadedWagonsMonth').textContent = 
+                formatNumber(dashboardData.loading.loaded_wagons_month);
+            document.getElementById('progressPercent').textContent = 
+                `${dashboardData.loading.progress_percent}%`;
+            document.getElementById('progressFill').style.width = 
+                `${dashboardData.loading.progress_percent}%`;
+            document.getElementById('planMonth').textContent = 
+                formatNumber(dashboardData.loading.plan_month);
+            document.getElementById('loadedYesterday').textContent = 
+                formatNumber(dashboardData.loading.loaded_wagons_yesterday);
+
+            // Receivables metrics
+            document.getElementById('totalDebt').textContent = 
+                formatCurrency(dashboardData.receivables.total_debt);
+            document.getElementById('overdueDebt').textContent = 
+                formatCurrency(dashboardData.receivables.overdue_debt);
+            document.getElementById('overduePercent').textContent = 
+                `${dashboardData.receivables.overdue_percent}%`;
+            document.getElementById('overdueProgressFill').style.width = 
+                `${dashboardData.receivables.overdue_percent}%`;
+
+            // Repairs metrics
+            document.getElementById('repairTR').textContent = 
+                dashboardData.repairs.tr_count;
+            document.getElementById('repairTRPercent').textContent = 
+                `${dashboardData.repairs.tr_percent}% от парка`;
+            document.getElementById('repairKR').textContent = 
+                dashboardData.repairs.kr_count;
+            document.getElementById('repairKRPercent').textContent = 
+                `${dashboardData.repairs.kr_percent}% от парка`;
+            document.getElementById('repairTOR').textContent = 
+                dashboardData.repairs.tor_count;
+            document.getElementById('repairTORPercent').textContent = 
+                `${dashboardData.repairs.tor_percent}% от парка`;
+            document.getElementById('fleetTotal').textContent = 
+                formatNumber(dashboardData.repairs.fleet_total);
+
+            // Last update
+            document.getElementById('lastUpdate').textContent = dashboardData.last_update;
+        }
+
+        // Create trend chart
+        let trendChart = null;
+        function createTrendChart() {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            
+            if (trendChart) {
+                trendChart.destroy();
+            }
+
+            const labels = dashboardData.daily_trend.map(d => `День ${d.day}`);
+            const data = dashboardData.daily_trend.map(d => d.wagons);
+
+            trendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Погружено вагонов',
+                        data: data,
+                        borderColor: '#20b2aa',
+                        backgroundColor: 'rgba(32, 178, 170, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.3,
+                        fill: true,
+                        pointBackgroundColor: '#20b2aa',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    size: 14,
+                                    family: 'FKGroteskNeue, Inter, sans-serif',
+                                    weight: '500'
+                                },
+                                color: '#1a2a4a',
+                                padding: 15
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: '#1a2a4a',
+                            titleFont: {
+                                size: 14,
+                                family: 'FKGroteskNeue, Inter, sans-serif'
+                            },
+                            bodyFont: {
+                                size: 13,
+                                family: 'FKGroteskNeue, Inter, sans-serif'
+                            },
+                            padding: 12,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Вагонов: ' + formatNumber(context.parsed.y);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            ticks: {
+                                font: {
+                                    size: 12,
+                                    family: 'FKGroteskNeue, Inter, sans-serif'
+                                },
+                                color: '#6b7280',
+                                callback: function(value) {
+                                    return formatNumber(value);
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: {
+                                    size: 12,
+                                    family: 'FKGroteskNeue, Inter, sans-serif'
+                                },
+                                color: '#6b7280'
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Refresh data (simulation)
+        function refreshData() {
+            // Simulate data refresh with slight variations
+            dashboardData.loading.loaded_wagons_month += Math.floor(Math.random() * 50);
+            dashboardData.loading.loaded_wagons_yesterday = 1500 + Math.floor(Math.random() * 100);
+            dashboardData.receivables.overdue_debt += Math.floor(Math.random() * 1000000 - 500000);
+            dashboardData.receivables.overdue_percent = Math.round(
+                (dashboardData.receivables.overdue_debt / dashboardData.receivables.total_debt) * 100
+            );
+            
+            // Update timestamp
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            dashboardData.last_update = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+
+            // Re-populate dashboard
+            populateDashboard();
+            
+            // Show feedback
+            const btn = document.querySelector('.refresh-btn');
+            btn.textContent = '✓ Обновлено!';
+            setTimeout(() => {
+                btn.textContent = '🔄 Обновить данные';
+            }, 2000);
+        }
+
+        // Initialize dashboard
+        function initDashboard() {
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+            populateDashboard();
+            createTrendChart();
+        }
+
+        // Run on page load
+        document.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+</html>
