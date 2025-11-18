@@ -1066,13 +1066,18 @@ async function refreshData() {
 // ==========================
 
 async function initDashboard() {
+    // обновляем часы
     updateDateTime();
     setInterval(updateDateTime, 1000);
 
     try {
-        await loadDataFromSheet();
-        populateDashboard();
-        createTrendChart();
+        // первый старт — сразу тянем данные из Google Sheets
+        await refreshData();
+
+        // потом обновляем дашборд автоматически каждые 5 минут
+        setInterval(() => {
+            refreshData();
+        }, 5 * 60 * 1000); // 5 минут = 5 * 60 * 1000 мс
     } catch (e) {
         console.error('Ошибка инициализации:', e);
         document.getElementById('lastUpdate').textContent = 'Ошибка загрузки';
