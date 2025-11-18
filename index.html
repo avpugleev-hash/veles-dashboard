@@ -824,7 +824,8 @@ function buildDashboardDataFromRaw(rowObjs) {
                 tor_percent: 0
             },
             daily_trend: [],
-            last_update: ''
+            last_update: '',
+            period_label: ''
         };
     }
 
@@ -833,6 +834,7 @@ function buildDashboardDataFromRaw(rowObjs) {
     yesterday.setDate(today.getDate() - 1);
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
 
+    // строки текущего месяца (с 1-го по вчера)
     const rowsThisMonth = rowObjs.filter(r => {
         const d = startOfDay(r.date);
         return d >= monthStart && d <= yesterday;
@@ -847,19 +849,16 @@ function buildDashboardDataFromRaw(rowObjs) {
     const rowToday = rowObjs.find(r => startOfDay(r.date).getTime() === today.getTime());
     const plannedToday = rowToday ? rowToday.planned_wagons : 0;
 
+    // сортируем все строки по дате и берём последнюю
     const sorted = rowObjs.slice().sort((a, b) => a.date - b.date);
     const lastRow = sorted[sorted.length - 1];
 
+    // период: с 1-го числа месяца последней записи по дату последней записи
+    const periodStart = new Date(lastRow.date.getFullYear(), lastRow.date.getMonth(), 1);
+    const periodLabel =
+        `Погрузка с ${formatDateDMY(periodStart)} по ${formatDateDMY(lastRow.date)}`;
+
     const totalDebt = lastRow.total_debt || 0;
-    const sorted = rowObjs.slice().sort((a, b) => a.date - b.date);
-const lastRow = sorted[sorted.length - 1];
-
-const periodStart = new Date(lastRow.date.getFullYear(), lastRow.date.getMonth(), 1);
-const periodLabel =
-    `Погрузка с ${formatDateDMY(periodStart)} по ${formatDateDMY(lastRow.date)}`;
-
-const totalDebt = lastRow.total_debt || 0;
-
     const overdueDebt = lastRow.overdue_debt || 0;
     const overduePercent = totalDebt ? Math.round(overdueDebt / totalDebt * 100) : 0;
 
@@ -903,11 +902,12 @@ const totalDebt = lastRow.total_debt || 0;
             kr_percent: krPercent,
             tor_percent: torPercent
         },
-       daily_trend: dailyTrend,
-       last_update: lastRow.timestamp,
-       period_label: periodLabel
+        daily_trend: dailyTrend,
+        last_update: lastRow.timestamp,
+        period_label: periodLabel
     };
 }
+
 
 async function loadDataFromSheet() {
     const res = await fetch(SHEET_CSV_URL);
