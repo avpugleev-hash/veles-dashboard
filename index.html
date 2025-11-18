@@ -559,7 +559,7 @@ body {
                     <div class="current-datetime" id="currentDateTime">—</div>
                     <div class="last-update">
                         <span>⏱</span>
-                        <span>Обновлено: <span id="lastUpdate">—</span></span>
+                        <span id="lastUpdate">Погрузка с — по —</span>
                     </div>
                     <button class="refresh-btn" onclick="refreshData()">🔄 Обновить данные</button>
                 </div>
@@ -749,6 +749,12 @@ function startOfDay(d) {
     return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
+function formatDateDMY(d) {
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${dd}-${mm}-${yyyy}`;
+}
 function rowsToObjects(rows) {
     if (!rows.length) return [];
 
@@ -845,6 +851,15 @@ function buildDashboardDataFromRaw(rowObjs) {
     const lastRow = sorted[sorted.length - 1];
 
     const totalDebt = lastRow.total_debt || 0;
+    const sorted = rowObjs.slice().sort((a, b) => a.date - b.date);
+const lastRow = sorted[sorted.length - 1];
+
+const periodStart = new Date(lastRow.date.getFullYear(), lastRow.date.getMonth(), 1);
+const periodLabel =
+    `Погрузка с ${formatDateDMY(periodStart)} по ${formatDateDMY(lastRow.date)}`;
+
+const totalDebt = lastRow.total_debt || 0;
+
     const overdueDebt = lastRow.overdue_debt || 0;
     const overduePercent = totalDebt ? Math.round(overdueDebt / totalDebt * 100) : 0;
 
