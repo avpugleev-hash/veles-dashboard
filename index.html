@@ -684,50 +684,53 @@ body {
             </div>
 
             <!-- Card 2: Receivables -->
-                            <div class="card-body">
-                    <div class="debt-amount">
-                        <div class="debt-item">
-                            <span class="debt-label">Общая задолженность:</span>
-                            <span class="debt-value total" id="totalDebt">—</span>
-                        </div>
-                        <div class="debt-item">
-                            <span class="debt-label">Просроченная:</span>
-                            <span class="debt-value overdue" id="overdueDebt">—</span>
-                        </div>
-                    </div>
-                    
-                    <div class="progress-section">
-                        <div class="progress-info">
-                            <span class="progress-label">Доля просроченной</span>
-                            <span class="progress-value" id="overduePercent" style="color: var(--warning-orange);">—</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill warning" id="overdueProgressFill" style="width: 0%"></div>
-                        </div>
-                    </div>
-                
-                    <!-- Кнопка раскрытия структуры просрочки по клиентам -->
-                    <button type="button" class="clients-overdue-toggle" id="toggleClientsOverdue">
-                        ▾ Развернуть структуру по клиентам
-                    </button>
-                
-                    <!-- Панель со списком клиентов -->
-                    <div class="clients-overdue-panel hidden" id="clientsOverduePanel">
-                        <table class="clients-table">
-                            <thead>
-                                <tr>
-                                    <th>Клиент</th>
-                                    <th>Просрочено, ₽</th>
-                                    <th>Доля от просрочки</th>
-                                </tr>
-                            </thead>
-                            <tbody id="clientsOverdueBody">
-                                <!-- Заполняется скриптом -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+<div class="metric-card">
+    <div class="card-header">
+        <div class="card-icon">💳</div>
+        <h2 class="card-title">ЗАДОЛЖЕННОСТЬ</h2>
+    </div>
+    <div class="card-body">
+        <div class="debt-amount">
+            <div class="debt-item">
+                <span class="debt-label">Общая задолженность:</span>
+                <span class="debt-value total" id="totalDebt">—</span>
             </div>
+            <div class="debt-item">
+                <span class="debt-label">Просроченная:</span>
+                <span class="debt-value overdue" id="overdueDebt">—</span>
+            </div>
+        </div>
+        
+        <div class="progress-section">
+            <div class="progress-info">
+                <span class="progress-label">Доля просроченной</span>
+                <span class="progress-value" id="overduePercent" style="color: var(--warning-orange);">—</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill warning" id="overdueProgressFill" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <button type="button" class="clients-overdue-toggle" id="toggleClientsOverdue">
+            ▾ Развернуть структуру по клиентам
+        </button>
+
+        <div class="clients-overdue-panel hidden" id="clientsOverduePanel">
+            <table class="clients-table">
+                <thead>
+                    <tr>
+                        <th>Клиент</th>
+                        <th>Просрочено, ₽</th>
+                        <th>Доля от просрочки</th>
+                    </tr>
+                </thead>
+                <tbody id="clientsOverdueBody">
+                    <!-- Заполняется скриптом -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
             <!-- Card 3: Repairs -->
             <div class="metric-card">
@@ -883,16 +886,23 @@ function rowsToObjects(rows) {
         result.push({
             date,
             timestamp: row[idxTimestamp],
-            loaded_wagons: toNumber(idxLoaded      !== -1 ? row[idxLoaded]      : 0),
-            planned_wagons: toNumber(idxPlanned    !== -1 ? row[idxPlanned]    : 0),
-            total_debt:     toNumber(idxTotalDebt  !== -1 ? row[idxTotalDebt]  : 0),
-            overdue_debt:   toNumber(idxOverdueDebt!== -1 ? row[idxOverdueDebt]: 0),
-            tr_count:       toNumber(idxTr         !== -1 ? row[idxTr]         : 0),
-            kr_count:       toNumber(idxKr         !== -1 ? row[idxKr]         : 0),
-            tor_count:      toNumber(idxTor        !== -1 ? row[idxTor]        : 0),
-            fleet_total:    toNumber(idxFleet      !== -1 ? row[idxFleet]      : 0)
+            loaded_wagons: toNumber(idxLoaded       !== -1 ? row[idxLoaded]       : 0),
+            planned_wagons: toNumber(idxPlanned     !== -1 ? row[idxPlanned]     : 0),
+            total_debt:     toNumber(idxTotalDebt   !== -1 ? row[idxTotalDebt]   : 0),
+            overdue_debt:   toNumber(idxOverdueDebt !== -1 ? row[idxOverdueDebt] : 0),
+            tr_count:       toNumber(idxTr          !== -1 ? row[idxTr]          : 0),
+            kr_count:       toNumber(idxKr          !== -1 ? row[idxKr]          : 0),
+            tor_count:      toNumber(idxTor         !== -1 ? row[idxTor]         : 0),
+            fleet_total:    toNumber(idxFleet       !== -1 ? row[idxFleet]       : 0)
         });
     }
+
+    return result;
+}
+
+// ==========================
+// структура просрочки по клиентам
+// ==========================
 function buildReceivablesByClientFromRows(rows) {
     if (!rows || !rows.length) return [];
 
@@ -965,7 +975,6 @@ function buildReceivablesByClientFromRows(rows) {
 
     return result;
 }
-
     
     return result;
 }
@@ -1375,23 +1384,6 @@ async function initDashboard() {
     updateDateTime();
     setInterval(updateDateTime, 1000);
 
-    try {
-        // первый старт — сразу тянем данные из Google Sheets
-        await refreshData();
-
-        // потом обновляем дашборд автоматически каждые 5 минут
-        setInterval(() => {
-            refreshData();
-        }, 5 * 60 * 1000); // 5 минут = 5 * 60 * 1000 мс
-    } catch (e) {
-        console.error('Ошибка инициализации:', e);
-        document.getElementById('lastUpdate').textContent = 'Ошибка загрузки';
-    }
-    async function initDashboard() {
-    // обновляем часы
-    updateDateTime();
-    setInterval(updateDateTime, 1000);
-
     // обработчик кнопки "развернуть по клиентам"
     const toggleBtn = document.getElementById('toggleClientsOverdue');
     if (toggleBtn) {
@@ -1420,9 +1412,8 @@ async function initDashboard() {
     }
 }
 
-}
-
 document.addEventListener('DOMContentLoaded', initDashboard);
+
 </script>
 </body>
 </html>
