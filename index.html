@@ -694,256 +694,392 @@ body {
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        // Dashboard data
-        const dashboardData = {
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+'use strict';
+
+// ==========================
+// 1. ССЫЛКА НА GOOGLE SHEETS
+// ==========================
+// ВСТАВЬ сюда свою CSV-ссылку с output=csv
+const SHEET_CSV_URL =
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vRy08FvutySDNk8yvn0QKdT92-uWjRqaxqi2057Tl42Ai2zLS4L833E2g2GdgBnpFX-t5uwX6JUcmg4/pubhtml';
+
+let dashboardData = null;
+let trendChart = null;
+
+// ==========================
+// 2. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// ==========================
+
+function toNumber(value) {
+    if (value === undefined || value === null || value === '') return 0;
+    const normalized = String(value).replace(/\s+/g, '').replace(',', '.');
+    const n = Number(normalized);
+    return isNaN(n) ? 0 : n;
+}
+
+function parseCSV(csvText) {
+    const lines = csvText.trim().split(/\r?\n/);
+    return lines.map(line => line.split(',').map(c => c.trim()));
+}
+
+function parseDate(dateStr) {
+    if (!dateStr) return null;
+
+    // YYYY-MM-DD
+    let m = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) {
+        const [, y, mo, d] = m;
+        return new Date(Number(y), Number(mo) - 1, Number(d));
+    }
+
+    // DD.MM.YYYY
+    m = dateStr.match(/^(\d{2})\.(\d{2})\.(\d{4})/);
+    if (m) {
+        const [, d, mo, y] = m;
+        return new Date(Number(y), Number(mo) - 1, Number(d));
+    }
+
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? null : d;
+}
+
+function startOfDay(d) {
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function rowsToObjects(rows) {
+    if (!rows.length) return [];
+
+    const header = rows[0];
+    const idxTimestamp   = header.indexOf('timestamp');
+    const idxLoaded      = header.indexOf('loaded_wagons');
+    const idxPlanned     = header.indexOf('planned_wagons');
+    const idxTotalDebt   = header.indexOf('total_debt');
+    const idxOverdueDebt = header.indexOf('overdue_debt');
+    const idxTr          = header.indexOf('tr_count');
+    const idxKr          = header.indexOf('kr_count');
+    const idxTor         = header.indexOf('tor_count');
+    const idxFleet       = header.indexOf('fleet_total');
+
+    const result = [];
+
+    for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row[idxTimestamp]) continue;
+
+        const date = parseDate(row[idxTimestamp]);
+        if (!date) continue;
+
+        result.push({
+            date,
+            timestamp: row[idxTimestamp],
+            loaded_wagons: toNumber(idxLoaded      !== -1 ? row[idxLoaded]      : 0),
+            planned_wagons: toNumber(idxPlanned    !== -1 ? row[idxPlanned]    : 0),
+            total_debt:     toNumber(idxTotalDebt  !== -1 ? row[idxTotalDebt]  : 0),
+            overdue_debt:   toNumber(idxOverdueDebt!== -1 ? row[idxOverdueDebt]: 0),
+            tr_count:       toNumber(idxTr         !== -1 ? row[idxTr]         : 0),
+            kr_count:       toNumber(idxKr         !== -1 ? row[idxKr]         : 0),
+            tor_count:      toNumber(idxTor        !== -1 ? row[idxTor]        : 0),
+            fleet_total:    toNumber(idxFleet      !== -1 ? row[idxFleet]      : 0)
+        });
+    }
+
+    return result;
+}
+
+// ==========================
+// 3. СБОРКА dashboardData
+// ==========================
+
+function buildDashboardDataFromRaw(rowObjs) {
+    if (!rowObjs.length) {
+        return {
             loading: {
-                loaded_wagons_month: 35420,
-                planned_wagons_today: 1590,
-                loaded_wagons_yesterday: 1555,
-                progress_percent: 91,
-                plan_month: 38850
+                loaded_wagons_month: 0,
+                planned_wagons_today: 0,
+                loaded_wagons_yesterday: 0,
+                plan_month: 0,
+                progress_percent: 0
             },
             receivables: {
-                total_debt: 320435670,
-                overdue_debt: 80654321,
-                overdue_percent: 25
+                total_debt: 0,
+                overdue_debt: 0,
+                overdue_percent: 0
             },
             repairs: {
-                tr_count: 32,
-                tr_percent: 16,
-                kr_count: 45,
-                kr_percent: 23,
-                tor_count: 2,
-                tor_percent: 1,
-                fleet_total: 2000
+                tr_count: 0,
+                kr_count: 0,
+                tor_count: 0,
+                fleet_total: 0,
+                tr_percent: 0,
+                kr_percent: 0,
+                tor_percent: 0
             },
-            daily_trend: [
-                { day: 1, wagons: 1420 },
-                { day: 2, wagons: 1490 },
-                { day: 3, wagons: 1510 },
-                { day: 4, wagons: 1485 },
-                { day: 5, wagons: 1555 },
-                { day: 6, wagons: 1542 },
-                { day: 7, wagons: 1568 }
-            ],
-            last_update: "2025-11-18 10:35:42"
+            daily_trend: [],
+            last_update: ''
         };
+    }
 
-        // Format number with spaces (Russian format)
-        function formatNumber(num) {
-            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-        }
+    const today = startOfDay(new Date());
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
 
-        // Format currency in millions
-        function formatCurrency(amount) {
-            const millions = (amount / 1000000).toFixed(1);
-            return `${millions} млн. р.`;
-        }
+    const rowsThisMonth = rowObjs.filter(r => {
+        const d = startOfDay(r.date);
+        return d >= monthStart && d <= yesterday;
+    });
 
-        // Update current date and time
-        function updateDateTime() {
-            const now = new Date();
-            const options = {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            };
-            document.getElementById('currentDateTime').textContent = 
-                now.toLocaleDateString('ru-RU', options);
-        }
+    const loadedMonth = rowsThisMonth.reduce((sum, r) => sum + (r.loaded_wagons || 0), 0);
+    const planMonth   = rowsThisMonth.reduce((sum, r) => sum + (r.planned_wagons || 0), 0);
 
-        // Populate dashboard data
-        function populateDashboard() {
-            // Loading metrics
-            document.getElementById('loadedWagonsMonth').textContent = 
-                formatNumber(dashboardData.loading.loaded_wagons_month);
-            document.getElementById('progressPercent').textContent = 
-                `${dashboardData.loading.progress_percent}%`;
-            document.getElementById('progressFill').style.width = 
-                `${dashboardData.loading.progress_percent}%`;
-            document.getElementById('planMonth').textContent = 
-                formatNumber(dashboardData.loading.plan_month);
-            document.getElementById('loadedYesterday').textContent = 
-                formatNumber(dashboardData.loading.loaded_wagons_yesterday);
+    const rowYesterday = rowObjs.find(r => startOfDay(r.date).getTime() === yesterday.getTime());
+    const loadedYesterday = rowYesterday ? rowYesterday.loaded_wagons : 0;
 
-            // Receivables metrics
-            document.getElementById('totalDebt').textContent = 
-                formatCurrency(dashboardData.receivables.total_debt);
-            document.getElementById('overdueDebt').textContent = 
-                formatCurrency(dashboardData.receivables.overdue_debt);
-            document.getElementById('overduePercent').textContent = 
-                `${dashboardData.receivables.overdue_percent}%`;
-            document.getElementById('overdueProgressFill').style.width = 
-                `${dashboardData.receivables.overdue_percent}%`;
+    const rowToday = rowObjs.find(r => startOfDay(r.date).getTime() === today.getTime());
+    const plannedToday = rowToday ? rowToday.planned_wagons : 0;
 
-            // Repairs metrics
-            document.getElementById('repairTR').textContent = 
-                dashboardData.repairs.tr_count;
-            document.getElementById('repairTRPercent').textContent = 
-                `${dashboardData.repairs.tr_percent}% от парка`;
-            document.getElementById('repairKR').textContent = 
-                dashboardData.repairs.kr_count;
-            document.getElementById('repairKRPercent').textContent = 
-                `${dashboardData.repairs.kr_percent}% от парка`;
-            document.getElementById('repairTOR').textContent = 
-                dashboardData.repairs.tor_count;
-            document.getElementById('repairTORPercent').textContent = 
-                `${dashboardData.repairs.tor_percent}% от парка`;
-            document.getElementById('fleetTotal').textContent = 
-                formatNumber(dashboardData.repairs.fleet_total);
+    const sorted = rowObjs.slice().sort((a, b) => a.date - b.date);
+    const lastRow = sorted[sorted.length - 1];
 
-            // Last update
-            document.getElementById('lastUpdate').textContent = dashboardData.last_update;
-        }
+    const totalDebt = lastRow.total_debt || 0;
+    const overdueDebt = lastRow.overdue_debt || 0;
+    const overduePercent = totalDebt ? Math.round(overdueDebt / totalDebt * 100) : 0;
 
-        // Create trend chart
-        let trendChart = null;
-        function createTrendChart() {
-            const ctx = document.getElementById('trendChart').getContext('2d');
-            
-            if (trendChart) {
-                trendChart.destroy();
-            }
+    const fleetTotal = lastRow.fleet_total || 2000;
 
-            const labels = dashboardData.daily_trend.map(d => `День ${d.day}`);
-            const data = dashboardData.daily_trend.map(d => d.wagons);
+    const tr = lastRow.tr_count || 0;
+    const kr = lastRow.kr_count || 0;
+    const tor = lastRow.tor_count || 0;
 
-            trendChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Погружено вагонов',
-                        data: data,
-                        borderColor: '#20b2aa',
-                        backgroundColor: 'rgba(32, 178, 170, 0.1)',
-                        borderWidth: 3,
-                        tension: 0.3,
-                        fill: true,
-                        pointBackgroundColor: '#20b2aa',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 2,
-                        pointRadius: 5,
-                        pointHoverRadius: 7
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'top',
-                            labels: {
-                                font: {
-                                    size: 14,
-                                    family: 'FKGroteskNeue, Inter, sans-serif',
-                                    weight: '500'
-                                },
-                                color: '#1a2a4a',
-                                padding: 15
-                            }
-                        },
-                        tooltip: {
-                            backgroundColor: '#1a2a4a',
-                            titleFont: {
-                                size: 14,
-                                family: 'FKGroteskNeue, Inter, sans-serif'
-                            },
-                            bodyFont: {
-                                size: 13,
-                                family: 'FKGroteskNeue, Inter, sans-serif'
-                            },
-                            padding: 12,
-                            cornerRadius: 8,
-                            callbacks: {
-                                label: function(context) {
-                                    return 'Вагонов: ' + formatNumber(context.parsed.y);
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: false,
-                            ticks: {
-                                font: {
-                                    size: 12,
-                                    family: 'FKGroteskNeue, Inter, sans-serif'
-                                },
-                                color: '#6b7280',
-                                callback: function(value) {
-                                    return formatNumber(value);
-                                }
-                            },
-                            grid: {
-                                color: 'rgba(0, 0, 0, 0.05)'
-                            }
-                        },
-                        x: {
-                            ticks: {
-                                font: {
-                                    size: 12,
-                                    family: 'FKGroteskNeue, Inter, sans-serif'
-                                },
-                                color: '#6b7280'
-                            },
-                            grid: {
-                                display: false
-                            }
-                        }
+    const trPercent  = fleetTotal ? Math.round(tr  / fleetTotal * 100) : 0;
+    const krPercent  = fleetTotal ? Math.round(kr  / fleetTotal * 100) : 0;
+    const torPercent = fleetTotal ? Math.round(tor / fleetTotal * 100) : 0;
+
+    const last7 = sorted.slice(-7);
+    const dailyTrend = last7.map(r => {
+        const d = r.date;
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        return { label: `${dd}.${mm}`, wagons: r.loaded_wagons };
+    });
+
+    return {
+        loading: {
+            loaded_wagons_month: loadedMonth,
+            planned_wagons_today: plannedToday,
+            loaded_wagons_yesterday: loadedYesterday,
+            plan_month: planMonth,
+            progress_percent: planMonth ? Math.round(loadedMonth / planMonth * 100) : 0
+        },
+        receivables: {
+            total_debt: totalDebt,
+            overdue_debt: overdueDebt,
+            overdue_percent: overduePercent
+        },
+        repairs: {
+            tr_count: tr,
+            kr_count: kr,
+            tor_count: tor,
+            fleet_total: fleetTotal,
+            tr_percent: trPercent,
+            kr_percent: krPercent,
+            tor_percent: torPercent
+        },
+        daily_trend: dailyTrend,
+        last_update: lastRow.timestamp
+    };
+}
+
+async function loadDataFromSheet() {
+    const res = await fetch(SHEET_CSV_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const csvText = await res.text();
+    const rows = parseCSV(csvText);
+    const rowObjs = rowsToObjects(rows);
+    dashboardData = buildDashboardDataFromRaw(rowObjs);
+}
+
+// ==========================
+// 4. ФОРМАТИРОВАНИЕ / ВРЕМЯ
+// ==========================
+
+function formatNumber(num) {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+}
+
+function formatCurrency(amount) {
+    const millions = (amount / 1000000).toFixed(1);
+    return `${millions} млн. р.`;
+}
+
+function updateDateTime() {
+    const now = new Date();
+    const options = {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    };
+    document.getElementById('currentDateTime').textContent =
+        now.toLocaleDateString('ru-RU', options);
+}
+
+// ==========================
+// 5. ЗАПОЛНЕНИЕ КАРТОЧЕК
+// ==========================
+
+function populateDashboard() {
+    if (!dashboardData) return;
+
+    document.getElementById('loadedWagonsMonth').textContent =
+        formatNumber(dashboardData.loading.loaded_wagons_month);
+    document.getElementById('progressPercent').textContent =
+        `${dashboardData.loading.progress_percent}%`;
+    document.getElementById('progressFill').style.width =
+        `${dashboardData.loading.progress_percent}%`;
+    document.getElementById('planMonth').textContent =
+        formatNumber(dashboardData.loading.plan_month);
+    document.getElementById('loadedYesterday').textContent =
+        formatNumber(dashboardData.loading.loaded_wagons_yesterday);
+
+    document.getElementById('totalDebt').textContent =
+        formatCurrency(dashboardData.receivables.total_debt);
+    document.getElementById('overdueDebt').textContent =
+        formatCurrency(dashboardData.receivables.overdue_debt);
+    document.getElementById('overduePercent').textContent =
+        `${dashboardData.receivables.overdue_percent}%`;
+    document.getElementById('overdueProgressFill').style.width =
+        `${dashboardData.receivables.overdue_percent}%`;
+
+    document.getElementById('repairTR').textContent =
+        dashboardData.repairs.tr_count;
+    document.getElementById('repairTRPercent').textContent =
+        `${dashboardData.repairs.tr_percent}% от парка`;
+    document.getElementById('repairKR').textContent =
+        dashboardData.repairs.kr_count;
+    document.getElementById('repairKRPercent').textContent =
+        `${dashboardData.repairs.kr_percent}% от парка`;
+    document.getElementById('repairTOR').textContent =
+        dashboardData.repairs.tor_count;
+    document.getElementById('repairTORPercent').textContent =
+        `${dashboardData.repairs.tor_percent}% от парка`;
+    document.getElementById('fleetTotal').textContent =
+        formatNumber(dashboardData.repairs.fleet_total);
+
+    document.getElementById('lastUpdate').textContent =
+        dashboardData.last_update || '—';
+}
+
+// ==========================
+// 6. ГРАФИК
+// ==========================
+
+function createTrendChart() {
+    const ctx = document.getElementById('trendChart').getContext('2d');
+    if (trendChart) trendChart.destroy();
+
+    const labels = dashboardData.daily_trend.map(d => d.label);
+    const data = dashboardData.daily_trend.map(d => d.wagons);
+
+    trendChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Погружено вагонов',
+                data,
+                borderColor: '#20b2aa',
+                backgroundColor: 'rgba(32, 178, 170, 0.12)',
+                borderWidth: 3,
+                tension: 0.3,
+                fill: true,
+                pointBackgroundColor: '#20b2aa',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: true, position: 'top' },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => 'Вагонов: ' + formatNumber(ctx.parsed.y)
                     }
                 }
-            });
+            },
+            scales: {
+                y: {
+                    ticks: {
+                        callback: value => formatNumber(value)
+                    }
+                }
+            }
         }
+    });
+}
 
-        // Refresh data (simulation)
-        function refreshData() {
-            // Simulate data refresh with slight variations
-            dashboardData.loading.loaded_wagons_month += Math.floor(Math.random() * 50);
-            dashboardData.loading.loaded_wagons_yesterday = 1500 + Math.floor(Math.random() * 100);
-            dashboardData.receivables.overdue_debt += Math.floor(Math.random() * 1000000 - 500000);
-            dashboardData.receivables.overdue_percent = Math.round(
-                (dashboardData.receivables.overdue_debt / dashboardData.receivables.total_debt) * 100
-            );
-            
-            // Update timestamp
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            const seconds = String(now.getSeconds()).padStart(2, '0');
-            dashboardData.last_update = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+// ==========================
+// 7. ОБНОВЛЕНИЕ ПО КНОПКЕ
+// ==========================
 
-            // Re-populate dashboard
-            populateDashboard();
-            
-            // Show feedback
-            const btn = document.querySelector('.refresh-btn');
+async function refreshData() {
+    const btn = document.querySelector('.refresh-btn');
+    if (btn) btn.disabled = true;
+
+    try {
+        await loadDataFromSheet();
+        populateDashboard();
+        createTrendChart();
+
+        if (btn) {
             btn.textContent = '✓ Обновлено!';
             setTimeout(() => {
                 btn.textContent = '🔄 Обновить данные';
+                btn.disabled = false;
+            }, 1500);
+        }
+    } catch (e) {
+        console.error('Ошибка обновления данных:', e);
+        document.getElementById('lastUpdate').textContent = 'Ошибка загрузки';
+        if (btn) {
+            btn.textContent = 'Ошибка 😕';
+            setTimeout(() => {
+                btn.textContent = '🔄 Обновить данные';
+                btn.disabled = false;
             }, 2000);
         }
+    }
+}
 
-        // Initialize dashboard
-        function initDashboard() {
-            updateDateTime();
-            setInterval(updateDateTime, 1000);
-            populateDashboard();
-            createTrendChart();
-        }
+// ==========================
+// 8. ИНИЦИАЛИЗАЦИЯ
+// ==========================
 
-        // Run on page load
-        document.addEventListener('DOMContentLoaded', initDashboard);
-    </script>
+async function initDashboard() {
+    updateDateTime();
+    setInterval(updateDateTime, 1000);
+
+    try {
+        await loadDataFromSheet();
+        populateDashboard();
+        createTrendChart();
+    } catch (e) {
+        console.error('Ошибка инициализации:', e);
+        document.getElementById('lastUpdate').textContent = 'Ошибка загрузки';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', initDashboard);
+</script>
 </body>
 </html>
