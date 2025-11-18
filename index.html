@@ -590,12 +590,16 @@ body {
                     
                     <div class="secondary-metrics">
                         <div class="secondary-metric">
-                            <span class="secondary-metric-label">План на месяц:</span>
+                            <span class="secondary-metric-label">По плану:</span>
                             <span class="secondary-metric-value" id="planMonth">—</span>
                         </div>
                         <div class="secondary-metric">
                             <span class="secondary-metric-label">Вчера погружено:</span>
                             <span class="secondary-metric-value" id="loadedYesterday">—</span>
+                        </div>
+                        <div class="secondary-metric">
+                            <span class="secondary-metric-label" style="font-weight: 600;">План на месяц:</span>
+                            <span class="secondary-metric-value" id="fullMonthPlan" style="font-weight: 600;">—</span>
                         </div>
                     </div>
                 </div>
@@ -799,7 +803,8 @@ function rowsToObjects(rows) {
 // 3. СБОРКА dashboardData
 // ==========================
 
-function buildDashboardDataFromRaw(rowObjs) {
+function buildDashboardDataFromRaw(rowObjs, monthPlanTotal) {
+    monthPlanTotal = monthPlanTotal || 0;
     if (!rowObjs.length) {
         return {
             loading: {
@@ -807,6 +812,7 @@ function buildDashboardDataFromRaw(rowObjs) {
                 planned_wagons_today: 0,
                 loaded_wagons_yesterday: 0,
                 plan_month: 0,
+                month_total_plan: monthPlanTotal,
                 progress_percent: 0
             },
             receivables: {
@@ -885,9 +891,11 @@ function buildDashboardDataFromRaw(rowObjs) {
             loaded_wagons_month: loadedMonth,
             planned_wagons_today: plannedToday,
             loaded_wagons_yesterday: loadedYesterday,
-            plan_month: planMonth,
+            plan_month: planMonth,                // «По плану» (накопительный план)
+            month_total_plan: monthPlanTotal,     // План на месяц (из L1 = 3500)
             progress_percent: planMonth ? Math.round(loadedMonth / planMonth * 100) : 0
         },
+
         receivables: {
             total_debt: totalDebt,
             overdue_debt: overdueDebt,
@@ -914,9 +922,24 @@ async function loadDataFromSheet() {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const csvText = await res.text();
     const rows = parseCSV(csvText);
+
+    // Ищем план на месяц в первой строке (последняя непустая ячейка, у тебя это L1 = 3500)
+    let monthPlanFromHeader = 0;
+    if (rows.length) {
+        const headerRow = rows[0];
+        for (let i = headerRow.length - 1; i >= 0; i--) {
+            const cell = headerRow[i];
+            if (cell !== '') {
+                monthPlanFromHeader = toNumber(cell);
+                break;
+            }
+        }
+    }
+
     const rowObjs = rowsToObjects(rows);
-    dashboardData = buildDashboardDataFromRaw(rowObjs);
+    dashboardData = buildDashboardDataFromRaw(rowObjs, monthPlanFromHeader);
 }
+
 
 // ==========================
 // 4. ФОРМАТИРОВАНИЕ / ВРЕМЯ
@@ -961,8 +984,11 @@ function populateDashboard() {
         `${dashboardData.loading.progress_percent}%`;
     document.getElementById('planMonth').textContent =
         formatNumber(dashboardData.loading.plan_month);
+    document.getElementById('fullMonthPlan').textContent =
+        formatNumber(dashboardData.loading.month_total_plan || 0);
     document.getElementById('loadedYesterday').textContent =
         formatNumber(dashboardData.loading.loaded_wagons_yesterday);
+
 
     document.getElementById('totalDebt').textContent =
         formatCurrency(dashboardData.receivables.total_debt);
