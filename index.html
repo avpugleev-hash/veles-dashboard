@@ -950,7 +950,7 @@ function buildReceivablesByClientFromRows(rows) {
 
     if (!items.length) return [];
 
-    // Оставляем только записи за последнюю дату (максимальный as_of_date)
+    // Оставляем только записи за последнюю дату
     let filtered = items;
     if (maxDate) {
         const maxKey = startOfDay(maxDate).getTime();
@@ -967,14 +967,15 @@ function buildReceivablesByClientFromRows(rows) {
         sums.set(key, prev + it.overdue);
     }
 
-    // Преобразуем в массив и сортируем от большего к меньшему
+    // Преобразуем в массив, сортируем и фильтруем только > 1 000 000 ₽
     const result = Array.from(sums.entries())
         .map(([client, overdue]) => ({ client, overdue }))
-        .filter(r => r.overdue > 0)
+        .filter(r => r.overdue > 1000000)          // 👈 только компании с просрочкой > 1 млн
         .sort((a, b) => b.overdue - a.overdue);
 
     return result;
 }
+
 
 // ==========================
 // 3. СБОРКА dashboardData
