@@ -903,8 +903,9 @@ const totalDebt = lastRow.total_debt || 0;
             kr_percent: krPercent,
             tor_percent: torPercent
         },
-        daily_trend: dailyTrend,
-        last_update: lastRow.timestamp
+       daily_trend: dailyTrend,
+       last_update: lastRow.timestamp,
+       period_label: periodLabel
     };
 }
 
@@ -988,7 +989,7 @@ function populateDashboard() {
         formatNumber(dashboardData.repairs.fleet_total);
 
     document.getElementById('lastUpdate').textContent =
-        dashboardData.last_update || '—';
+        dashboardData.period_label || '—';
 }
 
 // ==========================
