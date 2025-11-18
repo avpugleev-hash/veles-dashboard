@@ -231,6 +231,16 @@ body {
     gap: var(--space-8);
     justify-content: flex-end;
 }
+        
+.data-updated {
+    font-size: var(--font-size-xs);
+    opacity: 0.7;
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    justify-content: flex-end;
+    margin-top: 4px;
+}
 
 .refresh-btn {
     background: var(--gold-accent);
@@ -565,8 +575,13 @@ body {
                         <span>⏱</span>
                         <span id="lastUpdate">Погрузка с — по —</span>
                     </div>
+                    <div class="data-updated">
+                        <span>🕒</span>
+                        <span id="dataUpdatedAt">Данные обновлены: —</span>
+                    </div>
                     <button class="refresh-btn" onclick="refreshData()">🔄 Обновить данные</button>
                 </div>
+
             </div>
         </header>
 
@@ -972,6 +987,16 @@ function updateDateTime() {
     document.getElementById('currentDateTime').textContent =
         now.toLocaleDateString('ru-RU', options);
 }
+    
+function formatUpdatedAt(date) {
+    const dd = String(date.getDate()).padStart(2, '0');
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const yyyy = date.getFullYear();
+    const hh = String(date.getHours()).padStart(2, '0');
+    const min = String(date.getMinutes()).padStart(2, '0');
+    const ss = String(date.getSeconds()).padStart(2, '0');
+    return `${dd}-${mm}-${yyyy} ${hh}:${min}:${ss}`;
+}
 
 // ==========================
 // 5. ЗАПОЛНЕНИЕ КАРТОЧЕК
@@ -1086,6 +1111,13 @@ async function refreshData() {
         await loadDataFromSheet();
         populateDashboard();
         createTrendChart();
+                // ставим время последнего успешного обновления
+        const updatedEl = document.getElementById('dataUpdatedAt');
+        if (updatedEl) {
+            const now = new Date();
+            updatedEl.textContent = 'Данные обновлены: ' + formatUpdatedAt(now);
+        }
+
 
         if (btn) {
             btn.textContent = '✓ Обновлено!';
@@ -1096,6 +1128,10 @@ async function refreshData() {
         }
     } catch (e) {
         console.error('Ошибка обновления данных:', e);
+        const updatedEl = document.getElementById('dataUpdatedAt');
+        if (updatedEl) {
+            updatedEl.textContent = 'Ошибка обновления данных';
+        }
         document.getElementById('lastUpdate').textContent = 'Ошибка загрузки';
         if (btn) {
             btn.textContent = 'Ошибка 😕';
