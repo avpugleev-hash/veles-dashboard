@@ -688,6 +688,7 @@ body {
     <div class="card-header">
         <div class="card-icon">💳</div>
         <h2 class="card-title">ЗАДОЛЖЕННОСТЬ</h2>
+        <div id="receivablesDate" class="metric-label">Данные на —</div>
     </div>
     <div class="card-body">
         <div class="debt-amount">
@@ -930,6 +931,48 @@ function computeTotalsFromAggRows(rows) {
     }
 
     return { total, overdue };
+}
+// Дата среза (максимальный as_of_date из ar_agg_client_contract)
+function getSnapshotDateFromAggRows(rows) {
+    if (!rows || rows.length < 2) return null;
+
+    const header = rows[0];
+    const idxAsOf = header.indexOf('as_of_date');
+    if (idxAsOf === -1) {
+        console.warn('Колонка as_of_date не найдена в ar_agg_client_contract');
+        return null;
+    }
+
+    let maxDate = null;
+
+    for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row || !row.length) continue;
+
+        const raw = row[idxAsOf];
+        if (!raw) continue;
+
+        const d = parseDate(raw); // parseDate уже есть выше в коде
+        if (!d) continue;
+
+        if (!maxDate || d > maxDate) {
+            maxDate = d;
+        }
+    }
+
+    return maxDate;
+}
+
+// Формат вида "18 ноября"
+function formatDateRuShort(date) {
+    if (!date) return '';
+    const months = [
+        'января','февраля','марта','апреля','мая','июня',
+        'июля','августа','сентября','октября','ноября','декабря'
+    ];
+    const day = date.getDate();
+    const monthName = months[date.getMonth()];
+    return day + ' ' + monthName;
 }
     
 function buildReceivablesByClientFromRows(rows) {
@@ -1183,6 +1226,11 @@ async function loadDataFromSheet() {
             if (resClients.ok) {
                 const csvTextClients = await resClients.text();
                 const rowsClients = parseCSV(csvTextClients);
+                // дата среза (аналог G1 на листе ar_agg_client_contract)
+                const snapshotDate = getSnapshotDateFromAggRows(rowsClients);
+                if (snapshotDate && dashboardData) {
+                    dashboardData.receivables_date = snapshotDate;
+                }
 
                 // а) считаем общую и просроченную задолженность по agg-листу
                 const aggTotals = computeTotalsFromAggRows(rowsClients);
@@ -1325,6 +1373,15 @@ function populateDashboard() {
         `${dashboardData.receivables.overdue_percent}%`;
     document.getElementById('overdueProgressFill').style.width =
         `${dashboardData.receivables.overdue_percent}%`;
+    // Подпись под заголовком "ЗАДОЛЖЕННОСТЬ"
+    const dateEl = document.getElementById('receivablesDate');
+    if (dateEl) {
+        if (dashboardData.receivables_date) {
+            dateEl.textContent = 'Данные на ' + formatDateRuShort(dashboardData.receivables_date);
+        } else {
+            dateEl.textContent = '';
+        }
+    }
 
     // 👉 рисуем структуру просрочки по клиентам
     renderReceivablesByClient();
