@@ -368,6 +368,83 @@ body {
     padding-top: var(--space-16);
     border-top: 1px solid var(--border-color);
 }
+/* Общие строки метрик в карточках */
+.metric-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-8);
+}
+
+.metric-value {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+}
+
+/* Акцентный текст (проценты, просрочка) */
+.text-accent {
+    color: var(--warning-orange);
+}
+
+/* Таблицы в панелях (клиенты, поступления) */
+.metric-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--font-size-xs);
+}
+
+.metric-table th,
+.metric-table td {
+    padding: 4px 6px;
+}
+
+.metric-table th {
+    text-align: left;
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-secondary);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.metric-table td.amount,
+.metric-table td.percent {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.metric-table td.percent {
+    color: var(--warning-orange);
+}
+
+.metric-table tr:nth-child(even) {
+    background-color: rgba(15, 23, 42, 0.02);
+}
+
+/* Кнопки-ссылки под карточкой */
+.link-button {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.link-button:hover {
+    color: var(--navy-primary);
+}
+
+/* Вспомогательные отступы */
+.mt-1 { margin-top: 4px; }
+.mt-2 { margin-top: 8px; }
+
+/* Скрытие панелей (overdue / payments) */
+.hidden {
+    display: none;
+}
 
 .secondary-metric {
     display: flex;
@@ -1374,10 +1451,6 @@ function formatCurrency(amount) {
   const millions = (amount / 1_000_000).toFixed(1);
   return millions;
 }
-function formatMillions(amount) {
-  const millions = (amount / 1_000_000).toFixed(1);
-  return millions;
-}
 
 function updateDateTime() {
     const now = new Date();
@@ -1508,6 +1581,7 @@ function renderPaymentsCard() {
 function populateDashboard() {
     if (!dashboardData) return;
 
+    // --- Погрузка ---
     document.getElementById('loadedWagonsMonth').textContent =
         formatNumber(dashboardData.loading.loaded_wagons_month);
     document.getElementById('progressPercent').textContent =
@@ -1521,7 +1595,7 @@ function populateDashboard() {
     document.getElementById('loadedYesterday').textContent =
         formatNumber(dashboardData.loading.loaded_wagons_yesterday);
 
-
+    // --- Задолженность ---
     document.getElementById('totalDebt').textContent =
         formatCurrency(dashboardData.receivables.total_debt);
     document.getElementById('overdueDebt').textContent =
@@ -1530,8 +1604,7 @@ function populateDashboard() {
         `${dashboardData.receivables.overdue_percent}%`;
     document.getElementById('overdueProgressFill').style.width =
         `${dashboardData.receivables.overdue_percent}%`;
-    document.getElementById('overdueProgressFill').style.width =
-        `${dashboardData.receivables.overdue_percent}%`;
+
     // Подпись под заголовком "ЗАДОЛЖЕННОСТЬ"
     const dateEl = document.getElementById('receivablesDate');
     if (dateEl) {
@@ -1542,18 +1615,22 @@ function populateDashboard() {
         }
     }
 
-    // 👉 рисуем структуру просрочки по клиентам
+    // Структура просрочки по клиентам
     renderReceivablesByClient();
-// === Поступления ===
-if (paymentsByClient && paymentsByClient.length) {
-    const totalPayments = paymentsByClient.reduce((sum, p) => sum + (p.amount || 0), 0);
-    updatePaymentsTotal(totalPayments);
-    renderPaymentsByClient(paymentsByClient);
-} else {
-    updatePaymentsTotal(0);
-    renderPaymentsByClient([]);
-}
 
+    // --- Поступления (общая сумма + таблица по клиентам) ---
+    if (paymentsByClient && paymentsByClient.length) {
+        const totalPayments = paymentsByClient.reduce(
+            (sum, p) => sum + (p.amount || 0), 0
+        );
+        updatePaymentsTotal(totalPayments);
+        renderPaymentsByClient(paymentsByClient);
+    } else {
+        updatePaymentsTotal(0);
+        renderPaymentsByClient([]);
+    }
+
+    // --- Ремонты ---
     document.getElementById('repairTR').textContent =
         dashboardData.repairs.tr_count;
     document.getElementById('repairTRPercent').textContent =
@@ -1570,17 +1647,9 @@ if (paymentsByClient && paymentsByClient.length) {
         formatNumber(dashboardData.repairs.fleet_total);
 
     document.getElementById('lastUpdate').textContent =
-    dashboardData.period_label || '—';
+        dashboardData.period_label || '—';
 }
-// === Поступления ===
-if (paymentsByClient && paymentsByClient.length) {
-    const totalPayments = paymentsByClient.reduce((sum, p) => sum + (p.amount || 0), 0);
-    updatePaymentsTotal(totalPayments);
-    renderPaymentsByClient(paymentsByClient);
-} else {
-    updatePaymentsTotal(0);
-    renderPaymentsByClient([]);
-}
+
 
 // ==========================
 // 6. ГРАФИК
@@ -1646,15 +1715,13 @@ async function refreshData() {
         await loadDataFromSheet();
         populateDashboard();
         createTrendChart();
-        renderReceivablesByClient();
-        renderPaymentsCard(); // 👈 вот это
-                // ставим время последнего успешного обновления
+
+        // ставим время последнего успешного обновления
         const updatedEl = document.getElementById('dataUpdatedAt');
         if (updatedEl) {
             const now = new Date();
             updatedEl.textContent = 'Данные обновлены: ' + formatUpdatedAt(now);
         }
-
 
         if (btn) {
             btn.textContent = '✓ Обновлено!';
@@ -1669,7 +1736,10 @@ async function refreshData() {
         if (updatedEl) {
             updatedEl.textContent = 'Ошибка обновления данных';
         }
-        document.getElementById('lastUpdate').textContent = 'Ошибка загрузки';
+        const lastUpdEl = document.getElementById('lastUpdate');
+        if (lastUpdEl) {
+            lastUpdEl.textContent = 'Ошибка загрузки';
+        }
         if (btn) {
             btn.textContent = 'Ошибка 😕';
             setTimeout(() => {
@@ -1679,6 +1749,7 @@ async function refreshData() {
         }
     }
 }
+
 // === Поступления: рендер суммы и списка клиентов ===
 
 // Подставляем сумму поступлений на карточку (общая)
