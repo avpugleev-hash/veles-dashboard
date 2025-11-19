@@ -1,1692 +1,260 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Дашборд | ООО "ТК ВЕЛЕС"</title>
-    <style>
-        :root {
-  /* Primitive Color Tokens */
-  --color-white: rgba(255, 255, 255, 1);
-  --color-black: rgba(0, 0, 0, 1);
-  --color-cream-50: rgba(252, 252, 249, 1);
-  --color-cream-100: rgba(255, 255, 253, 1);
-  --color-gray-200: rgba(245, 245, 245, 1);
-  --color-gray-300: rgba(167, 169, 169, 1);
-  --color-gray-400: rgba(119, 124, 124, 1);
-  --color-slate-500: rgba(98, 108, 113, 1);
-  --color-brown-600: rgba(94, 82, 64, 1);
-  --color-charcoal-700: rgba(31, 33, 33, 1);
-  --color-charcoal-800: rgba(38, 40, 40, 1);
-  --color-slate-900: rgba(19, 52, 59, 1);
-  --color-teal-300: rgba(50, 184, 198, 1);
-  --color-teal-400: rgba(45, 166, 178, 1);
-  --color-teal-500: rgba(33, 128, 141, 1);
-  --color-teal-600: rgba(29, 116, 128, 1);
-  --color-teal-700: rgba(26, 104, 115, 1);
-  --color-teal-800: rgba(41, 150, 161, 1);
-  --color-red-400: rgba(255, 84, 89, 1);
-  --color-red-500: rgba(192, 21, 47, 1);
-  --color-orange-400: rgba(230, 129, 97, 1);
-  --color-orange-500: rgba(168, 75, 47, 1);
-
-  /* Custom dashboard colors */
-  --navy-primary: #1a2a4a;
-  --navy-dark: #0f1a2e;
-  --gold-accent: #d4a574;
-  --gray-secondary: #4a5568;
-  --success-green: #20b2aa;
-  --warning-orange: #e8622b;
-  --bg-light: #f7f8fa;
-  --bg-card: #ffffff;
-  --text-primary: #1a2a4a;
-  --text-secondary: #6b7280;
-  --border-color: #e5e7eb;
-
-  /* RGB versions for opacity control */
-  --color-brown-600-rgb: 94, 82, 64;
-  --color-teal-500-rgb: 33, 128, 141;
-  --color-slate-900-rgb: 19, 52, 59;
-  --color-slate-500-rgb: 98, 108, 113;
-  --color-red-500-rgb: 192, 21, 47;
-  --color-red-400-rgb: 255, 84, 89;
-  --color-orange-500-rgb: 168, 75, 47;
-  --color-orange-400-rgb: 230, 129, 97;
-
-  /* Background color tokens (Light Mode) */
-  --color-bg-1: rgba(59, 130, 246, 0.08);
-  --color-bg-2: rgba(245, 158, 11, 0.08);
-  --color-bg-3: rgba(34, 197, 94, 0.08);
-  --color-bg-4: rgba(239, 68, 68, 0.08);
-  --color-bg-5: rgba(147, 51, 234, 0.08);
-  --color-bg-6: rgba(249, 115, 22, 0.08);
-  --color-bg-7: rgba(236, 72, 153, 0.08);
-  --color-bg-8: rgba(6, 182, 212, 0.08);
-
-  /* Semantic Color Tokens (Light Mode) */
-  --color-background: var(--color-cream-50);
-  --color-surface: var(--color-cream-100);
-  --color-text: var(--color-slate-900);
-  --color-text-secondary: var(--color-slate-500);
-  --color-primary: var(--color-teal-500);
-  --color-primary-hover: var(--color-teal-600);
-  --color-primary-active: var(--color-teal-700);
-  --color-secondary: rgba(var(--color-brown-600-rgb), 0.12);
-  --color-secondary-hover: rgba(var(--color-brown-600-rgb), 0.2);
-  --color-secondary-active: rgba(var(--color-brown-600-rgb), 0.25);
-  --color-border: rgba(var(--color-brown-600-rgb), 0.2);
-  --color-btn-primary-text: var(--color-cream-50);
-  --color-card-border: rgba(var(--color-brown-600-rgb), 0.12);
-  --color-card-border-inner: rgba(var(--color-brown-600-rgb), 0.12);
-  --color-error: var(--color-red-500);
-  --color-success: var(--color-teal-500);
-  --color-warning: var(--color-orange-500);
-  --color-info: var(--color-slate-500);
-  --color-focus-ring: rgba(var(--color-teal-500-rgb), 0.4);
-  --color-select-caret: rgba(var(--color-slate-900-rgb), 0.8);
-
-  /* Common style patterns */
-  --focus-ring: 0 0 0 3px var(--color-focus-ring);
-  --focus-outline: 2px solid var(--color-primary);
-  --status-bg-opacity: 0.15;
-  --status-border-opacity: 0.25;
-
-  /* Typography */
-  --font-family-base: "FKGroteskNeue", "Geist", "Inter", -apple-system,
-    BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-family-mono: "Berkeley Mono", ui-monospace, SFMono-Regular, Menlo,
-    Monaco, Consolas, monospace;
-  --font-size-xs: 11px;
-  --font-size-sm: 12px;
-  --font-size-base: 14px;
-  --font-size-md: 14px;
-  --font-size-lg: 16px;
-  --font-size-xl: 18px;
-  --font-size-2xl: 20px;
-  --font-size-3xl: 24px;
-  --font-size-4xl: 30px;
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 550;
-  --font-weight-bold: 600;
-  --line-height-tight: 1.2;
-  --line-height-normal: 1.5;
-  --letter-spacing-tight: -0.01em;
-
-  /* Spacing */
-  --space-0: 0;
-  --space-1: 1px;
-  --space-2: 2px;
-  --space-4: 4px;
-  --space-6: 6px;
-  --space-8: 8px;
-  --space-10: 10px;
-  --space-12: 12px;
-  --space-16: 16px;
-  --space-20: 20px;
-  --space-24: 24px;
-  --space-32: 32px;
-
-  /* Border Radius */
-  --radius-sm: 6px;
-  --radius-base: 8px;
-  --radius-md: 10px;
-  --radius-lg: 12px;
-  --radius-full: 9999px;
-
-  /* Shadows */
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.02);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.04),
-    0 2px 4px -1px rgba(0, 0, 0, 0.02);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.04),
-    0 4px 6px -2px rgba(0, 0, 0, 0.02);
-  --shadow-inset-sm: inset 0 1px 0 rgba(255, 255, 255, 0.15),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.03);
-
-  /* Animation */
-  --duration-fast: 150ms;
-  --duration-normal: 250ms;
-  --ease-standard: cubic-bezier(0.16, 1, 0.3, 1);
-
-  /* Layout */
-  --container-sm: 640px;
-  --container-md: 768px;
-  --container-lg: 1024px;
-  --container-xl: 1280px;
-}
-
-@font-face {
-  font-family: 'FKGroteskNeue';
-  src: url('https://r2cdn.perplexity.ai/fonts/FKGroteskNeue.woff2')
-    format('woff2');
-}
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family: var(--font-family-base);
-    background: var(--bg-light);
-    color: var(--text-primary);
-    line-height: 1.6;
-    min-height: 100vh;
-}
-
-.dashboard-container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: var(--space-24);
-}
-
-/* Header */
-.dashboard-header {
-    background: var(--navy-primary);
-    color: white;
-    padding: var(--space-24) var(--space-32);
-    border-radius: var(--radius-lg);
-    margin-bottom: var(--space-32);
-    box-shadow: 0 4px 12px rgba(26, 42, 74, 0.15);
-}
-
-.header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: var(--space-16);
-}
-
-.company-info h1 {
-    font-size: var(--font-size-3xl);
-    font-weight: var(--font-weight-bold);
-    margin-bottom: var(--space-4);
-    letter-spacing: var(--letter-spacing-tight);
-}
-
-.company-info .subtitle {
-    font-size: var(--font-size-base);
-    opacity: 0.85;
-    font-weight: var(--font-weight-normal);
-}
-
-.header-right {
-    text-align: right;
-}
-
-.current-datetime {
-    font-size: var(--font-size-2xl);
-    font-weight: var(--font-weight-semibold);
-    margin-bottom: var(--space-4);
-}
-
-.last-update {
-    font-size: var(--font-size-sm);
-    opacity: 0.75;
-    display: flex;
-    align-items: center;
-    gap: var(--space-8);
-    justify-content: flex-end;
-}
-        
-.data-updated {
-    font-size: var(--font-size-xs);
-    opacity: 0.7;
-    display: flex;
-    align-items: center;
-    gap: var(--space-8);
-    justify-content: flex-end;
-    margin-top: 4px;
-}
-
-.refresh-btn {
-    background: var(--gold-accent);
-    color: var(--navy-primary);
-    border: none;
-    padding: var(--space-8) var(--space-20);
-    border-radius: var(--radius-base);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
-    cursor: pointer;
-    transition: all var(--duration-normal) var(--ease-standard);
-    margin-top: var(--space-8);
-}
-
-.refresh-btn:hover {
-    background: #c89860;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(212, 165, 116, 0.3);
-}
-
-/* Metrics Grid */
-.metrics-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: var(--space-24);
-    margin-bottom: var(--space-32);
-}
-
-.metric-card {
-    background: var(--bg-card);
-    border-radius: var(--radius-lg);
-    padding: var(--space-24);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    border: 1px solid var(--border-color);
-    transition: all var(--duration-normal) var(--ease-standard);
-}
-
-.metric-card:hover {
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-    transform: translateY(-2px);
-}
-
-.card-header {
-    display: flex;
-    align-items: center;
-    gap: var(--space-12);
-    margin-bottom: var(--space-20);
-    padding-bottom: var(--space-16);
-    border-bottom: 2px solid var(--border-color);
-}
-
-.card-icon {
-    font-size: 32px;
-}
-
-.card-title {
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-bold);
-    color: var(--navy-primary);
-    letter-spacing: 0.5px;
-}
-
-.card-body {
-    margin-bottom: var(--space-16);
-}
-
-.main-metric {
-    font-size: 42px;
-    font-weight: var(--font-weight-bold);
-    color: var(--navy-primary);
-    margin-bottom: var(--space-8);
-    line-height: 1;
-}
-
-.metric-label {
-    font-size: var(--font-size-sm);
-    color: var(--text-secondary);
-    font-weight: var(--font-weight-medium);
-    margin-bottom: var(--space-16);
-}
-
-.progress-section {
-    margin: var(--space-16) 0;
-}
-
-.progress-info {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: var(--space-8);
-}
-
-.progress-label {
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
-    color: var(--text-primary);
-}
-
-.progress-value {
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-bold);
-    color: var(--success-green);
-}
-
-.progress-bar {
-    width: 100%;
-    height: 8px;
-    background: var(--border-color);
-    border-radius: var(--radius-full);
-    overflow: hidden;
-}
-
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--success-green), var(--gold-accent));
-    border-radius: var(--radius-full);
-    transition: width 0.6s var(--ease-standard);
-}
-
-.secondary-metrics {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-12);
-    margin-top: var(--space-16);
-    padding-top: var(--space-16);
-    border-top: 1px solid var(--border-color);
-}
-
-.secondary-metric {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: var(--font-size-sm);
-}
-.secondary-metric.month-plan .secondary-metric-label,
-.secondary-metric.month-plan .secondary-metric-value {
-    font-size: var(--font-size-md);       /* чуть крупнее */
-    font-weight: var(--font-weight-bold); /* жирный шрифт */
-}
-.secondary-metric-label {
-    color: var(--text-secondary);
-    font-weight: var(--font-weight-medium);
-}
-
-.secondary-metric-value {
-    font-weight: var(--font-weight-semibold);
-    color: var(--text-primary);
-}
-
-/* Debt card specific */
-.debt-amount {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-12);
-}
-
-.debt-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-}
-
-.debt-label {
-    font-size: var(--font-size-sm);
-    color: var(--text-secondary);
-    font-weight: var(--font-weight-medium);
-}
-
-.debt-value {
-    font-size: var(--font-size-2xl);
-    font-weight: var(--font-weight-bold);
-}
-
-.debt-value.total {
-    color: var(--navy-primary);
-}
-
-.debt-value.overdue {
-    color: var(--warning-orange);
-}
-
-.progress-fill.warning {
-    background: linear-gradient(90deg, var(--warning-orange), #ff9a62);
-}
-/* Receivables by client (drilldown) */
-.clients-overdue-toggle {
-    margin-top: var(--space-12);
-    font-size: var(--font-size-xs);
-    color: var(--text-secondary);
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.clients-overdue-toggle:hover {
-    color: var(--navy-primary);
-}
-
-.clients-overdue-panel {
-    margin-top: var(--space-12);
-    padding-top: var(--space-8);
-    border-top: 1px dashed rgba(148, 163, 184, 0.6);
-}
-
-.clients-overdue-panel.hidden {
-    display: none;
-}
-
-.clients-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: var(--font-size-xs);
-}
-
-.clients-table th,
-.clients-table td {
-    padding: 4px 6px;
-}
-
-.clients-table th {
-    text-align: left;
-    font-weight: var(--font-weight-semibold);
-    color: var(--text-secondary);
-    border-bottom: 1px solid rgba(148, 163, 184, 0.3);
-}
-
-.clients-table td.amount,
-.clients-table td.percent {
-    text-align: right;
-    white-space: nowrap;
-}
-
-.clients-table td.percent {
-    color: var(--warning-orange);
-}
-
-.clients-table tr:nth-child(even) {
-    background-color: rgba(15, 23, 42, 0.02);
-}
-
-/* Repairs card specific */
-.repair-breakdown {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-16);
-}
-
-.repair-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--space-12);
-    background: var(--bg-light);
-    border-radius: var(--radius-base);
-    border-left: 4px solid var(--navy-primary);
-}
-
-.repair-item:nth-child(1) {
-    border-left-color: var(--success-green);
-}
-
-.repair-item:nth-child(2) {
-    border-left-color: var(--warning-orange);
-}
-
-.repair-item:nth-child(3) {
-    border-left-color: var(--gold-accent);
-}
-
-.repair-info {
-    display: flex;
-    flex-direction: column;
-}
-
-.repair-type {
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
-    color: var(--navy-primary);
-}
-
-.repair-description {
-    font-size: 11px;
-    color: var(--text-secondary);
-}
-
-.repair-stats {
-    text-align: right;
-}
-
-.repair-count {
-    font-size: var(--font-size-2xl);
-    font-weight: var(--font-weight-bold);
-    color: var(--navy-primary);
-}
-
-.repair-percent {
-    font-size: var(--font-size-xs);
-    color: var(--text-secondary);
-}
-
-/* Chart Section */
-.chart-section {
-    background: var(--bg-card);
-    border-radius: var(--radius-lg);
-    padding: var(--space-24);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    border: 1px solid var(--border-color);
-}
-
-.chart-header {
-    margin-bottom: var(--space-24);
-    padding-bottom: var(--space-16);
-    border-bottom: 2px solid var(--border-color);
-}
-
-.chart-title {
-    font-size: var(--font-size-xl);
-    font-weight: var(--font-weight-bold);
-    color: var(--navy-primary);
-}
-
-.chart-container {
-    height: 300px;
-    position: relative;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .dashboard-container {
-        padding: var(--space-16);
-    }
-
-    .header-content {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .header-right {
-        text-align: left;
-        width: 100%;
-    }
-
-    .last-update {
-        justify-content: flex-start;
-    }
-
-    .metrics-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .main-metric {
-        font-size: 36px;
-    }
-
-    .company-info h1 {
-        font-size: var(--font-size-2xl);
-    }
-}
-
-@media (max-width: 480px) {
-    .dashboard-header {
-        padding: var(--space-16);
-    }
-
-    .metric-card {
-        padding: var(--space-16);
-    }
-
-    .main-metric {
-        font-size: 32px;
-    }
-}
-    </style>
+  <meta charset="UTF-8" />
+  <title>Дэшборд транспортной компании</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
-    <div class="dashboard-container">
-        <!-- Header -->
-        <header class="dashboard-header">
-            <div class="header-content">
-                <div class="company-info">
-                    <h1>ООО "Транспортная Компания 'ВЕЛЕС'"</h1>
-                    <p class="subtitle">Операционный дашборд</p>
+  <div class="page">
+    <header class="header">
+      <div class="header__inner">
+        <div class="header__logo">ЛК транспортной компании</div>
+        <div class="header__date js-header-date">18 ноября</div>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="dashboard">
+        <div class="dashboard__cards cards">
+
+          <!-- КАРТОЧКА ПОГРУЗКА -->
+          <div class="cards__item cards__item--load">
+            <div class="card card--load">
+              <div class="card__header">
+                <div class="card__icon">
+                  <img src="img/icons/load.svg" alt="Погрузка" />
                 </div>
-                <div class="header-right">
-                    <div class="current-datetime" id="currentDateTime">—</div>
-                    <div class="last-update">
-                        <span>⏱</span>
-                        <span id="lastUpdate">Погрузка с — по —</span>
-                    </div>
-                    <div class="data-updated">
-                        <span>🕒</span>
-                        <span id="dataUpdatedAt">Данные обновлены: —</span>
-                    </div>
-                    <button class="refresh-btn" onclick="refreshData()">🔄 Обновить данные</button>
+                <div class="card__title-wrap">
+                  <div class="card__title">ПОГРУЗКА</div>
+                </div>
+              </div>
+
+              <div class="card__body">
+                <div class="card__main-number">
+                  <span class="js-load-month">1 955</span>
+                </div>
+                <div class="card__main-caption">Погружено вагонов (месяц)</div>
+
+                <div class="card__row card__row--mt">
+                  <div class="card__label">Выполнение плана</div>
+                  <div class="card__value card__value--accent">
+                    <span class="js-load-plan-percent">92</span>%
+                  </div>
                 </div>
 
-            </div>
-        </header>
+                <div class="card__progress">
+                  <div class="card__progress-line">
+                    <div class="card__progress-line-filled js-load-plan-bar" style="width:92%;"></div>
+                  </div>
+                </div>
 
-        <!-- Metrics Grid -->
-        <div class="metrics-grid">
-            <!-- Card 1: Loading -->
-            <div class="metric-card">
-                <div class="card-header">
-                    <div class="card-icon">📦</div>
-                    <h2 class="card-title">ПОГРУЗКА</h2>
+                <div class="card__row">
+                  <div class="card__label">По плану:</div>
+                  <div class="card__value">
+                    <span class="js-load-plan">2 124</span>
+                  </div>
                 </div>
-                <div class="card-body">
-                    <div class="main-metric" id="loadedWagonsMonth">—</div>
-                    <div class="metric-label">Погружено вагонов (месяц)</div>
-                    
-                    <div class="progress-section">
-                        <div class="progress-info">
-                            <span class="progress-label">Выполнение плана</span>
-                            <span class="progress-value" id="progressPercent">—</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="secondary-metrics">
-                        <div class="secondary-metric">
-                            <span class="secondary-metric-label">По плану:</span>
-                            <span class="secondary-metric-value" id="planMonth">—</span>
-                        </div>
-                        <div class="secondary-metric">
-                            <span class="secondary-metric-label">Вчера погружено:</span>
-                            <span class="secondary-metric-value" id="loadedYesterday">—</span>
-                        </div>
-                       <div class="secondary-metric month-plan">
-                            <span class="secondary-metric-label">План на месяц:</span>
-                            <span class="secondary-metric-value" id="fullMonthPlan">—</span>
-                        </div>
-                    </div>
+
+                <div class="card__row">
+                  <div class="card__label">Вчера погружено:</div>
+                  <div class="card__value">
+                    <span class="js-load-yesterday">115</span>
+                  </div>
                 </div>
+
+                <div class="card__row">
+                  <div class="card__label">План на месяц:</div>
+                  <div class="card__value">
+                    <span class="js-load-month-plan">3 550</span>
+                  </div>
+                </div>
+              </div>
             </div>
-<!-- Card: Payments -->
-<div class="metric-card">
-  <div class="card-header">
-    <div class="card-icon">💰</div>
-    <h2 class="card-title">ПОСТУПЛЕНИЯ</h2>
-    <div id="paymentsDateLabel" class="metric-label"></div>
+          </div>
+          <!-- КОНЕЦ КАРТОЧКИ ПОГРУЗКА -->
+
+          <!-- КАРТОЧКА ЗАДОЛЖЕННОСТЬ (ОБЪЕДИНЁННАЯ С ПОСТУПЛЕНИЯМИ) -->
+          <div class="cards__item cards__item--debt">
+            <div class="card card--debt">
+              <div class="card__header">
+                <div class="card__icon">
+                  <img src="img/icons/debt.svg" alt="Задолженность" />
+                </div>
+                <div class="card__title-wrap">
+                  <div class="card__title">ЗАДОЛЖЕННОСТЬ</div>
+                  <div class="card__subtitle">
+                    Данные на <span class="js-debt-date">18 ноября</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card__body">
+
+                <!-- Общая задолженность -->
+                <div class="card__row">
+                  <div class="card__label">Общая задолженность:</div>
+                  <div class="card__value">
+                    <span class="js-debt-total">319.6</span> млн. р.
+                  </div>
+                </div>
+
+                <!-- Просроченная задолженность -->
+                <div class="card__row">
+                  <div class="card__label">Просроченная:</div>
+                  <div class="card__value card__value--warning">
+                    <span class="js-debt-overdue">99.8</span> млн. р.
+                  </div>
+                </div>
+
+                <!-- НОВАЯ СТРОКА: Поступления -->
+                <div class="card__row">
+                  <div class="card__label">Поступления:</div>
+                  <div class="card__value">
+                    <span class="js-payments-total">6.8</span> млн. р.
+                  </div>
+                </div>
+
+                <!-- Доля просроченной -->
+                <div class="card__row">
+                  <div class="card__label">Доля просроченной</div>
+                  <div class="card__value card__value--orange">
+                    <span class="js-debt-overdue-share">31</span>%
+                  </div>
+                </div>
+
+                <!-- Прогресс-бар доли просроченной -->
+                <div class="card__progress">
+                  <div class="card__progress-line">
+                    <div class="card__progress-line-filled js-debt-overdue-bar" style="width:31%;"></div>
+                  </div>
+                </div>
+
+                <!-- Кнопка: структура задолженности по клиентам -->
+                <button
+                  class="card__link card__link--toggle js-debt-clients-toggle"
+                  type="button">
+                  ▾ Развернуть структуру по клиентам
+                </button>
+
+                <!-- НОВАЯ КНОПКА: структура поступлений по клиентам -->
+                <button
+                  class="card__link card__link--toggle js-payments-clients-toggle"
+                  type="button">
+                  ▾ Развернуть поступления по клиентам
+                </button>
+
+                <!-- Таблица структуры по клиентам (как было; скрывается/показывается JS) -->
+                <div class="card__table card__table--clients js-debt-clients-table">
+                  <div class="card__table-head">
+                    <div class="card__table-col card__table-col--name">Клиент</div>
+                    <div class="card__table-col card__table-col--money">Просрочено, ₽</div>
+                    <div class="card__table-col card__table-col--share">Доля от просрочки</div>
+                  </div>
+                  <div class="card__table-body js-debt-clients-rows">
+                    <!-- строки клиентов добавляет JS -->
+                  </div>
+                </div>
+
+                <!-- Таблица структуры поступлений по клиентам (новая, аналогичная) -->
+                <div class="card__table card__table--clients js-payments-clients-table">
+                  <div class="card__table-head">
+                    <div class="card__table-col card__table-col--name">Клиент</div>
+                    <div class="card__table-col card__table-col--money">Поступления, ₽</div>
+                    <div class="card__table-col card__table-col--share">Доля в поступлениях</div>
+                  </div>
+                  <div class="card__table-body js-payments-clients-rows">
+                    <!-- строки клиентов с поступлениями добавляет JS -->
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+          <!-- КОНЕЦ КАРТОЧКИ ЗАДОЛЖЕННОСТЬ -->
+
+          <!-- КАРТОЧКА РЕМОНТЫ -->
+          <div class="cards__item cards__item--repairs">
+            <div class="card card--repairs">
+              <div class="card__header">
+                <div class="card__icon">
+                  <img src="img/icons/repairs.svg" alt="Ремонты" />
+                </div>
+                <div class="card__title-wrap">
+                  <div class="card__title">РЕМОНТЫ</div>
+                </div>
+              </div>
+
+              <div class="card__body">
+
+                <div class="card__repairs-item">
+                  <div class="card__repairs-label">ТР</div>
+                  <div class="card__repairs-sub">Текущий ремонт</div>
+                  <div class="card__repairs-value">
+                    <span class="js-repairs-tr-count">0</span>
+                  </div>
+                  <div class="card__repairs-share">
+                    <span class="js-repairs-tr-share">0</span>% от парка
+                  </div>
+                </div>
+
+                <div class="card__repairs-item">
+                  <div class="card__repairs-label">КР</div>
+                  <div class="card__repairs-sub">Капитальный ремонт</div>
+                  <div class="card__repairs-value">
+                    <span class="js-repairs-kr-count">0</span>
+                  </div>
+                  <div class="card__repairs-share">
+                    <span class="js-repairs-kr-share">0</span>% от парка
+                  </div>
+                </div>
+
+                <div class="card__repairs-item">
+                  <div class="card__repairs-label">???</div>
+                  <div class="card__repairs-sub">???</div>
+                  <div class="card__repairs-value">
+                    <span class="js-repairs-other-count">0</span>
+                  </div>
+                  <div class="card__repairs-share">
+                    <span class="js-repairs-other-share">0</span>% от парка
+                  </div>
+                </div>
+
+                <div class="card__row card__row--mt">
+                  <div class="card__label">Всего вагонов в парке:</div>
+                  <div class="card__value">
+                    <span class="js-park-total">2 149</span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+          <!-- КОНЕЦ КАРТОЧКИ РЕМОНТЫ -->
+
+        </div>
+
+        <!-- ГРАФИК ДИНАМИКИ ПОГРУЗКИ -->
+        <section class="dashboard__chart chart">
+          <div class="chart__header">
+            <div class="chart__title">Динамика погрузки за последние 7 дней</div>
+          </div>
+          <div class="chart__body">
+            <canvas id="load-dynamics-chart"></canvas>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer__inner">
+        © Транспортная компания
+      </div>
+    </footer>
   </div>
-  <div class="card-body">
-    <div class="metric-row">
-      <label for="paymentsCompanySelect" class="metric-label">
-        Компания:
-      </label>
-      <select id="paymentsCompanySelect" class="metric-select">
-        <!-- опции заполним из JS -->
-      </select>
-    </div>
-    <div class="metric-row">
-      <span class="metric-label">Сумма оплаты:</span>
-      <span id="paymentsAmountValue" class="metric-value">0 ₽</span>
-    </div>
-  </div>
-</div>
 
-            <!-- Card 2: Receivables -->
-<div class="metric-card">
-    <div class="card-header">
-        <div class="card-icon">💳</div>
-        <h2 class="card-title">ЗАДОЛЖЕННОСТЬ</h2>
-        <div id="receivablesDate" class="metric-label">Данные на —</div>
-    </div>
-    <div class="card-body">
-        <div class="debt-amount">
-            <div class="debt-item">
-                <span class="debt-label">Общая задолженность:</span>
-                <span class="debt-value total" id="totalDebt">—</span>
-            </div>
-            <div class="debt-item">
-                <span class="debt-label">Просроченная:</span>
-                <span class="debt-value overdue" id="overdueDebt">—</span>
-            </div>
-        </div>
-        
-        <div class="progress-section">
-            <div class="progress-info">
-                <span class="progress-label">Доля просроченной</span>
-                <span class="progress-value" id="overduePercent" style="color: var(--warning-orange);">—</span>
-            </div>
-            <div class="progress-bar">
-                <div class="progress-fill warning" id="overdueProgressFill" style="width: 0%"></div>
-            </div>
-        </div>
-
-        <button type="button" class="clients-overdue-toggle" id="toggleClientsOverdue">
-            ▾ Развернуть структуру по клиентам
-        </button>
-
-        <div class="clients-overdue-panel hidden" id="clientsOverduePanel">
-            <table class="clients-table">
-                <thead>
-                    <tr>
-                        <th>Клиент</th>
-                        <th>Просрочено, ₽</th>
-                        <th>Доля от просрочки</th>
-                    </tr>
-                </thead>
-                <tbody id="clientsOverdueBody">
-                    <!-- Заполняется скриптом -->
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-            <!-- Card 3: Repairs -->
-            <div class="metric-card">
-                <div class="card-header">
-                    <div class="card-icon">🔧</div>
-                    <h2 class="card-title">РЕМОНТЫ</h2>
-                </div>
-                <div class="card-body">
-                    <div class="repair-breakdown">
-                        <div class="repair-item">
-                            <div class="repair-info">
-                                <div class="repair-type">ТР</div>
-                                <div class="repair-description">Текущий ремонт</div>
-                            </div>
-                            <div class="repair-stats">
-                                <div class="repair-count" id="repairTR">—</div>
-                                <div class="repair-percent" id="repairTRPercent">—</div>
-                            </div>
-                        </div>
-                        
-                        <div class="repair-item">
-                            <div class="repair-info">
-                                <div class="repair-type">КР</div>
-                                <div class="repair-description">Капитальный ремонт</div>
-                            </div>
-                            <div class="repair-stats">
-                                <div class="repair-count" id="repairKR">—</div>
-                                <div class="repair-percent" id="repairKRPercent">—</div>
-                            </div>
-                        </div>
-                        
-                        <div class="repair-item">
-                            <div class="repair-info">
-                                <div class="repair-type">???</div>
-                                <div class="repair-description">???</div>
-                            </div>
-                            <div class="repair-stats">
-                                <div class="repair-count" id="repairTOR">—</div>
-                                <div class="repair-percent" id="repairTORPercent">—</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="secondary-metrics">
-                        <div class="secondary-metric">
-                            <span class="secondary-metric-label">Всего вагонов в парке:</span>
-                            <span class="secondary-metric-value" id="fleetTotal">—</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Chart Section -->
-        <div class="chart-section">
-            <div class="chart-header">
-                <h3 class="chart-title">Динамика погрузки за последние 7 дней</h3>
-            </div>
-            <div class="chart-container">
-                <canvas id="trendChart"></canvas>
-            </div>
-        </div>
-    </div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-'use strict';
-
-// ==========================
-// 1. ССЫЛКА НА GOOGLE SHEETS
-// ==========================
-// ВСТАВЬ сюда свою CSV-ссылку с output=csv
-const SHEET_CSV_URL =
-  'https://docs.google.com/spreadsheets/d/e/2PACX-1vRy08FvutySDNk8yvn0QKdT92-uWjRqaxqi2057Tl42Ai2zLS4L833E2g2GdgBnpFX-t5uwX6JUcmg4/pub?gid=1433292947&single=true&output=csv';
-// ar_agg_client_contract (НОВАЯ ссылка, только для структуры просрочки)
-const SHEET_CLIENTS_CSV_URL =
-  'https://docs.google.com/spreadsheets/d/e/2PACX-1vRy08FvutySDNk8yvn0QKdT92-uWjRqaxqi2057Tl42Ai2zLS4L833E2g2GdgBnpFX-t5uwX6JUcmg4/pub?gid=57311955&single=true&output=csv';
-const SHEET_PAYMENTS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRy08FvutySDNk8yvn0QKdT92-uWjRqaxqi2057Tl42Ai2zLS4L833E2g2GdgBnpFX-t5uwX6JUcmg4/pub?gid=740110225&single=true&output=csv';
-
-let dashboardData = null;
-let trendChart = null;
-let receivablesByClient = [];   // сюда положим структуру просрочки по клиентам
-let paymentsLastDate = null;
-let paymentsByClient = []; // [{ client, amount }]
-
-// ==========================
-// 2. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
-// ==========================
-function buildPaymentsFromRows(rows) {
-    if (!rows || rows.length < 2) return { lastDate: null, items: [] };
-
-    const header = rows[0];
-    const idxAsOf   = header.indexOf('as_of_date');
-    const idxClient = header.indexOf('client_name');
-    const idxTotal  = header.indexOf('total_received');
-
-    if (idxAsOf === -1 || idxClient === -1 || idxTotal === -1) {
-        console.warn('Не найдены нужные колонки в ar_payments_daily');
-        return { lastDate: null, items: [] };
-    }
-
-    let maxDate = null;
-    const byDate = {};
-
-    for (let i = 1; i < rows.length; i++) {
-        const row = rows[i];
-        if (!row || !row.length) continue;
-
-        const asOfRaw = row[idxAsOf];
-        const client  = row[idxClient];
-        const total   = toNumber(row[idxTotal]);
-
-        if (!asOfRaw || !client) continue;
-
-        const d = parseDate(asOfRaw);
-        if (!d) continue;
-
-        if (!maxDate || d > maxDate) {
-            maxDate = d;
-        }
-
-        const key = startOfDay(d).getTime();
-        if (!byDate[key]) byDate[key] = [];
-        byDate[key].push({
-            client: client,
-            amount: total
-        });
-    }
-
-    if (!maxDate) return { lastDate: null, items: [] };
-
-    const lastKey = startOfDay(maxDate).getTime();
-    let items = byDate[lastKey] || [];
-
-    // оставляем только клиентов с ненулевой суммой
-    items = items.filter(it => it.amount !== 0);
-
-    // сортируем по убыванию оплаты
-    items.sort((a, b) => b.amount - a.amount);
-
-    return { lastDate: maxDate, items };
-}
-
-function toNumber(value) {
-    if (value === undefined || value === null || value === '') return 0;
-    const normalized = String(value).replace(/\s+/g, '').replace(',', '.');
-    const n = Number(normalized);
-    return isNaN(n) ? 0 : n;
-}
-
-function parseCSV(csvText) {
-    const lines = csvText.trim().split(/\r?\n/);
-    return lines.map(line => line.split(',').map(c => c.trim()));
-}
-
-function parseDate(dateStr) {
-    if (!dateStr) return null;
-
-    // YYYY-MM-DD
-    let m = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (m) {
-        const [, y, mo, d] = m;
-        return new Date(Number(y), Number(mo) - 1, Number(d));
-    }
-
-    // DD.MM.YYYY
-    m = dateStr.match(/^(\d{2})\.(\d{2})\.(\d{4})/);
-    if (m) {
-        const [, d, mo, y] = m;
-        return new Date(Number(y), Number(mo) - 1, Number(d));
-    }
-
-    const d = new Date(dateStr);
-    return isNaN(d.getTime()) ? null : d;
-}
-
-function startOfDay(d) {
-    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-}
-
-function formatDateDMY(d) {
-    const dd = String(d.getDate()).padStart(2, '0');
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const yyyy = d.getFullYear();
-    return `${dd}-${mm}-${yyyy}`;
-}
-function rowsToObjects(rows) {
-    if (!rows.length) return [];
-
-    const header = rows[0];
-    const idxTimestamp   = header.indexOf('timestamp');
-    const idxLoaded      = header.indexOf('loaded_wagons');
-    const idxPlanned     = header.indexOf('planned_wagons');
-    const idxTotalDebt   = header.indexOf('total_debt');
-    const idxOverdueDebt = header.indexOf('overdue_debt');
-    const idxTr          = header.indexOf('tr_count');
-    const idxKr          = header.indexOf('kr_count');
-    const idxTor         = header.indexOf('tor_count');
-    const idxFleet       = header.indexOf('fleet_total');
-
-    const result = [];
-
-    for (let i = 1; i < rows.length; i++) {
-        const row = rows[i];
-        if (!row[idxTimestamp]) continue;
-
-        const date = parseDate(row[idxTimestamp]);
-        if (!date) continue;
-
-        result.push({
-            date,
-            timestamp: row[idxTimestamp],
-            loaded_wagons: toNumber(idxLoaded       !== -1 ? row[idxLoaded]       : 0),
-            planned_wagons: toNumber(idxPlanned     !== -1 ? row[idxPlanned]     : 0),
-            total_debt:     toNumber(idxTotalDebt   !== -1 ? row[idxTotalDebt]   : 0),
-            overdue_debt:   toNumber(idxOverdueDebt !== -1 ? row[idxOverdueDebt] : 0),
-            tr_count:       toNumber(idxTr          !== -1 ? row[idxTr]          : 0),
-            kr_count:       toNumber(idxKr          !== -1 ? row[idxKr]          : 0),
-            tor_count:      toNumber(idxTor         !== -1 ? row[idxTor]         : 0),
-            fleet_total:    toNumber(idxFleet       !== -1 ? row[idxFleet]       : 0)
-        });
-    }
-
-    return result;
-}
-
-// ==========================
-// структура просрочки по клиентам
-// ==========================
-function computeTotalsFromAggRows(rows) {
-    // rows — это «сырые» строки CSV с листа ar_agg_client_contract
-    if (!rows || rows.length < 2) {
-        return { total: 0, overdue: 0 };
-    }
-
-    const header = rows[0];
-    const idxTotal   = header.indexOf('total_balance');
-    const idxOverdue = header.indexOf('overdue_balance');
-
-    if (idxTotal === -1 || idxOverdue === -1) {
-        console.warn('Колонки total_balance / overdue_balance не найдены в ar_agg_client_contract');
-        return { total: 0, overdue: 0 };
-    }
-
-    let total = 0;
-    let overdue = 0;
-
-    for (let i = 1; i < rows.length; i++) {
-        const row = rows[i];
-        if (!row || !row.length) continue;
-
-        total   += toNumber(row[idxTotal]);
-        overdue += toNumber(row[idxOverdue]);
-    }
-
-    return { total, overdue };
-}
-// Дата среза (максимальный as_of_date из ar_agg_client_contract)
-function getSnapshotDateFromAggRows(rows) {
-    if (!rows || rows.length < 2) return null;
-
-    const header = rows[0];
-    const idxAsOf = header.indexOf('as_of_date');
-    if (idxAsOf === -1) {
-        console.warn('Колонка as_of_date не найдена в ar_agg_client_contract');
-        return null;
-    }
-
-    let maxDate = null;
-
-    for (let i = 1; i < rows.length; i++) {
-        const row = rows[i];
-        if (!row || !row.length) continue;
-
-        const raw = row[idxAsOf];
-        if (!raw) continue;
-
-        const d = parseDate(raw); // parseDate уже есть выше в коде
-        if (!d) continue;
-
-        if (!maxDate || d > maxDate) {
-            maxDate = d;
-        }
-    }
-
-    return maxDate;
-}
-
-// Формат вида "18 ноября"
-function formatDateRuShort(date) {
-    if (!date) return '';
-    const months = [
-        'января','февраля','марта','апреля','мая','июня',
-        'июля','августа','сентября','октября','ноября','декабря'
-    ];
-    const day = date.getDate();
-    const monthName = months[date.getMonth()];
-    return day + ' ' + monthName;
-}
-    
-function buildReceivablesByClientFromRows(rows) {
-    if (!rows || !rows.length) return [];
-
-    const header = rows[0];
-    const idxAsOf    = header.indexOf('as_of_date');
-    const idxClient  = header.indexOf('client_name');
-    const idxOverdue = header.indexOf('overdue_balance');
-
-    if (idxClient === -1 || idxOverdue === -1) {
-        console.warn('Не найдены колонки client_name / overdue_balance в ar_agg_client_contract');
-        return [];
-    }
-
-    const items = [];
-    let maxDate = null;
-
-    for (let i = 1; i < rows.length; i++) {
-        const row = rows[i];
-        if (!row || !row.length) continue;
-
-        const client = row[idxClient];
-        if (!client) continue;
-
-        const overdueVal = toNumber(row[idxOverdue]);
-        if (!overdueVal) continue; // пропускаем клиентов без просрочки
-
-        let asOfDate = null;
-        if (idxAsOf !== -1) {
-            const asOfRaw = row[idxAsOf];
-            if (asOfRaw) {
-                asOfDate = parseDate(asOfRaw);
-            }
-        }
-
-        if (asOfDate && (!maxDate || asOfDate > maxDate)) {
-            maxDate = asOfDate;
-        }
-
-        items.push({
-            client: client,
-            overdue: overdueVal,
-            asOf: asOfDate
-        });
-    }
-
-    if (!items.length) return [];
-
-    // Оставляем только записи за последнюю дату
-    let filtered = items;
-    if (maxDate) {
-        const maxKey = startOfDay(maxDate).getTime();
-        filtered = items.filter(it =>
-            it.asOf && startOfDay(it.asOf).getTime() === maxKey
-        );
-    }
-
-    // Агрегируем по клиенту
-    const sums = new Map();
-    for (const it of filtered) {
-        const key = String(it.client).trim();
-        const prev = sums.get(key) || 0;
-        sums.set(key, prev + it.overdue);
-    }
-
-    // Преобразуем в массив, сортируем и фильтруем только > 1 000 000 ₽
-    const result = Array.from(sums.entries())
-        .map(([client, overdue]) => ({ client, overdue }))
-        .filter(r => r.overdue > 1000000)          // 👈 только компании с просрочкой > 1 млн
-        .sort((a, b) => b.overdue - a.overdue);
-
-    return result;
-}
-
-
-// ==========================
-// 3. СБОРКА dashboardData
-// ==========================
-
-function buildDashboardDataFromRaw(rowObjs, monthPlanTotal) {
-    monthPlanTotal = monthPlanTotal || 0;
-    if (!rowObjs.length) {
-        return {
-            loading: {
-                loaded_wagons_month: 0,
-                planned_wagons_today: 0,
-                loaded_wagons_yesterday: 0,
-                plan_month: 0,
-                month_total_plan: monthPlanTotal,
-                progress_percent: 0
-            },
-            receivables: {
-                total_debt: 0,
-                overdue_debt: 0,
-                overdue_percent: 0
-            },
-            repairs: {
-                tr_count: 0,
-                kr_count: 0,
-                tor_count: 0,
-                fleet_total: 0,
-                tr_percent: 0,
-                kr_percent: 0,
-                tor_percent: 0
-            },
-            daily_trend: [],
-            last_update: '',
-            period_label: ''
-        };
-    }
-
-    const today = startOfDay(new Date());
-    const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
-    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-
-    // строки текущего месяца (с 1-го по вчера)
-    const rowsThisMonth = rowObjs.filter(r => {
-        const d = startOfDay(r.date);
-        return d >= monthStart && d <= yesterday;
-    });
-
-    const loadedMonth = rowsThisMonth.reduce((sum, r) => sum + (r.loaded_wagons || 0), 0);
-    const planMonth   = rowsThisMonth.reduce((sum, r) => sum + (r.planned_wagons || 0), 0);
-
-    const rowYesterday = rowObjs.find(r => startOfDay(r.date).getTime() === yesterday.getTime());
-    const loadedYesterday = rowYesterday ? rowYesterday.loaded_wagons : 0;
-
-    const rowToday = rowObjs.find(r => startOfDay(r.date).getTime() === today.getTime());
-    const plannedToday = rowToday ? rowToday.planned_wagons : 0;
-
-    // сортируем все строки по дате и берём последнюю
-    const sorted = rowObjs.slice().sort((a, b) => a.date - b.date);
-    const lastRow = sorted[sorted.length - 1];
-
-    // === НОВАЯ ЛОГИКА ДЛЯ ЗАДОЛЖЕННОСТИ ===
-    // 1) если на сегодня есть ненулевая задолженность — берём её
-    // 2) иначе берём последнюю строку до сегодня с ненулевой задолженностью
-    // 3) если не нашли — используем lastRow (как раньше)
-    const hasTodayDebt =
-        rowToday &&
-        (
-            (rowToday.total_debt  || 0) !== 0 ||
-            (rowToday.overdue_debt || 0) !== 0
-        );
-
-    let debtRow;
-    if (hasTodayDebt) {
-        debtRow = rowToday;
-    } else {
-        const reversed = sorted.slice().reverse();
-        debtRow = reversed.find(r => {
-            const d = startOfDay(r.date);
-            if (d.getTime() >= today.getTime()) return false; // только дни < сегодня
-            const td = r.total_debt || 0;
-            const od = r.overdue_debt || 0;
-            return td !== 0 || od !== 0;
-        }) || lastRow;
-    }
-
-    // период: с 1-го числа месяца последней записи по дату последней записи
-    const periodStart = new Date(lastRow.date.getFullYear(), lastRow.date.getMonth(), 1);
-    const periodLabel =
-        `Погрузка с ${formatDateDMY(periodStart)} по ${formatDateDMY(lastRow.date)}`;
-
-    // считаем задолженность по выбранной debtRow
-    const totalDebt = (debtRow && debtRow.total_debt) || 0;
-    const overdueDebt = (debtRow && debtRow.overdue_debt) || 0;
-    const overduePercent = totalDebt ? Math.round(overdueDebt / totalDebt * 100) : 0;
-
-    const fleetTotal = lastRow.fleet_total || 2000;
-
-    const tr = lastRow.tr_count || 0;
-    const kr = lastRow.kr_count || 0;
-    const tor = lastRow.tor_count || 0;
-
-    const trPercent  = fleetTotal ? Math.round(tr  / fleetTotal * 100) : 0;
-    const krPercent  = fleetTotal ? Math.round(kr  / fleetTotal * 100) : 0;
-    const torPercent = fleetTotal ? Math.round(tor / fleetTotal * 100) : 0;
-
-    const last7 = sorted.slice(-7);
-    const dailyTrend = last7.map(r => {
-        const d = r.date;
-        const dd = String(d.getDate()).padStart(2, '0');
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        return { label: `${dd}.${mm}`, wagons: r.loaded_wagons };
-    });
-
-    return {
-        loading: {
-            loaded_wagons_month: loadedMonth,
-            planned_wagons_today: plannedToday,
-            loaded_wagons_yesterday: loadedYesterday,
-            plan_month: planMonth,                // «По плану» (накопительный план)
-            month_total_plan: monthPlanTotal,     // План на месяц (из L1)
-            progress_percent: planMonth ? Math.round(loadedMonth / planMonth * 100) : 0
-        },
-
-        receivables: {
-            total_debt: totalDebt,
-            overdue_debt: overdueDebt,
-            overdue_percent: overduePercent
-        },
-        repairs: {
-            tr_count: tr,
-            kr_count: kr,
-            tor_count: tor,
-            fleet_total: fleetTotal,
-            tr_percent: trPercent,
-            kr_percent: krPercent,
-            tor_percent: torPercent
-        },
-        daily_trend: dailyTrend,
-        last_update: lastRow.timestamp,
-        period_label: periodLabel
-    };
-}
-
-
-
-async function loadDataFromSheet() {
-    // 1) основной raw_data
-    const res = await fetch(SHEET_CSV_URL);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const csvText = await res.text();
-    const rows = parseCSV(csvText);
-
-    // Ищем план на месяц в первой строке (как было)
-    let monthPlanFromHeader = 0;
-    if (rows.length) {
-        const headerRow = rows[0];
-        for (let i = headerRow.length - 1; i >= 0; i--) {
-            const cell = headerRow[i];
-            if (cell !== '') {
-                monthPlanFromHeader = toNumber(cell);
-                break;
-            }
-        }
-    }
-
-    const rowObjs = rowsToObjects(rows);
-    dashboardData = buildDashboardDataFromRaw(rowObjs, monthPlanFromHeader);
-        // 3) ar_payments_daily
-    if (SHEET_PAYMENTS_CSV_URL) {
-        try {
-            const resPay = await fetch(SHEET_PAYMENTS_CSV_URL);
-            if (resPay.ok) {
-                const csvTextPay = await resPay.text();
-                const rowsPay = parseCSV(csvTextPay);
-
-                const payments = buildPaymentsFromRows(rowsPay);
-                paymentsLastDate = payments.lastDate;
-                paymentsByClient = payments.items;
-            } else {
-                console.warn('Не удалось загрузить ar_payments_daily, статус:', resPay.status);
-            }
-        } catch (e) {
-            console.error('Ошибка загрузки ar_payments_daily:', e);
-        }
-    }
-    // 2) структура просрочки по клиентам + суммы из ar_agg_client_contract
-    receivablesByClient = [];
-
-    if (SHEET_CLIENTS_CSV_URL) {
-        try {
-            const resClients = await fetch(SHEET_CLIENTS_CSV_URL);
-            if (resClients.ok) {
-                const csvTextClients = await resClients.text();
-                const rowsClients = parseCSV(csvTextClients);
-                // дата среза (аналог G1 на листе ar_agg_client_contract)
-                const snapshotDate = getSnapshotDateFromAggRows(rowsClients);
-                if (snapshotDate && dashboardData) {
-                    dashboardData.receivables_date = snapshotDate;
-                }
-
-                // а) считаем общую и просроченную задолженность по agg-листу
-                const aggTotals = computeTotalsFromAggRows(rowsClients);
-                    if (dashboardData && dashboardData.receivables) {
-                        dashboardData.receivables.total_debt   = aggTotals.total;
-                        dashboardData.receivables.overdue_debt = aggTotals.overdue;
-                        dashboardData.receivables.overdue_percent =
-                            aggTotals.total
-                                ? Math.round(aggTotals.overdue / aggTotals.total * 100)
-                                : 0;
-                    }
-
-                // б) строим структуру по клиентам (ТОП > 1 млн)
-                receivablesByClient = buildReceivablesByClientFromRows(rowsClients);
-            } else {
-                console.warn('Не удалось загрузить ar_agg_client_contract, статус:', resClients.status);
-            }
-        } catch (e) {
-            console.error('Ошибка загрузки сводки по клиентам:', e);
-        }
-    }
-}
-
-
-
-
-// ==========================
-// 4. ФОРМАТИРОВАНИЕ / ВРЕМЯ
-// ==========================
-
-function formatNumber(num) {
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-}
-
-function formatCurrency(amount) {
-    const millions = (amount / 1000000).toFixed(1);
-    return `${millions} млн. р.`;
-}
-
-function updateDateTime() {
-    const now = new Date();
-    const options = {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-    };
-    document.getElementById('currentDateTime').textContent =
-        now.toLocaleDateString('ru-RU', options);
-}
-    
-function formatUpdatedAt(date) {
-    const dd = String(date.getDate()).padStart(2, '0');
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    const yyyy = date.getFullYear();
-    const hh = String(date.getHours()).padStart(2, '0');
-    const min = String(date.getMinutes()).padStart(2, '0');
-    const ss = String(date.getSeconds()).padStart(2, '0');
-    return `${dd}-${mm}-${yyyy} ${hh}:${min}:${ss}`;
-}
-
-// ==========================
-// 5. ЗАПОЛНЕНИЕ КАРТОЧЕК
-// ==========================
-function renderReceivablesByClient() {
-    const panel = document.getElementById('clientsOverduePanel');
-    const tbody = document.getElementById('clientsOverdueBody');
-    const toggle = document.getElementById('toggleClientsOverdue');
-
-    if (!panel || !tbody || !toggle) return;
-
-    tbody.innerHTML = '';
-
-    if (!receivablesByClient || !receivablesByClient.length) {
-        const tr = document.createElement('tr');
-        const td = document.createElement('td');
-        td.colSpan = 3;
-        td.textContent = 'Нет данных по просроченной задолженности.';
-        td.style.fontSize = '12px';
-        td.style.color = 'var(--text-secondary)';
-        tr.appendChild(td);
-        tbody.appendChild(tr);
-        toggle.disabled = true;
-        return;
-    }
-
-    toggle.disabled = false;
-
-    const totalOverdue = receivablesByClient.reduce((sum, r) => sum + r.overdue, 0);
-
-    receivablesByClient.forEach(row => {
-        const tr = document.createElement('tr');
-
-        const tdClient = document.createElement('td');
-        tdClient.textContent = row.client;
-        tr.appendChild(tdClient);
-
-        const tdAmount = document.createElement('td');
-        tdAmount.className = 'amount';
-        tdAmount.textContent = formatCurrency(row.overdue);
-        tr.appendChild(tdAmount);
-
-        const tdPerc = document.createElement('td');
-        tdPerc.className = 'percent';
-        const p = totalOverdue ? Math.round(row.overdue / totalOverdue * 100) : 0;
-        tdPerc.textContent = p + '%';
-        tr.appendChild(tdPerc);
-
-        tbody.appendChild(tr);
-    });
-}
-function renderPaymentsCard() {
-    const dateLabel = document.getElementById('paymentsDateLabel');
-    const selectEl  = document.getElementById('paymentsCompanySelect');
-    const amountEl  = document.getElementById('paymentsAmountValue');
-
-    if (!dateLabel || !selectEl || !amountEl) return;
-
-    // Подпись даты
-    if (paymentsLastDate) {
-        dateLabel.textContent = 'Данные на ' + formatDateRuShort(paymentsLastDate);
-    } else {
-        dateLabel.textContent = 'Нет данных о поступлениях';
-    }
-
-    // Наполняем список компаний
-    selectEl.innerHTML = '';
-
-    if (!paymentsByClient || !paymentsByClient.length) {
-        const opt = document.createElement('option');
-        opt.value = '';
-        opt.textContent = 'Нет данных';
-        selectEl.appendChild(opt);
-        amountEl.textContent = '0 ₽';
-        return;
-    }
-
-    paymentsByClient.forEach((item, idx) => {
-        const opt = document.createElement('option');
-        opt.value = idx; // индекс в массиве
-        opt.textContent = item.client;
-        selectEl.appendChild(opt);
-    });
-
-    // обработчик выбора
-    selectEl.onchange = function() {
-        const idx = Number(this.value);
-        if (isNaN(idx) || !paymentsByClient[idx]) {
-            amountEl.textContent = '0 ₽';
-            return;
-        }
-        const amount = paymentsByClient[idx].amount || 0;
-        amountEl.textContent = formatCurrency(amount);
-    };
-
-    // выставляем первичного клиента
-    selectEl.value = '0';
-    const first = paymentsByClient[0];
-    amountEl.textContent = formatCurrency(first.amount || 0);
-}
-
-function populateDashboard() {
-    if (!dashboardData) return;
-
-    document.getElementById('loadedWagonsMonth').textContent =
-        formatNumber(dashboardData.loading.loaded_wagons_month);
-    document.getElementById('progressPercent').textContent =
-        `${dashboardData.loading.progress_percent}%`;
-    document.getElementById('progressFill').style.width =
-        `${dashboardData.loading.progress_percent}%`;
-    document.getElementById('planMonth').textContent =
-        formatNumber(dashboardData.loading.plan_month);
-    document.getElementById('fullMonthPlan').textContent =
-        formatNumber(dashboardData.loading.month_total_plan || 0);
-    document.getElementById('loadedYesterday').textContent =
-        formatNumber(dashboardData.loading.loaded_wagons_yesterday);
-
-
-    document.getElementById('totalDebt').textContent =
-        formatCurrency(dashboardData.receivables.total_debt);
-    document.getElementById('overdueDebt').textContent =
-        formatCurrency(dashboardData.receivables.overdue_debt);
-    document.getElementById('overduePercent').textContent =
-        `${dashboardData.receivables.overdue_percent}%`;
-    document.getElementById('overdueProgressFill').style.width =
-        `${dashboardData.receivables.overdue_percent}%`;
-    document.getElementById('overdueProgressFill').style.width =
-        `${dashboardData.receivables.overdue_percent}%`;
-    // Подпись под заголовком "ЗАДОЛЖЕННОСТЬ"
-    const dateEl = document.getElementById('receivablesDate');
-    if (dateEl) {
-        if (dashboardData.receivables_date) {
-            dateEl.textContent = 'Данные на ' + formatDateRuShort(dashboardData.receivables_date);
-        } else {
-            dateEl.textContent = '';
-        }
-    }
-
-    // 👉 рисуем структуру просрочки по клиентам
-    renderReceivablesByClient();
-
-    document.getElementById('repairTR').textContent =
-        dashboardData.repairs.tr_count;
-    document.getElementById('repairTRPercent').textContent =
-        `${dashboardData.repairs.tr_percent}% от парка`;
-    document.getElementById('repairKR').textContent =
-        dashboardData.repairs.kr_count;
-    document.getElementById('repairKRPercent').textContent =
-        `${dashboardData.repairs.kr_percent}% от парка`;
-    document.getElementById('repairTOR').textContent =
-        dashboardData.repairs.tor_count;
-    document.getElementById('repairTORPercent').textContent =
-        `${dashboardData.repairs.tor_percent}% от парка`;
-    document.getElementById('fleetTotal').textContent =
-        formatNumber(dashboardData.repairs.fleet_total);
-
-    document.getElementById('lastUpdate').textContent =
-    dashboardData.period_label || '—';
-}
-
-// ==========================
-// 6. ГРАФИК
-// ==========================
-
-function createTrendChart() {
-    const ctx = document.getElementById('trendChart').getContext('2d');
-    if (trendChart) trendChart.destroy();
-
-    const labels = dashboardData.daily_trend.map(d => d.label);
-    const data = dashboardData.daily_trend.map(d => d.wagons);
-
-    trendChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels,
-            datasets: [{
-                label: 'Погружено вагонов',
-                data,
-                borderColor: '#20b2aa',
-                backgroundColor: 'rgba(32, 178, 170, 0.12)',
-                borderWidth: 3,
-                tension: 0.3,
-                fill: true,
-                pointBackgroundColor: '#20b2aa',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-                pointRadius: 4,
-                pointHoverRadius: 6
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: true, position: 'top' },
-                tooltip: {
-                    callbacks: {
-                        label: ctx => 'Вагонов: ' + formatNumber(ctx.parsed.y)
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    ticks: {
-                        callback: value => formatNumber(value)
-                    }
-                }
-            }
-        }
-    });
-}
-
-// ==========================
-// 7. ОБНОВЛЕНИЕ ПО КНОПКЕ
-// ==========================
-
-async function refreshData() {
-    const btn = document.querySelector('.refresh-btn');
-    if (btn) btn.disabled = true;
-
-    try {
-        await loadDataFromSheet();
-        populateDashboard();
-        createTrendChart();
-        renderReceivablesByClient();
-        renderPaymentsCard(); // 👈 вот это
-                // ставим время последнего успешного обновления
-        const updatedEl = document.getElementById('dataUpdatedAt');
-        if (updatedEl) {
-            const now = new Date();
-            updatedEl.textContent = 'Данные обновлены: ' + formatUpdatedAt(now);
-        }
-
-
-        if (btn) {
-            btn.textContent = '✓ Обновлено!';
-            setTimeout(() => {
-                btn.textContent = '🔄 Обновить данные';
-                btn.disabled = false;
-            }, 1500);
-        }
-    } catch (e) {
-        console.error('Ошибка обновления данных:', e);
-        const updatedEl = document.getElementById('dataUpdatedAt');
-        if (updatedEl) {
-            updatedEl.textContent = 'Ошибка обновления данных';
-        }
-        document.getElementById('lastUpdate').textContent = 'Ошибка загрузки';
-        if (btn) {
-            btn.textContent = 'Ошибка 😕';
-            setTimeout(() => {
-                btn.textContent = '🔄 Обновить данные';
-                btn.disabled = false;
-            }, 2000);
-        }
-    }
-}
-
-// ==========================
-// 8. ИНИЦИАЛИЗАЦИЯ
-// ==========================
-
-async function initDashboard() {
-    // обновляем часы
-    updateDateTime();
-    setInterval(updateDateTime, 1000);
-
-    // обработчик кнопки "развернуть по клиентам"
-    const toggleBtn = document.getElementById('toggleClientsOverdue');
-    if (toggleBtn) {
-        toggleBtn.addEventListener('click', () => {
-            const panel = document.getElementById('clientsOverduePanel');
-            if (!panel) return;
-            const isHidden = panel.classList.contains('hidden');
-            panel.classList.toggle('hidden', !isHidden);
-            toggleBtn.textContent = isHidden
-                ? '▴ Свернуть структуру по клиентам'
-                : '▾ Развернуть структуру по клиентам';
-        });
-    }
-
-    try {
-        // первый старт — сразу тянем данные
-        await refreshData();
-
-        // автообновление каждые 5 минут
-        setInterval(() => {
-            refreshData();
-        }, 5 * 60 * 1000);
-    } catch (e) {
-        console.error('Ошибка инициализации:', e);
-        document.getElementById('lastUpdate').textContent = 'Ошибка загрузки';
-    }
-}
-
-document.addEventListener('DOMContentLoaded', initDashboard);
-
-</script>
+  <script src="js/chart.min.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
