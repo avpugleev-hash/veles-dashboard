@@ -903,6 +903,35 @@ function rowsToObjects(rows) {
 // ==========================
 // структура просрочки по клиентам
 // ==========================
+function computeTotalsFromAggRows(rows) {
+    // rows — это «сырые» строки CSV с листа ar_agg_client_contract
+    if (!rows || rows.length < 2) {
+        return { total: 0, overdue: 0 };
+    }
+
+    const header = rows[0];
+    const idxTotal   = header.indexOf('total_balance');
+    const idxOverdue = header.indexOf('overdue_balance');
+
+    if (idxTotal === -1 || idxOverdue === -1) {
+        console.warn('Колонки total_balance / overdue_balance не найдены в ar_agg_client_contract');
+        return { total: 0, overdue: 0 };
+    }
+
+    let total = 0;
+    let overdue = 0;
+
+    for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row || !row.length) continue;
+
+        total   += toNumber(row[idxTotal]);
+        overdue += toNumber(row[idxOverdue]);
+    }
+
+    return { total, overdue };
+}
+    
 function buildReceivablesByClientFromRows(rows) {
     if (!rows || !rows.length) return [];
 
