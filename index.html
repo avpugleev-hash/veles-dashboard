@@ -260,6 +260,14 @@ body {
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(212, 165, 116, 0.3);
 }
+.repairs-totals-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px 16px;
+}
+.repairs-totals-grid .metric-row {
+  display: flex; justify-content: space-between;
+}
 
 /* Metrics Grid */
 .metrics-grid {
@@ -1395,6 +1403,12 @@ async function loadDataFromSheet() {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const csvText = await res.text();
     const rows = parseCSV(csvText);
+    const repairsCsv = await fetch(SHEET_REPAIRS_CSV_URL).then(r=>r.text());
+    const repRows = parseCSV(repairsCsv);
+    const repairsItems = buildRepairsFromSnapshot(repRows);
+
+// Предположим, дата — это твоя G1 из ar_agg_client_contract или A1 в repairs_snapshot
+renderRepairsCard(repairsItems, /* snapshotDate */ getSnapshotDateFromAggRows(rowsClients));
 
     // Ищем план на месяц в первой строке (как было)
     let monthPlanFromHeader = 0;
@@ -1638,6 +1652,53 @@ function populateDashboard() {
         `${dashboardData.receivables.overdue_percent}%`;
     document.getElementById('overdueProgressFill').style.width =
         `${dashboardData.receivables.overdue_percent}%`;
+function renderRepairsCard(items, dateStr) {
+  const order = ['ТОР','ДР','КР','ДРА','промывка'];
+  const mapName = {
+    TOR: 'ТОР', DR:'ДР', KR:'КР', DRA:'ДРА', WASH:'промывка'
+  };
+
+  // Тоталы
+  const list = document.getElementById('repairsTotalsList');
+  list.innerHTML = '';
+  const normalized = {};
+  items.forEach(x => { normalized[x.type.toLowerCase()] = x; });
+
+  order.forEach(name => {
+    const key = name.toLowerCase();
+    const row = document.createElement('div');
+    row.className = 'metric-row';
+    row.innerHTML = `
+      <span class="metric-label">${name}</span>
+      <span class="metric-value">${(normalized[key]?.total || 0)}</span>
+    `;
+    list.appendChild(row);
+  });
+
+  // Таблица по стадиям
+  const tbody = document.getElementById('repairsTableBody');
+  tbody.innerHTML = '';
+  order.forEach(name=>{
+    const key = name.toLowerCase();
+    const x = normalized[key] || {in_repair:0,in_transit:0,await_reg:0,await_dispatch:0,total:0};
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${name}</td>
+      <td>${x.in_repair}</td>
+      <td>${x.in_transit}</td>
+      <td>${x.await_reg}</td>
+      <td>${x.await_dispatch}</td>
+      <td><b>${x.total}</b></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  const dateEl = document.getElementById('repairsDate');
+  dateEl.textContent = dateStr ? ('Данные на ' + formatDateRuShort(dateStr)) : '';
+
+  const btn = document.getElementById('toggleRepairsTable');
+  btn.onclick = ()=> document.getElementById('repairsTablePanel').classList.toggle('hidden');
+}
 
     // Подпись под заголовком "ЗАДОЛЖЕННОСТЬ"
     const dateEl = document.getElementById('receivablesDate');
