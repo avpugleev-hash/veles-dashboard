@@ -759,7 +759,7 @@ body {
                     </div>
                 </div>
             </div>
-<!-- Card: Receivables (Задолженность и Поступления) -->
+<!-- Card: Receivables (Задолженность + Поступления) -->
 <div class="metric-card">
   <div class="card-header">
     <div class="card-icon">💳</div>
@@ -768,22 +768,19 @@ body {
   </div>
 
   <div class="card-body">
+    <!-- Общая задолженность -->
     <div class="metric-row">
       <span class="metric-label">Общая задолженность:</span>
       <span id="totalDebt" class="metric-value">0 млн. р.</span>
     </div>
 
+    <!-- Просроченная -->
     <div class="metric-row">
       <span class="metric-label">Просроченная:</span>
       <span id="overdueDebt" class="metric-value text-accent">0 млн. р.</span>
     </div>
 
-    <!-- 💰 Добавляем строку Поступления -->
-    <div class="metric-row">
-      <span class="metric-label">Поступления:</span>
-      <span id="paymentsTotal" class="metric-value">0 млн. р.</span>
-    </div>
-
+    <!-- Доля просроченной -->
     <div class="metric-row">
       <span class="metric-label">Доля просроченной</span>
       <span id="overduePercent" class="metric-value text-accent">0%</span>
@@ -793,20 +790,27 @@ body {
       <div id="overdueProgressFill" class="progress-fill"></div>
     </div>
 
+    <!-- Кнопка: структура по клиентам -->
     <div class="metric-row mt-2">
       <button id="toggleClientsOverdue" class="link-button">
         ▼ Развернуть структуру по клиентам
       </button>
     </div>
 
-    <!-- Новая кнопка: Развернуть поступления -->
+    <!-- Поступления (строка с суммой) -->
+    <div class="metric-row mt-1">
+      <span class="metric-label">Поступления:</span>
+      <span id="paymentsTotal" class="metric-value">0 млн. р.</span>
+    </div>
+
+    <!-- Кнопка: поступления по клиентам -->
     <div class="metric-row mt-1">
       <button id="toggleClientsPayments" class="link-button">
         ▼ Развернуть поступления по клиентам
       </button>
     </div>
 
-    <!-- Панель для таблицы клиентов с просрочкой -->
+    <!-- Панель: структура просроченной задолженности по клиентам -->
     <div id="clientsOverduePanel" class="hidden">
       <table class="metric-table">
         <thead>
@@ -820,7 +824,7 @@ body {
       </table>
     </div>
 
-    <!-- Панель для таблицы клиентов по поступлениям -->
+    <!-- Панель: поступления по клиентам -->
     <div id="clientsPaymentsPanel" class="hidden">
       <table class="metric-table">
         <thead>
@@ -835,6 +839,7 @@ body {
     </div>
   </div>
 </div>
+
 
 
             <!-- Card 3: Repairs -->
