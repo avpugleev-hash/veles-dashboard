@@ -682,6 +682,28 @@ body {
                     </div>
                 </div>
             </div>
+<!-- Card: Payments -->
+<div class="metric-card">
+  <div class="card-header">
+    <div class="card-icon">💰</div>
+    <h2 class="card-title">ПОСТУПЛЕНИЯ</h2>
+    <div id="paymentsDateLabel" class="metric-label"></div>
+  </div>
+  <div class="card-body">
+    <div class="metric-row">
+      <label for="paymentsCompanySelect" class="metric-label">
+        Компания:
+      </label>
+      <select id="paymentsCompanySelect" class="metric-select">
+        <!-- опции заполним из JS -->
+      </select>
+    </div>
+    <div class="metric-row">
+      <span class="metric-label">Сумма оплаты:</span>
+      <span id="paymentsAmountValue" class="metric-value">0 ₽</span>
+    </div>
+  </div>
+</div>
 
             <!-- Card 2: Receivables -->
 <div class="metric-card">
@@ -809,14 +831,71 @@ const SHEET_CSV_URL =
 // ar_agg_client_contract (НОВАЯ ссылка, только для структуры просрочки)
 const SHEET_CLIENTS_CSV_URL =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vRy08FvutySDNk8yvn0QKdT92-uWjRqaxqi2057Tl42Ai2zLS4L833E2g2GdgBnpFX-t5uwX6JUcmg4/pub?gid=57311955&single=true&output=csv';
+const SHEET_PAYMENTS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRy08FvutySDNk8yvn0QKdT92-uWjRqaxqi2057Tl42Ai2zLS4L833E2g2GdgBnpFX-t5uwX6JUcmg4/pub?gid=740110225&single=true&output=csv';
 
 let dashboardData = null;
 let trendChart = null;
 let receivablesByClient = [];   // сюда положим структуру просрочки по клиентам
+let paymentsLastDate = null;
+let paymentsByClient = []; // [{ client, amount }]
 
 // ==========================
 // 2. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 // ==========================
+function buildPaymentsFromRows(rows) {
+    if (!rows || rows.length < 2) return { lastDate: null, items: [] };
+
+    const header = rows[0];
+    const idxAsOf   = header.indexOf('as_of_date');
+    const idxClient = header.indexOf('client_name');
+    const idxTotal  = header.indexOf('total_received');
+
+    if (idxAsOf === -1 || idxClient === -1 || idxTotal === -1) {
+        console.warn('Не найдены нужные колонки в ar_payments_daily');
+        return { lastDate: null, items: [] };
+    }
+
+    let maxDate = null;
+    const byDate = {};
+
+    for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row || !row.length) continue;
+
+        const asOfRaw = row[idxAsOf];
+        const client  = row[idxClient];
+        const total   = toNumber(row[idxTotal]);
+
+        if (!asOfRaw || !client) continue;
+
+        const d = parseDate(asOfRaw);
+        if (!d) continue;
+
+        if (!maxDate || d > maxDate) {
+            maxDate = d;
+        }
+
+        const key = startOfDay(d).getTime();
+        if (!byDate[key]) byDate[key] = [];
+        byDate[key].push({
+            client: client,
+            amount: total
+        });
+    }
+
+    if (!maxDate) return { lastDate: null, items: [] };
+
+    const lastKey = startOfDay(maxDate).getTime();
+    let items = byDate[lastKey] || [];
+
+    // оставляем только клиентов с ненулевой суммой
+    items = items.filter(it => it.amount !== 0);
+
+    // сортируем по убыванию оплаты
+    items.sort((a, b) => b.amount - a.amount);
+
+    return { lastDate: maxDate, items };
+}
 
 function toNumber(value) {
     if (value === undefined || value === null || value === '') return 0;
@@ -1216,7 +1295,24 @@ async function loadDataFromSheet() {
 
     const rowObjs = rowsToObjects(rows);
     dashboardData = buildDashboardDataFromRaw(rowObjs, monthPlanFromHeader);
+        // 3) ar_payments_daily
+    if (SHEET_PAYMENTS_CSV_URL) {
+        try {
+            const resPay = await fetch(SHEET_PAYMENTS_CSV_URL);
+            if (resPay.ok) {
+                const csvTextPay = await resPay.text();
+                const rowsPay = parseCSV(csvTextPay);
 
+                const payments = buildPaymentsFromRows(rowsPay);
+                paymentsLastDate = payments.lastDate;
+                paymentsByClient = payments.items;
+            } else {
+                console.warn('Не удалось загрузить ar_payments_daily, статус:', resPay.status);
+            }
+        } catch (e) {
+            console.error('Ошибка загрузки ar_payments_daily:', e);
+        }
+    }
     // 2) структура просрочки по клиентам + суммы из ar_agg_client_contract
     receivablesByClient = [];
 
@@ -1345,6 +1441,55 @@ function renderReceivablesByClient() {
         tbody.appendChild(tr);
     });
 }
+function renderPaymentsCard() {
+    const dateLabel = document.getElementById('paymentsDateLabel');
+    const selectEl  = document.getElementById('paymentsCompanySelect');
+    const amountEl  = document.getElementById('paymentsAmountValue');
+
+    if (!dateLabel || !selectEl || !amountEl) return;
+
+    // Подпись даты
+    if (paymentsLastDate) {
+        dateLabel.textContent = 'Данные на ' + formatDateRuShort(paymentsLastDate);
+    } else {
+        dateLabel.textContent = 'Нет данных о поступлениях';
+    }
+
+    // Наполняем список компаний
+    selectEl.innerHTML = '';
+
+    if (!paymentsByClient || !paymentsByClient.length) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'Нет данных';
+        selectEl.appendChild(opt);
+        amountEl.textContent = '0 ₽';
+        return;
+    }
+
+    paymentsByClient.forEach((item, idx) => {
+        const opt = document.createElement('option');
+        opt.value = idx; // индекс в массиве
+        opt.textContent = item.client;
+        selectEl.appendChild(opt);
+    });
+
+    // обработчик выбора
+    selectEl.onchange = function() {
+        const idx = Number(this.value);
+        if (isNaN(idx) || !paymentsByClient[idx]) {
+            amountEl.textContent = '0 ₽';
+            return;
+        }
+        const amount = paymentsByClient[idx].amount || 0;
+        amountEl.textContent = formatCurrency(amount);
+    };
+
+    // выставляем первичного клиента
+    selectEl.value = '0';
+    const first = paymentsByClient[0];
+    amountEl.textContent = formatCurrency(first.amount || 0);
+}
 
 function populateDashboard() {
     if (!dashboardData) return;
@@ -1469,6 +1614,8 @@ async function refreshData() {
         await loadDataFromSheet();
         populateDashboard();
         createTrendChart();
+        renderReceivablesByClient();
+        renderPaymentsCard(); // 👈 вот это
                 // ставим время последнего успешного обновления
         const updatedEl = document.getElementById('dataUpdatedAt');
         if (updatedEl) {
