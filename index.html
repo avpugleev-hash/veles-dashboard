@@ -1174,23 +1174,36 @@ async function loadDataFromSheet() {
     const rowObjs = rowsToObjects(rows);
     dashboardData = buildDashboardDataFromRaw(rowObjs, monthPlanFromHeader);
 
-    // 2) структура просрочки по клиентам из ar_agg_client_contract
+    // 2) структура просрочки по клиентам + суммы из ar_agg_client_contract
     receivablesByClient = [];
+
     if (SHEET_CLIENTS_CSV_URL) {
         try {
             const resClients = await fetch(SHEET_CLIENTS_CSV_URL);
             if (resClients.ok) {
                 const csvTextClients = await resClients.text();
                 const rowsClients = parseCSV(csvTextClients);
+
+                // а) считаем общую и просроченную задолженность по agg-листу
+                const aggTotals = computeTotalsFromAggRows(rowsClients);
+                if (aggTotals.total > 0 && dashboardData && dashboardData.receivables) {
+                    dashboardData.receivables.total_debt   = aggTotals.total;
+                    dashboardData.receivables.overdue_debt = aggTotals.overdue;
+                    dashboardData.receivables.overdue_percent =
+                        Math.round(aggTotals.overdue / aggTotals.total * 100);
+                }
+
+                // б) строим структуру по клиентам (ТОП > 1 млн)
                 receivablesByClient = buildReceivablesByClientFromRows(rowsClients);
             } else {
                 console.warn('Не удалось загрузить ar_agg_client_contract, статус:', resClients.status);
             }
         } catch (e) {
-            console.error('Ошибка загрузки svodki po klientam:', e);
+            console.error('Ошибка загрузки сводки по клиентам:', e);
         }
     }
 }
+
 
 
 
