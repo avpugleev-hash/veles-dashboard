@@ -1761,31 +1761,20 @@ async function initDashboard() {
     updateDateTime();
     setInterval(updateDateTime, 1000);
 
-    // обработчик кнопки "развернуть по клиентам"
-    const toggleBtn = document.getElementById('toggleClientsOverdue');
-    if (toggleBtn) {
-        toggleBtn.addEventListener('click', () => {
-            const panel = document.getElementById('clientsOverduePanel');
-            if (!panel) return;
-            const isHidden = panel.classList.contains('hidden');
-            panel.classList.toggle('hidden', !isHidden);
-            toggleBtn.textContent = isHidden
-                ? '▴ Свернуть структуру по клиентам'
-                : '▾ Развернуть структуру по клиентам';
-        });
-    }
-
     try {
         // первый старт — сразу тянем данные
         await refreshData();
 
-        // автообновление каждые 5 минут
+        // дальше обновляем каждые 5 минут
         setInterval(() => {
             refreshData();
         }, 5 * 60 * 1000);
     } catch (e) {
         console.error('Ошибка инициализации:', e);
-        document.getElementById('lastUpdate').textContent = 'Ошибка загрузки';
+        const el = document.getElementById('lastUpdate');
+        if (el) {
+            el.textContent = 'Ошибка загрузки';
+        }
     }
 }
 
