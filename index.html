@@ -1370,6 +1370,14 @@ function formatCurrency(amount) {
     const millions = (amount / 1000000).toFixed(1);
     return `${millions} млн. р.`;
 }
+    function formatMillions(amount) {
+  const millions = (amount / 1_000_000).toFixed(1);
+  return millions;
+}
+function formatMillions(amount) {
+  const millions = (amount / 1_000_000).toFixed(1);
+  return millions;
+}
 
 function updateDateTime() {
     const now = new Date();
@@ -1446,6 +1454,7 @@ function renderReceivablesByClient() {
         tbody.appendChild(tr);
     });
 }
+    
 function renderPaymentsCard() {
     const dateLabel = document.getElementById('paymentsDateLabel');
     const selectEl  = document.getElementById('paymentsCompanySelect');
@@ -1535,6 +1544,15 @@ function populateDashboard() {
 
     // 👉 рисуем структуру просрочки по клиентам
     renderReceivablesByClient();
+// === Поступления ===
+if (paymentsByClient && paymentsByClient.length) {
+    const totalPayments = paymentsByClient.reduce((sum, p) => sum + (p.amount || 0), 0);
+    updatePaymentsTotal(totalPayments);
+    renderPaymentsByClient(paymentsByClient);
+} else {
+    updatePaymentsTotal(0);
+    renderPaymentsByClient([]);
+}
 
     document.getElementById('repairTR').textContent =
         dashboardData.repairs.tr_count;
@@ -1553,6 +1571,15 @@ function populateDashboard() {
 
     document.getElementById('lastUpdate').textContent =
     dashboardData.period_label || '—';
+}
+// === Поступления ===
+if (paymentsByClient && paymentsByClient.length) {
+    const totalPayments = paymentsByClient.reduce((sum, p) => sum + (p.amount || 0), 0);
+    updatePaymentsTotal(totalPayments);
+    renderPaymentsByClient(paymentsByClient);
+} else {
+    updatePaymentsTotal(0);
+    renderPaymentsByClient([]);
 }
 
 // ==========================
