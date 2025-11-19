@@ -1037,13 +1037,39 @@ function buildDashboardDataFromRaw(rowObjs, monthPlanTotal) {
     const sorted = rowObjs.slice().sort((a, b) => a.date - b.date);
     const lastRow = sorted[sorted.length - 1];
 
+    // === НОВАЯ ЛОГИКА ДЛЯ ЗАДОЛЖЕННОСТИ ===
+    // 1) если на сегодня есть ненулевая задолженность — берём её
+    // 2) иначе берём последнюю строку до сегодня с ненулевой задолженностью
+    // 3) если не нашли — используем lastRow (как раньше)
+    const hasTodayDebt =
+        rowToday &&
+        (
+            (rowToday.total_debt  || 0) !== 0 ||
+            (rowToday.overdue_debt || 0) !== 0
+        );
+
+    let debtRow;
+    if (hasTodayDebt) {
+        debtRow = rowToday;
+    } else {
+        const reversed = sorted.slice().reverse();
+        debtRow = reversed.find(r => {
+            const d = startOfDay(r.date);
+            if (d.getTime() >= today.getTime()) return false; // только дни < сегодня
+            const td = r.total_debt || 0;
+            const od = r.overdue_debt || 0;
+            return td !== 0 || od !== 0;
+        }) || lastRow;
+    }
+
     // период: с 1-го числа месяца последней записи по дату последней записи
     const periodStart = new Date(lastRow.date.getFullYear(), lastRow.date.getMonth(), 1);
     const periodLabel =
         `Погрузка с ${formatDateDMY(periodStart)} по ${formatDateDMY(lastRow.date)}`;
 
-    const totalDebt = lastRow.total_debt || 0;
-    const overdueDebt = lastRow.overdue_debt || 0;
+    // считаем задолженность по выбранной debtRow
+    const totalDebt = (debtRow && debtRow.total_debt) || 0;
+    const overdueDebt = (debtRow && debtRow.overdue_debt) || 0;
     const overduePercent = totalDebt ? Math.round(overdueDebt / totalDebt * 100) : 0;
 
     const fleetTotal = lastRow.fleet_total || 2000;
@@ -1070,7 +1096,7 @@ function buildDashboardDataFromRaw(rowObjs, monthPlanTotal) {
             planned_wagons_today: plannedToday,
             loaded_wagons_yesterday: loadedYesterday,
             plan_month: planMonth,                // «По плану» (накопительный план)
-            month_total_plan: monthPlanTotal,     // План на месяц (из L1 = 3500)
+            month_total_plan: monthPlanTotal,     // План на месяц (из L1)
             progress_percent: planMonth ? Math.round(loadedMonth / planMonth * 100) : 0
         },
 
@@ -1093,6 +1119,7 @@ function buildDashboardDataFromRaw(rowObjs, monthPlanTotal) {
         period_label: periodLabel
     };
 }
+
 
 
 async function loadDataFromSheet() {
