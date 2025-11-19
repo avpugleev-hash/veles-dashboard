@@ -682,78 +682,83 @@ body {
                     </div>
                 </div>
             </div>
-<!-- Card: Payments -->
+<!-- Card: Receivables (Задолженность и Поступления) -->
 <div class="metric-card">
   <div class="card-header">
-    <div class="card-icon">💰</div>
-    <h2 class="card-title">ПОСТУПЛЕНИЯ</h2>
-    <div id="paymentsDateLabel" class="metric-label"></div>
+    <div class="card-icon">💳</div>
+    <h2 class="card-title">ЗАДОЛЖЕННОСТЬ</h2>
+    <div id="receivablesDate" class="metric-label"></div>
   </div>
+
   <div class="card-body">
     <div class="metric-row">
-      <label for="paymentsCompanySelect" class="metric-label">
-        Компания:
-      </label>
-      <select id="paymentsCompanySelect" class="metric-select">
-        <!-- опции заполним из JS -->
-      </select>
+      <span class="metric-label">Общая задолженность:</span>
+      <span id="totalDebt" class="metric-value">0 млн. р.</span>
     </div>
+
     <div class="metric-row">
-      <span class="metric-label">Сумма оплаты:</span>
-      <span id="paymentsAmountValue" class="metric-value">0 ₽</span>
+      <span class="metric-label">Просроченная:</span>
+      <span id="overdueDebt" class="metric-value text-accent">0 млн. р.</span>
+    </div>
+
+    <!-- 💰 Добавляем строку Поступления -->
+    <div class="metric-row">
+      <span class="metric-label">Поступления:</span>
+      <span id="paymentsTotal" class="metric-value">0 млн. р.</span>
+    </div>
+
+    <div class="metric-row">
+      <span class="metric-label">Доля просроченной</span>
+      <span id="overduePercent" class="metric-value text-accent">0%</span>
+    </div>
+
+    <div class="progress-bar">
+      <div id="overdueProgressFill" class="progress-fill"></div>
+    </div>
+
+    <div class="metric-row mt-2">
+      <button id="toggleClientsOverdue" class="link-button">
+        ▼ Развернуть структуру по клиентам
+      </button>
+    </div>
+
+    <!-- Новая кнопка: Развернуть поступления -->
+    <div class="metric-row mt-1">
+      <button id="toggleClientsPayments" class="link-button">
+        ▼ Развернуть поступления по клиентам
+      </button>
+    </div>
+
+    <!-- Панель для таблицы клиентов с просрочкой -->
+    <div id="clientsOverduePanel" class="hidden">
+      <table class="metric-table">
+        <thead>
+          <tr>
+            <th>Клиент</th>
+            <th>Просроченная</th>
+            <th>%</th>
+          </tr>
+        </thead>
+        <tbody id="clientsOverdueBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Панель для таблицы клиентов по поступлениям -->
+    <div id="clientsPaymentsPanel" class="hidden">
+      <table class="metric-table">
+        <thead>
+          <tr>
+            <th>Клиент</th>
+            <th>Поступления</th>
+            <th>%</th>
+          </tr>
+        </thead>
+        <tbody id="clientsPaymentsBody"></tbody>
+      </table>
     </div>
   </div>
 </div>
 
-            <!-- Card 2: Receivables -->
-<div class="metric-card">
-    <div class="card-header">
-        <div class="card-icon">💳</div>
-        <h2 class="card-title">ЗАДОЛЖЕННОСТЬ</h2>
-        <div id="receivablesDate" class="metric-label">Данные на —</div>
-    </div>
-    <div class="card-body">
-        <div class="debt-amount">
-            <div class="debt-item">
-                <span class="debt-label">Общая задолженность:</span>
-                <span class="debt-value total" id="totalDebt">—</span>
-            </div>
-            <div class="debt-item">
-                <span class="debt-label">Просроченная:</span>
-                <span class="debt-value overdue" id="overdueDebt">—</span>
-            </div>
-        </div>
-        
-        <div class="progress-section">
-            <div class="progress-info">
-                <span class="progress-label">Доля просроченной</span>
-                <span class="progress-value" id="overduePercent" style="color: var(--warning-orange);">—</span>
-            </div>
-            <div class="progress-bar">
-                <div class="progress-fill warning" id="overdueProgressFill" style="width: 0%"></div>
-            </div>
-        </div>
-
-        <button type="button" class="clients-overdue-toggle" id="toggleClientsOverdue">
-            ▾ Развернуть структуру по клиентам
-        </button>
-
-        <div class="clients-overdue-panel hidden" id="clientsOverduePanel">
-            <table class="clients-table">
-                <thead>
-                    <tr>
-                        <th>Клиент</th>
-                        <th>Просрочено, ₽</th>
-                        <th>Доля от просрочки</th>
-                    </tr>
-                </thead>
-                <tbody id="clientsOverdueBody">
-                    <!-- Заполняется скриптом -->
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
 
             <!-- Card 3: Repairs -->
             <div class="metric-card">
@@ -1647,6 +1652,78 @@ async function refreshData() {
         }
     }
 }
+// === Поступления: рендер суммы и списка клиентов ===
+
+// Подставляем сумму поступлений на карточку (общая)
+function updatePaymentsTotal(sum) {
+  const el = document.getElementById('paymentsTotal');
+  if (!el) return;
+  el.textContent = formatMillions(sum) + ' млн. р.';
+}
+
+// Рендер таблицы поступлений по клиентам
+function renderPaymentsByClient(paymentsData) {
+  const panel = document.getElementById('clientsPaymentsPanel');
+  const tbody = document.getElementById('clientsPaymentsBody');
+  const toggle = document.getElementById('toggleClientsPayments');
+
+  if (!panel || !tbody || !toggle) return;
+
+  tbody.innerHTML = '';
+
+  if (!paymentsData || !paymentsData.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 3;
+    td.textContent = 'Нет данных о поступлениях по клиентам.';
+    td.style.fontSize = '12px';
+    td.style.color = 'var(--text-secondary)';
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+
+  const total = paymentsData.reduce((sum, r) => sum + (r.amount || 0), 0);
+
+  paymentsData.forEach(row => {
+    const tr = document.createElement('tr');
+
+    const tdClient = document.createElement('td');
+    tdClient.textContent = row.client;
+    tr.appendChild(tdClient);
+
+    const tdAmount = document.createElement('td');
+    tdAmount.className = 'amount';
+    tdAmount.textContent = formatMillions(row.amount) + ' млн. р.';
+    tr.appendChild(tdAmount);
+
+    const tdPercent = document.createElement('td');
+    tdPercent.className = 'percent';
+    const p = total ? Math.round((row.amount / total) * 100) : 0;
+    tdPercent.textContent = p + '%';
+    tr.appendChild(tdPercent);
+
+    tbody.appendChild(tr);
+  });
+}
+
+// === Обработчики кнопок раскрытия ===
+document.addEventListener('DOMContentLoaded', () => {
+  const btnOverdue = document.getElementById('toggleClientsOverdue');
+  const btnPayments = document.getElementById('toggleClientsPayments');
+
+  if (btnOverdue) {
+    btnOverdue.addEventListener('click', () => {
+      document.getElementById('clientsOverduePanel').classList.toggle('hidden');
+    });
+  }
+
+  if (btnPayments) {
+    btnPayments.addEventListener('click', () => {
+      document.getElementById('clientsPaymentsPanel').classList.toggle('hidden');
+    });
+  }
+});
 
 // ==========================
 // 8. ИНИЦИАЛИЗАЦИЯ
