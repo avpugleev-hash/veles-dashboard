@@ -1186,12 +1186,14 @@ async function loadDataFromSheet() {
 
                 // а) считаем общую и просроченную задолженность по agg-листу
                 const aggTotals = computeTotalsFromAggRows(rowsClients);
-                if (aggTotals.total > 0 && dashboardData && dashboardData.receivables) {
-                    dashboardData.receivables.total_debt   = aggTotals.total;
-                    dashboardData.receivables.overdue_debt = aggTotals.overdue;
-                    dashboardData.receivables.overdue_percent =
-                        Math.round(aggTotals.overdue / aggTotals.total * 100);
-                }
+                    if (dashboardData && dashboardData.receivables) {
+                        dashboardData.receivables.total_debt   = aggTotals.total;
+                        dashboardData.receivables.overdue_debt = aggTotals.overdue;
+                        dashboardData.receivables.overdue_percent =
+                            aggTotals.total
+                                ? Math.round(aggTotals.overdue / aggTotals.total * 100)
+                                : 0;
+                    }
 
                 // б) строим структуру по клиентам (ТОП > 1 млн)
                 receivablesByClient = buildReceivablesByClientFromRows(rowsClients);
