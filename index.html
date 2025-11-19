@@ -260,6 +260,14 @@ body {
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(212, 165, 116, 0.3);
 }
+.repairs-totals-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px 16px;
+}
+.repairs-totals-grid .metric-row {
+  display: flex; justify-content: space-between;
+}
 
 /* Metrics Grid */
 .metrics-grid {
@@ -771,129 +779,120 @@ body {
                 </div>
             </div>
 <!-- Card: Receivables (Задолженность + Поступления) -->
-<div class="metric-card">
-  <div class="card-header">
-    <div class="card-icon">💳</div>
-    <div class="card-header-text">
-      <h2 class="card-title">ЗАДОЛЖЕННОСТЬ</h2>
-      <div id="receivablesDate" class="metric-label"></div>
-    </div>
-  </div>
-
-  <div class="card-body">
-    <!-- Общая задолженность -->
-    <div class="metric-row">
-      <span class="metric-label">Общая задолженность:</span>
-      <span id="totalDebt" class="metric-value">0 млн. р.</span>
-    </div>
-
-    <!-- Просроченная -->
-    <div class="metric-row">
-      <span class="metric-label">Просроченная:</span>
-      <span id="overdueDebt" class="metric-value text-accent">0 млн. р.</span>
-    </div>
-
-    <!-- Доля просроченной -->
-    <div class="metric-row">
-      <span class="metric-label">Доля просроченной</span>
-      <span id="overduePercent" class="metric-value text-accent">0%</span>
-    </div>
-
-    <div class="progress-bar">
-      <div id="overdueProgressFill" class="progress-fill"></div>
-    </div>
-
-    <!-- Кнопка: структура по клиентам -->
-    <div class="metric-row mt-2">
-      <button id="toggleClientsOverdue" class="link-button">
-        ▼ Развернуть структуру по клиентам
-      </button>
-    </div>
-
-    <!-- Панель: структура просроченной задолженности по клиентам -->
-    <div id="clientsOverduePanel" class="hidden">
-      <table class="metric-table">
-        <thead>
-          <tr>
-            <th>Клиент</th>
-            <th>Просроченная</th>
-            <th>%</th>
-          </tr>
-        </thead>
-        <tbody id="clientsOverdueBody"></tbody>
-      </table>
-    </div>
-
-    <!-- Блок поступлений: опускаем ниже структуры -->
-    <div class="metric-row mt-4">
-      <span class="metric-label">Поступления:</span>
-      <span id="paymentsTotal" class="metric-value">0 млн. р.</span>
-    </div>
-
-    <!-- Кнопка: поступления по клиентам -->
-    <div class="metric-row mt-1">
-      <button id="toggleClientsPayments" class="link-button">
-        ▼ Развернуть поступления по клиентам
-      </button>
-    </div>
-
-    <!-- Панель: поступления по клиентам -->
-    <div id="clientsPaymentsPanel" class="hidden">
-      <table class="metric-table">
-        <thead>
-          <tr>
-            <th>Клиент</th>
-            <th>Поступления</th>
-            <th>%</th>
-          </tr>
-        </thead>
-        <tbody id="clientsPaymentsBody"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
+            <div class="metric-card">
+              <div class="card-header">
+                <div class="card-icon">💳</div>
+                <div class="card-header-text">
+                  <h2 class="card-title">ЗАДОЛЖЕННОСТЬ</h2>
+                  <div id="receivablesDate" class="metric-label"></div>
+                </div>
+              </div>
+            
+              <div class="card-body">
+                <!-- Общая задолженность -->
+                <div class="metric-row">
+                  <span class="metric-label">Общая задолженность:</span>
+                  <span id="totalDebt" class="metric-value">0 млн. р.</span>
+                </div>
+            
+                <!-- Просроченная -->
+                <div class="metric-row">
+                  <span class="metric-label">Просроченная:</span>
+                  <span id="overdueDebt" class="metric-value text-accent">0 млн. р.</span>
+                </div>
+            
+                <!-- Доля просроченной -->
+                <div class="metric-row">
+                  <span class="metric-label">Доля просроченной</span>
+                  <span id="overduePercent" class="metric-value text-accent">0%</span>
+                </div>
+            
+                <div class="progress-bar">
+                  <div id="overdueProgressFill" class="progress-fill"></div>
+                </div>
+            
+                <!-- Кнопка: структура по клиентам -->
+                <div class="metric-row mt-2">
+                  <button id="toggleClientsOverdue" class="link-button">
+                    ▼ Развернуть структуру по клиентам
+                  </button>
+                </div>
+            
+                <!-- Панель: структура просроченной задолженности по клиентам -->
+                <div id="clientsOverduePanel" class="hidden">
+                  <table class="metric-table">
+                    <thead>
+                      <tr>
+                        <th>Клиент</th>
+                        <th>Просроченная</th>
+                        <th>%</th>
+                      </tr>
+                    </thead>
+                    <tbody id="clientsOverdueBody"></tbody>
+                  </table>
+                </div>
+            
+                <!-- Блок поступлений: опускаем ниже структуры -->
+                <div class="metric-row mt-4">
+                  <span class="metric-label">Поступления:</span>
+                  <span id="paymentsTotal" class="metric-value">0 млн. р.</span>
+                </div>
+            
+                <!-- Кнопка: поступления по клиентам -->
+                <div class="metric-row mt-1">
+                  <button id="toggleClientsPayments" class="link-button">
+                    ▼ Развернуть поступления по клиентам
+                  </button>
+                </div>
+            
+                <!-- Панель: поступления по клиентам -->
+                <div id="clientsPaymentsPanel" class="hidden">
+                  <table class="metric-table">
+                    <thead>
+                      <tr>
+                        <th>Клиент</th>
+                        <th>Поступления</th>
+                        <th>%</th>
+                      </tr>
+                    </thead>
+                    <tbody id="clientsPaymentsBody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
 
             <!-- Card 3: Repairs -->
             <div class="metric-card">
-                <div class="card-header">
-                    <div class="card-icon">🔧</div>
+                  <div class="card-header">
+                    <div class="card-icon">🛠️</div>
                     <h2 class="card-title">РЕМОНТЫ</h2>
-                </div>
-                <div class="card-body">
-                    <div class="repair-breakdown">
-                        <div class="repair-item">
-                            <div class="repair-info">
-                                <div class="repair-type">ТР</div>
-                                <div class="repair-description">Текущий ремонт</div>
-                            </div>
-                            <div class="repair-stats">
-                                <div class="repair-count" id="repairTR">—</div>
-                                <div class="repair-percent" id="repairTRPercent">—</div>
-                            </div>
-                        </div>
-                        
-                        <div class="repair-item">
-                            <div class="repair-info">
-                                <div class="repair-type">КР</div>
-                                <div class="repair-description">Капитальный ремонт</div>
-                            </div>
-                            <div class="repair-stats">
-                                <div class="repair-count" id="repairKR">—</div>
-                                <div class="repair-percent" id="repairKRPercent">—</div>
-                            </div>
-                        </div>
-                        
-                        <div class="repair-item">
-                            <div class="repair-info">
-                                <div class="repair-type">ДР</div>
-                                <div class="repair-description">Деповской ремонт</div>
-                            </div>
-                            <div class="repair-stats">
-                                <div class="repair-count" id="repairTOR">—</div>
-                                <div class="repair-percent" id="repairTORPercent">—</div>
-                            </div>
-                        </div>
+                    <div id="repairsDate" class="metric-label"></div>
+                  </div>
+                
+                  <div class="card-body">
+                    <div id="repairsTotalsList" class="repairs-totals-grid"></div>
+                
+                    <div class="metric-row mt-2">
+                      <button id="toggleRepairsTable" class="link-button">▼ Развернуть структуру по ремонтам</button>
                     </div>
+                
+                    <div id="repairsTablePanel" class="hidden">
+                      <table class="metric-table">
+                        <thead>
+                          <tr>
+                            <th>Вид ремонта</th>
+                            <th>В ремонте</th>
+                            <th>В пути</th>
+                            <th>В ожидании оформления</th>
+                            <th>В ожидании отправки</th>
+                            <th>Итого</th>
+                          </tr>
+                        </thead>
+                        <tbody id="repairsTableBody"></tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
                     
                     <div class="secondary-metrics">
                         <div class="secondary-metric">
@@ -930,6 +929,7 @@ const SHEET_CSV_URL =
 const SHEET_CLIENTS_CSV_URL =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vRy08FvutySDNk8yvn0QKdT92-uWjRqaxqi2057Tl42Ai2zLS4L833E2g2GdgBnpFX-t5uwX6JUcmg4/pub?gid=57311955&single=true&output=csv';
 const SHEET_PAYMENTS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRy08FvutySDNk8yvn0QKdT92-uWjRqaxqi2057Tl42Ai2zLS4L833E2g2GdgBnpFX-t5uwX6JUcmg4/pub?gid=740110225&single=true&output=csv';
+const SHEET_REPAIRS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRy08FvutySDNk8yvn0QKdT92-uWjRqaxqi2057Tl42Ai2zLS4L833E2g2GdgBnpFX-t5uwX6JUcmg4/pub?gid=1619190380&single=true&output=csv';
 
 let dashboardData = null;
 let trendChart = null;
@@ -1077,38 +1077,74 @@ function rowsToObjects(rows) {
 
     return result;
 }
+function buildRepairsFromSnapshot(rows) {
+  // ожидаем заголовки: вид ремонта | в ремонте | в пути | в ожидании оформления в ремонт | в ожидании отправки из ремонта | всего
+  const hdr = rows[0].map(h => h.toLowerCase().trim());
+  const idx = {
+    type: hdr.indexOf('вид ремонта'),
+    r: hdr.indexOf('в ремонте'),
+    t: hdr.indexOf('в пути'),
+    reg: hdr.indexOf('в ожидании оформления в ремонт'),
+    disp: hdr.indexOf('в ожидании отправки из ремонта'),
+    total: hdr.indexOf('всего'),
+  };
+  const items = [];
+  for (let i=1;i<rows.length;i++){
+    const r = rows[i];
+    if (!r[idx.type]) continue;
+    items.push({
+      type: r[idx.type],
+      in_repair: Number(r[idx.r]||0),
+      in_transit: Number(r[idx.t]||0),
+      await_reg: Number(r[idx.reg]||0),
+      await_dispatch: Number(r[idx.disp]||0),
+      total: Number(r[idx.total]||0),
+    });
+  }
+  return items;
+}
 
 // ==========================
 // структура просрочки по клиентам
 // ==========================
 function computeTotalsFromAggRows(rows) {
-    // rows — это «сырые» строки CSV с листа ar_agg_client_contract
-    if (!rows || rows.length < 2) {
-        return { total: 0, overdue: 0 };
-    }
+  if (!rows || rows.length < 2) {
+    return { total: 0, overdue: 0 };
+  }
 
-    const header = rows[0];
-    const idxTotal   = header.indexOf('total_balance');
-    const idxOverdue = header.indexOf('overdue_balance');
+  const header = rows[0];
+  const idxAsOf   = header.indexOf('as_of_date');
+  const idxTotal  = header.indexOf('total_balance');
+  const idxOver   = header.indexOf('overdue_balance');
+  if (idxTotal === -1 || idxOver === -1) {
+    console.warn('Колонки total_balance / overdue_balance не найдены в ar_agg_client_contract');
+    return { total: 0, overdue: 0 };
+  }
 
-    if (idxTotal === -1 || idxOverdue === -1) {
-        console.warn('Колонки total_balance / overdue_balance не найдены в ar_agg_client_contract');
-        return { total: 0, overdue: 0 };
-    }
-
-    let total = 0;
-    let overdue = 0;
-
+  // 1) найдём максимальную дату
+  let maxDate = null;
+  if (idxAsOf !== -1) {
     for (let i = 1; i < rows.length; i++) {
-        const row = rows[i];
-        if (!row || !row.length) continue;
-
-        total   += toNumber(row[idxTotal]);
-        overdue += toNumber(row[idxOverdue]);
+      const d = parseDate(rows[i][idxAsOf]);
+      if (d && (!maxDate || d > maxDate)) maxDate = d;
     }
+  }
 
-    return { total, overdue };
+  // 2) суммируем только строки за maxDate (или все, если даты нет)
+  const key = maxDate ? startOfDay(maxDate).getTime() : null;
+  let total = 0, overdue = 0;
+
+  for (let i = 1; i < rows.length; i++) {
+    if (key) {
+      const d = parseDate(rows[i][idxAsOf]);
+      if (!d || startOfDay(d).getTime() !== key) continue;
+    }
+    total   += toNumber(rows[i][idxTotal]);
+    overdue += toNumber(rows[i][idxOver]);
+  }
+  return { total, overdue };
 }
+
 // Дата среза (максимальный as_of_date из ar_agg_client_contract)
 function getSnapshotDateFromAggRows(rows) {
     if (!rows || rows.length < 2) return null;
@@ -1372,12 +1408,13 @@ function buildDashboardDataFromRaw(rowObjs, monthPlanTotal) {
 
 
 async function loadDataFromSheet() {
-    // 1) основной raw_data
-    const res = await fetch(SHEET_CSV_URL);
+  let snapshotDate = null; // будет использоваться и для ремонтов
+  // 1) основной raw_data
+  const res = await fetch(SHEET_CSV_URL);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const csvText = await res.text();
     const rows = parseCSV(csvText);
-
+   
     // Ищем план на месяц в первой строке (как было)
     let monthPlanFromHeader = 0;
     if (rows.length) {
@@ -1421,7 +1458,7 @@ async function loadDataFromSheet() {
                 const csvTextClients = await resClients.text();
                 const rowsClients = parseCSV(csvTextClients);
                 // дата среза (аналог G1 на листе ar_agg_client_contract)
-                const snapshotDate = getSnapshotDateFromAggRows(rowsClients);
+                  snapshotDate = getSnapshotDateFromAggRows(rowsClients);
                 if (snapshotDate && dashboardData) {
                     dashboardData.receivables_date = snapshotDate;
                 }
@@ -1446,10 +1483,18 @@ async function loadDataFromSheet() {
             console.error('Ошибка загрузки сводки по клиентам:', e);
         }
     }
+      // 4) repairs_snapshot (последним, когда уже есть snapshotDate)
+  try {
+    const repairsCsv = await fetch(SHEET_REPAIRS_CSV_URL).then(r => r.text());
+    const repRows = parseCSV(repairsCsv);
+    const repairsItems = buildRepairsFromSnapshot(repRows);
+    renderRepairsCard(repairsItems, snapshotDate);
+  } catch (e) {
+    console.error('Ошибка загрузки repairs_snapshot:', e);
+    renderRepairsCard([], snapshotDate);
+  }
+
 }
-
-
-
 
 // ==========================
 // 4. ФОРМАТИРОВАНИЕ / ВРЕМЯ
@@ -1593,7 +1638,53 @@ function renderPaymentsCard() {
     const first = paymentsByClient[0];
     amountEl.textContent = formatCurrency(first.amount || 0);
 }
+function renderRepairsCard(items, dateStr) {
+  const order = ['ТОР','ДР','КР','ДРА','промывка'];
+  const mapName = {
+    TOR: 'ТОР', DR:'ДР', KR:'КР', DRA:'ДРА', WASH:'промывка'
+  };
 
+  // Тоталы
+  const list = document.getElementById('repairsTotalsList');
+  list.innerHTML = '';
+  const normalized = {};
+  items.forEach(x => { normalized[x.type.toLowerCase()] = x; });
+
+  order.forEach(name => {
+    const key = name.toLowerCase();
+    const row = document.createElement('div');
+    row.className = 'metric-row';
+    row.innerHTML = `
+      <span class="metric-label">${name}</span>
+      <span class="metric-value">${(normalized[key]?.total || 0)}</span>
+    `;
+    list.appendChild(row);
+  });
+
+  // Таблица по стадиям
+  const tbody = document.getElementById('repairsTableBody');
+  tbody.innerHTML = '';
+  order.forEach(name=>{
+    const key = name.toLowerCase();
+    const x = normalized[key] || {in_repair:0,in_transit:0,await_reg:0,await_dispatch:0,total:0};
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${name}</td>
+      <td>${x.in_repair}</td>
+      <td>${x.in_transit}</td>
+      <td>${x.await_reg}</td>
+      <td>${x.await_dispatch}</td>
+      <td><b>${x.total}</b></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  const dateEl = document.getElementById('repairsDate');
+  dateEl.textContent = dateStr ? ('Данные на ' + formatDateRuShort(dateStr)) : '';
+
+  const btn = document.getElementById('toggleRepairsTable');
+  btn.onclick = ()=> document.getElementById('repairsTablePanel').classList.toggle('hidden');
+}
 function populateDashboard() {
     if (!dashboardData) return;
 
@@ -1647,18 +1738,7 @@ function populateDashboard() {
     }
 
     // --- Ремонты ---
-    document.getElementById('repairTR').textContent =
-        dashboardData.repairs.tr_count;
-    document.getElementById('repairTRPercent').textContent =
-        `${dashboardData.repairs.tr_percent}% от парка`;
-    document.getElementById('repairKR').textContent =
-        dashboardData.repairs.kr_count;
-    document.getElementById('repairKRPercent').textContent =
-        `${dashboardData.repairs.kr_percent}% от парка`;
-    document.getElementById('repairTOR').textContent =
-        dashboardData.repairs.tor_count;
-    document.getElementById('repairTORPercent').textContent =
-        `${dashboardData.repairs.tor_percent}% от парка`;
+
     document.getElementById('fleetTotal').textContent =
         formatNumber(dashboardData.repairs.fleet_total);
 
