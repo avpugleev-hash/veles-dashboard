@@ -285,13 +285,22 @@ body {
 
 .card-header {
     display: flex;
-    align-items: center;
-    gap: var(--space-12);
+    align-items: flex-start;
+    gap: 12px;
     margin-bottom: var(--space-20);
     padding-bottom: var(--space-16);
     border-bottom: 2px solid var(--border-color);
 }
+.card-header-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
 
+.card-header-text .metric-label {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+}
 .card-icon {
     font-size: 32px;
 }
@@ -440,6 +449,7 @@ body {
 /* Вспомогательные отступы */
 .mt-1 { margin-top: 4px; }
 .mt-2 { margin-top: 8px; }
+.mt-3 { margin-top: 12px; }
 
 /* Скрытие панелей (overdue / payments) */
 .hidden {
@@ -763,8 +773,10 @@ body {
 <div class="metric-card">
   <div class="card-header">
     <div class="card-icon">💳</div>
-    <h2 class="card-title">ЗАДОЛЖЕННОСТЬ</h2>
-    <div id="receivablesDate" class="metric-label"></div>
+    <div class="card-header-text">
+      <h2 class="card-title">ЗАДОЛЖЕННОСТЬ</h2>
+      <div id="receivablesDate" class="metric-label"></div>
+    </div>
   </div>
 
   <div class="card-body">
@@ -797,19 +809,6 @@ body {
       </button>
     </div>
 
-    <!-- Поступления (строка с суммой) -->
-    <div class="metric-row mt-1">
-      <span class="metric-label">Поступления:</span>
-      <span id="paymentsTotal" class="metric-value">0 млн. р.</span>
-    </div>
-
-    <!-- Кнопка: поступления по клиентам -->
-    <div class="metric-row mt-1">
-      <button id="toggleClientsPayments" class="link-button">
-        ▼ Развернуть поступления по клиентам
-      </button>
-    </div>
-
     <!-- Панель: структура просроченной задолженности по клиентам -->
     <div id="clientsOverduePanel" class="hidden">
       <table class="metric-table">
@@ -822,6 +821,19 @@ body {
         </thead>
         <tbody id="clientsOverdueBody"></tbody>
       </table>
+    </div>
+
+    <!-- Блок поступлений: опускаем ниже структуры -->
+    <div class="metric-row mt-3">
+      <span class="metric-label">Поступления:</span>
+      <span id="paymentsTotal" class="metric-value">0 млн. р.</span>
+    </div>
+
+    <!-- Кнопка: поступления по клиентам -->
+    <div class="metric-row mt-1">
+      <button id="toggleClientsPayments" class="link-button">
+        ▼ Развернуть поступления по клиентам
+      </button>
     </div>
 
     <!-- Панель: поступления по клиентам -->
@@ -839,8 +851,6 @@ body {
     </div>
   </div>
 </div>
-
-
 
             <!-- Card 3: Repairs -->
             <div class="metric-card">
