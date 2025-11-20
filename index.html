@@ -1075,31 +1075,65 @@ function rowsToObjects(rows) {
     return result;
 }
 function buildRepairsFromSnapshot(rows) {
-  // ожидаем заголовки: вид ремонта | в ремонте | в пути | в ожидании оформления в ремонт | в ожидании отправки из ремонта | всего
-  const hdr = rows[0].map(h => h.toLowerCase().trim());
+  if (!rows || !rows.length) return [];
+
+  // Ищем строку с заголовком, где есть "вид ремонта"
+  let headerRowIndex = rows.findIndex(r =>
+    r && r.some(cell => cell && cell.toString().toLowerCase().includes('вид ремонта'))
+  );
+  if (headerRowIndex === -1) {
+    console.warn('Не удалось найти строку заголовка в repairs_snapshot');
+    return [];
+  }
+
+  const hdr = rows[headerRowIndex].map(h => (h || '').toString().toLowerCase().trim());
   const idx = {
     type: hdr.indexOf('вид ремонта'),
     r: hdr.indexOf('в ремонте'),
     t: hdr.indexOf('в пути'),
     reg: hdr.indexOf('в ожидании оформления в ремонт'),
     disp: hdr.indexOf('в ожидании отправки из ремонта'),
-    total: hdr.indexOf('всего'),
   };
+
+  // столбец с итогом может называться "всего" или "итого"
+  let totalIdx = hdr.indexOf('всего');
+  if (totalIdx === -1) {
+    totalIdx = hdr.indexOf('итого');
+  }
+  idx.total = totalIdx;
+
+  if (idx.type === -1) {
+    console.warn('В repairs_snapshot нет колонки "вид ремонта"');
+    return [];
+  }
+
   const items = [];
-  for (let i=1;i<rows.length;i++){
+  for (let i = headerRowIndex + 1; i < rows.length; i++) {
     const r = rows[i];
-    if (!r[idx.type]) continue;
+    if (!r || !r.length) continue;
+    const typeVal = r[idx.type];
+    if (!typeVal) continue;
+
+    const safeNum = (arr, index) => {
+      if (index === -1) return 0;
+      const v = arr[index];
+      const n = Number(v);
+      return Number.isFinite(n) ? n : 0;
+    };
+
     items.push({
-      type: r[idx.type],
-      in_repair: Number(r[idx.r]||0),
-      in_transit: Number(r[idx.t]||0),
-      await_reg: Number(r[idx.reg]||0),
-      await_dispatch: Number(r[idx.disp]||0),
-      total: Number(r[idx.total]||0),
+      type: String(typeVal).trim(),
+      in_repair:      safeNum(r, idx.r),
+      in_transit:     safeNum(r, idx.t),
+      await_reg:      safeNum(r, idx.reg),
+      await_dispatch: safeNum(r, idx.disp),
+      total:          safeNum(r, idx.total),
     });
   }
+
   return items;
 }
+
 
 // ==========================
 // структура просрочки по клиентам
@@ -1636,52 +1670,78 @@ function renderPaymentsCard() {
     amountEl.textContent = formatCurrency(first.amount || 0);
 }
 function renderRepairsCard(items, dateStr) {
-  const order = ['ТОР','ДР','КР','ДРА','промывка'];
-  const mapName = {
-    TOR: 'ТОР', DR:'ДР', KR:'КР', DRA:'ДРА', WASH:'промывка'
+  // Коды из таблицы: TOR, DR, KR, DRA, WASH
+  const order = ['TOR','DR','KR','DRA','WASH'];
+  const labels = {
+    TOR: 'ТОР',
+    DR:  'ДР',
+    KR:  'КР',
+    DRA: 'ДРА',
+    WASH:'Промывка',
   };
 
-  // Тоталы
   const list = document.getElementById('repairsTotalsList');
+  if (!list) return;
   list.innerHTML = '';
-  const normalized = {};
-  items.forEach(x => { normalized[x.type.toLowerCase()] = x; });
 
-  order.forEach(name => {
-    const key = name.toLowerCase();
+  const normalized = {};
+  (items || []).forEach(x => {
+    if (!x || !x.type) return;
+    const key = String(x.type).toUpperCase().trim(); // TOR/DR/...
+    normalized[key] = x;
+  });
+
+  // Тоталы по видам ремонта
+  order.forEach(code => {
+    const x = normalized[code] || { total: 0 };
     const row = document.createElement('div');
     row.className = 'metric-row';
     row.innerHTML = `
-      <span class="metric-label">${name}</span>
-      <span class="metric-value">${(normalized[key]?.total || 0)}</span>
+      <span class="metric-label">${labels[code] || code}</span>
+      <span class="metric-value">${x.total || 0}</span>
     `;
     list.appendChild(row);
   });
 
   // Таблица по стадиям
   const tbody = document.getElementById('repairsTableBody');
-  tbody.innerHTML = '';
-  order.forEach(name=>{
-    const key = name.toLowerCase();
-    const x = normalized[key] || {in_repair:0,in_transit:0,await_reg:0,await_dispatch:0,total:0};
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${name}</td>
-      <td>${x.in_repair}</td>
-      <td>${x.in_transit}</td>
-      <td>${x.await_reg}</td>
-      <td>${x.await_dispatch}</td>
-      <td><b>${x.total}</b></td>
-    `;
-    tbody.appendChild(tr);
-  });
+  if (tbody) {
+    tbody.innerHTML = '';
+    order.forEach(code => {
+      const x = normalized[code] || {
+        in_repair: 0,
+        in_transit: 0,
+        await_reg: 0,
+        await_dispatch: 0,
+        total: 0,
+      };
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${labels[code] || code}</td>
+        <td>${x.in_repair}</td>
+        <td>${x.in_transit}</td>
+        <td>${x.await_reg}</td>
+        <td>${x.await_dispatch}</td>
+        <td><b>${x.total}</b></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
 
   const dateEl = document.getElementById('repairsDate');
-  dateEl.textContent = dateStr ? ('Данные на ' + formatDateRuShort(dateStr)) : '';
+  if (dateEl) {
+    dateEl.textContent = dateStr ? ('Данные на ' + formatDateRuShort(dateStr)) : '';
+  }
 
   const btn = document.getElementById('toggleRepairsTable');
-  btn.onclick = ()=> document.getElementById('repairsTablePanel').classList.toggle('hidden');
+  if (btn) {
+    btn.onclick = () => {
+      const panel = document.getElementById('repairsTablePanel');
+      if (panel) panel.classList.toggle('hidden');
+    };
+  }
 }
+
 function populateDashboard() {
     if (!dashboardData) return;
 
