@@ -912,7 +912,7 @@ body {
         </div>
     </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
 'use strict';
 
@@ -921,1028 +921,610 @@ body {
 // ==========================
 // ВСТАВЬ сюда свою CSV-ссылку с output=csv
 const SHEET_CSV_URL =
-  'https://docs.google.com/spreadsheets/d/e/2PACX-1vRy08FvutySDNk8yvn0QKdT92-uWjRqaxqi2057Tl42Ai2zLS4L833E2g2GdgBnpFX-t5uwX6JUcmg4/pub?gid=1433292947&single=true&output=csv';
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vRy08FvutySDN...dgBnpFX-t5uwX6JUcmg4/pub?gid=1433292947&single=true&output=csv';
 // ar_agg_client_contract (НОВАЯ ссылка, только для структуры просрочки)
 const SHEET_CLIENTS_CSV_URL =
-  'https://docs.google.com/spreadsheets/d/e/2PACX-1vRy08FvutySDNk8yvn0QKdT92-uWjRqaxqi2057Tl42Ai2zLS4L833E2g2GdgBnpFX-t5uwX6JUcmg4/pub?gid=57311955&single=true&output=csv';
-const SHEET_PAYMENTS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRy08FvutySDNk8yvn0QKdT92-uWjRqaxqi2057Tl42Ai2zLS4L833E2g2GdgBnpFX-t5uwX6JUcmg4/pub?gid=740110225&single=true&output=csv';
-const SHEET_REPAIRS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRy08FvutySDNk8yvn0QKdT92-uWjRqaxqi2057Tl42Ai2zLS4L833E2g2GdgBnpFX-t5uwX6JUcmg4/pub?gid=1619190380&single=true&output=csv';
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vRy08FvutySDN...2GdgBnpFX-t5uwX6JUcmg4/pub?gid=57311955&single=true&output=csv';
+const SHEET_PAYMENTS_CSV_URL = 'https://docs.google.com/spreadsh...GdgBnpFX-t5uwX6JUcmg4/pub?gid=740110225&single=true&output=csv';
+const SHEET_REPAIRS_CSV_URL = 'https://docs.google.com/spreadshe...dgBnpFX-t5uwX6JUcmg4/pub?gid=1619190380&single=true&output=csv';
 
 let dashboardData = null;
 let trendChart = null;
 let receivablesByClient = [];   // сюда положим структуру просрочки по клиентам
-let paymentsLastDate = null;
-let paymentsByClient = []; // [{ client, amount }]
+let paymentsLastDays = [];      // структура по оплатам за последние дни (для анализа тренда платежей)
 
 // ==========================
-// 2. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// 2. УТИЛИТЫ
 // ==========================
-function buildPaymentsFromRows(rows) {
-    if (!rows || rows.length < 2) return { lastDate: null, items: [] };
+function parseCSV(text) {
+  const rows = [];
+  let current = '';
+  let row = [];
+  let inQuotes = false;
 
-    const header = rows[0];
-    const idxAsOf   = header.indexOf('as_of_date');
-    const idxClient = header.indexOf('client_name');
-    const idxTotal  = header.indexOf('total_received');
-
-    if (idxAsOf === -1 || idxClient === -1 || idxTotal === -1) {
-        console.warn('Не найдены нужные колонки в ar_payments_daily');
-        return { lastDate: null, items: [] };
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '"') {
+      if (inQuotes && text[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (c === ';' && !inQuotes) {
+      row.push(current);
+      current = '';
+    } else if ((c === '\n' || c === '\r') && !inQuotes) {
+      if (current !== '' || row.length) {
+        row.push(current);
+        rows.push(row);
+        row = [];
+        current = '';
+      }
+    } else {
+      current += c;
     }
-
-    let maxDate = null;
-    const byDate = {};
-
-    for (let i = 1; i < rows.length; i++) {
-        const row = rows[i];
-        if (!row || !row.length) continue;
-
-        const asOfRaw = row[idxAsOf];
-        const client  = row[idxClient];
-        const total   = toNumber(row[idxTotal]);
-
-        if (!asOfRaw || !client) continue;
-
-        const d = parseDate(asOfRaw);
-        if (!d) continue;
-
-        if (!maxDate || d > maxDate) {
-            maxDate = d;
-        }
-
-        const key = startOfDay(d).getTime();
-        if (!byDate[key]) byDate[key] = [];
-        byDate[key].push({
-            client: client,
-            amount: total
-        });
-    }
-
-    if (!maxDate) return { lastDate: null, items: [] };
-
-    const lastKey = startOfDay(maxDate).getTime();
-    let items = byDate[lastKey] || [];
-
-    // оставляем только клиентов с ненулевой суммой
-    items = items.filter(it => it.amount !== 0);
-
-    // сортируем по убыванию оплаты
-    items.sort((a, b) => b.amount - a.amount);
-
-    return { lastDate: maxDate, items };
+  }
+  if (current !== '' || row.length) {
+    row.push(current);
+    rows.push(row);
+  }
+  return rows;
 }
 
 function toNumber(value) {
-    if (value === undefined || value === null || value === '') return 0;
-    const normalized = String(value).replace(/\s+/g, '').replace(',', '.');
-    const n = Number(normalized);
-    return isNaN(n) ? 0 : n;
+  if (value === null || value === undefined) return 0;
+  if (typeof value === 'number') return value;
+  let v = String(value).replace(/\s+/g, '').replace(',', '.');
+  const n = parseFloat(v);
+  return Number.isFinite(n) ? n : 0;
 }
 
-function parseCSV(csvText) {
-    const lines = csvText.trim().split(/\r?\n/);
-    return lines.map(line => line.split(',').map(c => c.trim()));
+function formatNumber(num) {
+  if (num === null || num === undefined || isNaN(num)) return '0';
+  return Number(num).toLocaleString('ru-RU');
 }
 
-function parseDate(dateStr) {
-    if (!dateStr) return null;
+function formatPercent(value, digits = 1) {
+  if (value === null || value === undefined || isNaN(value)) return '0%';
+  return (value * 100).toFixed(digits).replace('.', ',') + '%';
+}
 
-    // YYYY-MM-DD
-    let m = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (m) {
-        const [, y, mo, d] = m;
-        return new Date(Number(y), Number(mo) - 1, Number(d));
+function parseDate(str) {
+  if (!str) return null;
+  // ожидаем формат типа 2025-11-18 или 18.11.2025
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    return new Date(str + 'T00:00:00');
+  }
+  const m = str.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2,4})$/);
+  if (m) {
+    const d = m[1].padStart(2, '0');
+    const mm = m[2].padStart(2, '0');
+    let yy = m[3];
+    if (yy.length === 2) yy = '20' + yy;
+    return new Date(`${yy}-${mm}-${d}T00:00:00`);
+  }
+  const ts = Date.parse(str);
+  return Number.isNaN(ts) ? null : new Date(ts);
+}
+
+function formatDateRuShort(dateStr) {
+  const d = parseDate(dateStr);
+  if (!d) return dateStr || '';
+  return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function formatUpdatedAt(date) {
+  return date.toLocaleString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+// ==========================
+// 3. ЗАГРУЗКА ДАННЫХ
+// ==========================
+async function fetchCSV(url) {
+  const resp = await fetch(url + '&_ts=' + Date.now());
+  if (!resp.ok) {
+    throw new Error('Ошибка загрузки CSV ' + resp.status);
+  }
+  const text = await resp.text();
+  return parseCSV(text);
+}
+
+async function loadDataFromSheet() {
+  const [rawRows, clientRows, paymentRows, repairRows] = await Promise.all([
+    fetchCSV(SHEET_CSV_URL),
+    fetchCSV(SHEET_CLIENTS_CSV_URL),
+    fetchCSV(SHEET_PAYMENTS_CSV_URL),
+    fetchCSV(SHEET_REPAIRS_CSV_URL),
+  ]);
+
+  const parsedMain = buildDashboardData(rawRows);
+  receivablesByClient = buildReceivablesByClient(clientRows);
+  const paymentsStruct = buildPaymentsDaily(paymentRows);
+  paymentsLastDays = paymentsStruct.items || [];
+
+  const repairsItems = buildRepairsFromSnapshot(repairRows);
+  dashboardData = {
+    ...parsedMain,
+    repairs: {
+      snapshotDate: paymentsStruct.lastDate,
+      items: repairsItems,
+      fleet_total: parsedMain.repairs.fleet_total,
+    },
+  };
+}
+
+// ==========================
+// 4. ПАРСИНГ ОСНОВНОГО CSV
+// ==========================
+function buildDashboardData(rows) {
+  if (!rows || rows.length < 2) {
+    console.warn('Нет данных raw_data');
+    return {
+      date: null,
+      total_wagons: 0,
+      loaded_today: 0,
+      loaded_yesterday: 0,
+      loaded_plan: 0,
+      loaded_diff: 0,
+      loaded_diff_pct: 0,
+      utilization: 0,
+      idle_total: 0,
+      idle_over_5: 0,
+      idle_over_10: 0,
+      idle_over_5_pct: 0,
+      idle_over_10_pct: 0,
+      clients_overdue: [],
+      daily_trend: [],
+      repairs: {
+        fleet_total: 0,
+      },
+    };
+  }
+
+  const header = rows[0].map(h => h.toLowerCase().trim());
+
+  const idxDate = header.indexOf('date');
+  const idxTotalWagons = header.indexOf('total_wagons');
+  const idxLoadedToday = header.indexOf('loaded_today');
+  const idxLoadedYesterday = header.indexOf('loaded_yesterday');
+  const idxLoadedPlan = header.indexOf('loaded_plan');
+  const idxUtilization = header.indexOf('utilization');
+
+  const idxIdleTotal = header.indexOf('idle_total');
+  const idxIdleOver5 = header.indexOf('idle_over_5');
+  const idxIdleOver10 = header.indexOf('idle_over_10');
+
+  const idxFleetTotal = header.indexOf('fleet_total');
+
+  let lastRow = rows[rows.length - 1];
+  for (let i = rows.length - 1; i >= 1; i--) {
+    const r = rows[i];
+    if (r && r.some(v => v !== '')) {
+      lastRow = r;
+      break;
     }
+  }
 
-    // DD.MM.YYYY
-    m = dateStr.match(/^(\d{2})\.(\d{2})\.(\d{4})/);
-    if (m) {
-        const [, d, mo, y] = m;
-        return new Date(Number(y), Number(mo) - 1, Number(d));
+  const dateStr = idxDate !== -1 ? lastRow[idxDate] : null;
+  const totalWagons = toNumber(idxTotalWagons !== -1 ? lastRow[idxTotalWagons] : 0);
+  const loadedToday = toNumber(idxLoadedToday !== -1 ? lastRow[idxLoadedToday] : 0);
+  const loadedYesterday = toNumber(idxLoadedYesterday !== -1 ? lastRow[idxLoadedYesterday] : 0);
+  const loadedPlan = toNumber(idxLoadedPlan !== -1 ? lastRow[idxLoadedPlan] : 0);
+  const utilization = toNumber(idxUtilization !== -1 ? lastRow[idxUtilization] : 0);
+
+  const idleTotal = toNumber(idxIdleTotal !== -1 ? lastRow[idxIdleTotal] : 0);
+  const idleOver5 = toNumber(idxIdleOver5 !== -1 ? lastRow[idxIdleOver5] : 0);
+  const idleOver10 = toNumber(idxIdleOver10 !== -1 ? lastRow[idxIdleOver10] : 0);
+
+  const fleetTotal = toNumber(idxFleetTotal !== -1 ? lastRow[idxFleetTotal] : 0);
+
+  const loadedDiff = loadedToday - loadedYesterday;
+  const loadedDiffPct = loadedYesterday ? (loadedDiff / loadedYesterday) : 0;
+
+  const idleOver5Pct = idleTotal ? (idleOver5 / idleTotal) : 0;
+  const idleOver10Pct = idleTotal ? (idleOver10 / idleTotal) : 0;
+
+  const dailyTrend = buildDailyTrend(rows, header);
+
+  return {
+    date: dateStr,
+    total_wagons: totalWagons,
+    loaded_today: loadedToday,
+    loaded_yesterday: loadedYesterday,
+    loaded_plan: loadedPlan,
+    loaded_diff: loadedDiff,
+    loaded_diff_pct: loadedDiffPct,
+    utilization: utilization,
+    idle_total: idleTotal,
+    idle_over_5: idleOver5,
+    idle_over_10: idleOver10,
+    idle_over_5_pct: idleOver5Pct,
+    idle_over_10_pct: idleOver10Pct,
+    daily_trend: dailyTrend,
+    repairs: {
+      fleet_total: fleetTotal,
+    },
+  };
+}
+
+function buildDailyTrend(rows, header) {
+  const idxDate = header.indexOf('date');
+  const idxLoaded = header.indexOf('loaded_today');
+  if (idxDate === -1 || idxLoaded === -1) return [];
+
+  const result = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r || !r[idxDate]) continue;
+    const d = parseDate(r[idxDate]);
+    if (!d) continue;
+    const wagons = toNumber(r[idxLoaded]);
+    result.push({
+      date: d,
+      wagons,
+      label: d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }),
+    });
+  }
+
+  result.sort((a, b) => a.date - b.date);
+  return result.slice(-7);
+}
+
+// ==========================
+// 5. ПРОСРОЧКА ПО КЛИЕНТАМ
+// ==========================
+function buildReceivablesByClient(rows) {
+  if (!rows || rows.length < 2) return [];
+  const header = rows[0].map(h => h.toLowerCase().trim());
+
+  const idxClient = header.indexOf('client_name');
+  const idxOverdue = header.indexOf('overdue_total');
+  const idxBucket = header.indexOf('bucket_name');
+
+  if (idxClient === -1 || idxOverdue === -1 || idxBucket === -1) {
+    console.warn('Нет нужных колонок в ar_agg_client_contract');
+    return [];
+  }
+
+  const map = new Map();
+
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r || !r[idxClient]) continue;
+    const client = r[idxClient];
+    const overdue = toNumber(r[idxOverdue]);
+    const bucket = r[idxBucket];
+    if (!map.has(client)) {
+      map.set(client, { client, total_overdue: 0, buckets: {} });
     }
+    const obj = map.get(client);
+    obj.total_overdue += overdue;
+    obj.buckets[bucket] = (obj.buckets[bucket] || 0) + overdue;
+  }
 
-    const d = new Date(dateStr);
-    return isNaN(d.getTime()) ? null : d;
+  const arr = Array.from(map.values());
+  arr.sort((a, b) => b.total_overdue - a.total_overdue);
+  return arr;
 }
 
-function startOfDay(d) {
-    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-}
+// ==========================
+// 6. ПЛАТЕЖИ ПО ДНЯМ
+// ==========================
+function buildPaymentsDaily(rows) {
+  if (!rows || rows.length < 2) {
+    console.warn('Нет данных в таблице оплат');
+    return { lastDate: null, items: [] };
+  }
+  const header = rows[0].map(h => h.toLowerCase().trim());
 
-function formatDateDMY(d) {
-    const dd = String(d.getDate()).padStart(2, '0');
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const yyyy = d.getFullYear();
-    return `${dd}-${mm}-${yyyy}`;
-}
-function rowsToObjects(rows) {
-    if (!rows.length) return [];
+  const idxAsOf = header.indexOf('as_of_date');
+  const idxClient = header.indexOf('client_name');
+  const idxTotal  = header.indexOf('total_received');
 
-    const header = rows[0];
-    const idxTimestamp   = header.indexOf('timestamp');
-    const idxLoaded      = header.indexOf('loaded_wagons');
-    const idxPlanned     = header.indexOf('planned_wagons');
-    const idxTotalDebt   = header.indexOf('total_debt');
-    const idxOverdueDebt = header.indexOf('overdue_debt');
-    const idxTr          = header.indexOf('tr_count');
-    const idxKr          = header.indexOf('kr_count');
-    const idxTor         = header.indexOf('tor_count');
-    const idxFleet       = header.indexOf('fleet_total');
+  if (idxAsOf === -1 || idxClient === -1 || idxTotal === -1) {
+    console.warn('Не найдены нужные колонки в ar_payments_daily');
+    return { lastDate: null, items: [] };
+  }
 
-    const result = [];
+  let maxDate = null;
+  const byDate = {};
 
-    for (let i = 1; i < rows.length; i++) {
-        const row = rows[i];
-        if (!row[idxTimestamp]) continue;
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || !row.length) continue;
 
-        const date = parseDate(row[idxTimestamp]);
-        if (!date) continue;
+    const dStr = row[idxAsOf];
+    const d = parseDate(dStr);
+    if (!d) continue;
 
-        result.push({
-            date,
-            timestamp: row[idxTimestamp],
-            loaded_wagons: toNumber(idxLoaded       !== -1 ? row[idxLoaded]       : 0),
-            planned_wagons: toNumber(idxPlanned     !== -1 ? row[idxPlanned]     : 0),
-            total_debt:     toNumber(idxTotalDebt   !== -1 ? row[idxTotalDebt]   : 0),
-            overdue_debt:   toNumber(idxOverdueDebt !== -1 ? row[idxOverdueDebt] : 0),
-            tr_count:       toNumber(idxTr          !== -1 ? row[idxTr]          : 0),
-            kr_count:       toNumber(idxKr          !== -1 ? row[idxKr]          : 0),
-            tor_count:      toNumber(idxTor         !== -1 ? row[idxTor]         : 0),
-            fleet_total:    toNumber(idxFleet       !== -1 ? row[idxFleet]       : 0)
-        });
+    const client = row[idxClient];
+    const amt = toNumber(row[idxTotal]);
+
+    const key = d.toISOString().slice(0, 10);
+    if (!byDate[key]) {
+      byDate[key] = { date: d, total: 0, perClient: {} };
     }
+    byDate[key].total += amt;
+    byDate[key].perClient[client] = (byDate[key].perClient[client] || 0) + amt;
 
-    return result;
+    if (!maxDate || d > maxDate) maxDate = d;
+  }
+
+  const items = Object.values(byDate).sort((a, b) => a.date - b.date);
+  const lastDateKey = maxDate ? maxDate.toISOString().slice(0, 10) : null;
+
+  return {
+    lastDate: lastDateKey,
+    items,
+  };
 }
+
+// ==========================
+// 7. РЕМОНТЫ (SNAPSHOT)
+// ==========================
 function buildRepairsFromSnapshot(rows) {
-  // ожидаем заголовки: вид ремонта | в ремонте | в пути | в ожидании оформления в ремонт | в ожидании отправки из ремонта | всего
-  const hdr = rows[0].map(h => h.toLowerCase().trim());
+  if (!rows || !rows.length) return [];
+
+  // Ищем строку с заголовком, где есть "вид ремонта"
+  let headerRowIndex = rows.findIndex(r =>
+    r && r.some(cell => cell && cell.toString().toLowerCase().includes('вид ремонта'))
+  );
+  if (headerRowIndex === -1) {
+    console.warn('Не удалось найти строку заголовка в repairs_snapshot');
+    return [];
+  }
+
+  const hdr = rows[headerRowIndex].map(h => (h || '').toString().toLowerCase().trim());
   const idx = {
     type: hdr.indexOf('вид ремонта'),
     r: hdr.indexOf('в ремонте'),
     t: hdr.indexOf('в пути'),
     reg: hdr.indexOf('в ожидании оформления в ремонт'),
     disp: hdr.indexOf('в ожидании отправки из ремонта'),
-    total: hdr.indexOf('всего'),
   };
+
+  // столбец с итогом может называться "всего" или "итого"
+  let totalIdx = hdr.indexOf('всего');
+  if (totalIdx === -1) {
+    totalIdx = hdr.indexOf('итого');
+  }
+  idx.total = totalIdx;
+
+  if (idx.type === -1) {
+    console.warn('В repairs_snapshot нет колонки "вид ремонта"');
+    return [];
+  }
+
   const items = [];
-  for (let i=1;i<rows.length;i++){
+  for (let i = headerRowIndex + 1; i < rows.length; i++) {
     const r = rows[i];
-    if (!r[idx.type]) continue;
+    if (!r || !r.length) continue;
+    const typeVal = r[idx.type];
+    if (!typeVal) continue;
+
+    const safeNum = (arr, idx) => {
+      if (idx === -1) return 0;
+      const v = arr[idx];
+      const n = Number(v);
+      return Number.isFinite(n) ? n : 0;
+    };
+
     items.push({
-      type: r[idx.type],
-      in_repair: Number(r[idx.r]||0),
-      in_transit: Number(r[idx.t]||0),
-      await_reg: Number(r[idx.reg]||0),
-      await_dispatch: Number(r[idx.disp]||0),
-      total: Number(r[idx.total]||0),
+      type: String(typeVal).trim(),
+      in_repair:     safeNum(r, idx.r),
+      in_transit:    safeNum(r, idx.t),
+      await_reg:     safeNum(r, idx.reg),
+      await_dispatch:safeNum(r, idx.disp),
+      total:         safeNum(r, idx.total),
     });
   }
   return items;
 }
 
 // ==========================
-// структура просрочки по клиентам
+// 8. ОТРИСОВКА ДАШБОРДА
 // ==========================
-function computeTotalsFromAggRows(rows) {
-  if (!rows || rows.length < 2) {
-    return { total: 0, overdue: 0 };
+function populateDashboard() {
+  if (!dashboardData) return;
+
+  const d = dashboardData;
+
+  const dateEl = document.getElementById('reportDate');
+  if (dateEl) {
+    dateEl.textContent = d.date ? formatDateRuShort(d.date) : '—';
   }
 
-  const header = rows[0];
-  const idxAsOf   = header.indexOf('as_of_date');
-  const idxTotal  = header.indexOf('total_balance');
-  const idxOver   = header.indexOf('overdue_balance');
-  if (idxTotal === -1 || idxOver === -1) {
-    console.warn('Колонки total_balance / overdue_balance не найдены в ar_agg_client_contract');
-    return { total: 0, overdue: 0 };
+  const fleetTotalEl = document.getElementById('fleetTotal');
+  if (fleetTotalEl) {
+    fleetTotalEl.textContent = formatNumber(d.repairs.fleet_total || 0);
   }
 
-  // 1) найдём максимальную дату
-  let maxDate = null;
-  if (idxAsOf !== -1) {
-    for (let i = 1; i < rows.length; i++) {
-      const d = parseDate(rows[i][idxAsOf]);
-      if (d && (!maxDate || d > maxDate)) maxDate = d;
-    }
+  setText('loadedToday', formatNumber(d.loaded_today));
+  setText('loadedYesterday', formatNumber(d.loaded_yesterday));
+  setText('loadedPlan', formatNumber(d.loaded_plan));
+  setText('loadedDiff', (d.loaded_diff >= 0 ? '+' : '') + formatNumber(d.loaded_diff));
+  setText('loadedDiffPct', (d.loaded_diff >= 0 ? '+' : '') + formatPercent(d.loaded_diff_pct));
+
+  setText('utilization', formatPercent(d.utilization));
+
+  setText('idleTotal', formatNumber(d.idle_total));
+  setText('idleOver5', formatNumber(d.idle_over_5));
+  setText('idleOver10', formatNumber(d.idle_over_10));
+  setText('idleOver5Pct', formatPercent(d.idle_over_5_pct));
+  setText('idleOver10Pct', formatPercent(d.idle_over_10_pct));
+
+  renderRepairsCard(d.repairs.items || [], d.date);
+  renderReceivablesTable(receivablesByClient);
+}
+
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
+}
+
+function renderReceivablesTable(clients) {
+  const tbody = document.getElementById('clientsTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  const top = (clients || []).slice(0, 15);
+
+  top.forEach(c => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${c.client}</td>
+      <td class="text-right">${formatNumber(c.total_overdue)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  const totalOverdue = top.reduce((sum, c) => sum + (c.total_overdue || 0), 0);
+  const totalEl = document.getElementById('totalOverdueTop');
+  if (totalEl) {
+    totalEl.textContent = formatNumber(totalOverdue);
   }
-
-  // 2) суммируем только строки за maxDate (или все, если даты нет)
-  const key = maxDate ? startOfDay(maxDate).getTime() : null;
-  let total = 0, overdue = 0;
-
-  for (let i = 1; i < rows.length; i++) {
-    if (key) {
-      const d = parseDate(rows[i][idxAsOf]);
-      if (!d || startOfDay(d).getTime() !== key) continue;
-    }
-    total   += toNumber(rows[i][idxTotal]);
-    overdue += toNumber(rows[i][idxOver]);
-  }
-  return { total, overdue };
 }
 
-// Дата среза (максимальный as_of_date из ar_agg_client_contract)
-function getSnapshotDateFromAggRows(rows) {
-    if (!rows || rows.length < 2) return null;
-
-    const header = rows[0];
-    const idxAsOf = header.indexOf('as_of_date');
-    if (idxAsOf === -1) {
-        console.warn('Колонка as_of_date не найдена в ar_agg_client_contract');
-        return null;
-    }
-
-    let maxDate = null;
-
-    for (let i = 1; i < rows.length; i++) {
-        const row = rows[i];
-        if (!row || !row.length) continue;
-
-        const raw = row[idxAsOf];
-        if (!raw) continue;
-
-        const d = parseDate(raw); // parseDate уже есть выше в коде
-        if (!d) continue;
-
-        if (!maxDate || d > maxDate) {
-            maxDate = d;
-        }
-    }
-
-    return maxDate;
-}
-
-// Формат вида "18 ноября"
-function formatDateRuShort(date) {
-    if (!date) return '';
-    const months = [
-        'января','февраля','марта','апреля','мая','июня',
-        'июля','августа','сентября','октября','ноября','декабря'
-    ];
-    const day = date.getDate();
-    const monthName = months[date.getMonth()];
-    return day + ' ' + monthName;
-}
-    
-function buildReceivablesByClientFromRows(rows) {
-    if (!rows || !rows.length) return [];
-
-    const header = rows[0];
-    const idxAsOf    = header.indexOf('as_of_date');
-    const idxClient  = header.indexOf('client_name');
-    const idxOverdue = header.indexOf('overdue_balance');
-
-    if (idxClient === -1 || idxOverdue === -1) {
-        console.warn('Не найдены колонки client_name / overdue_balance в ar_agg_client_contract');
-        return [];
-    }
-
-    const items = [];
-    let maxDate = null;
-
-    for (let i = 1; i < rows.length; i++) {
-        const row = rows[i];
-        if (!row || !row.length) continue;
-
-        const client = row[idxClient];
-        if (!client) continue;
-
-        const overdueVal = toNumber(row[idxOverdue]);
-        if (!overdueVal) continue; // пропускаем клиентов без просрочки
-
-        let asOfDate = null;
-        if (idxAsOf !== -1) {
-            const asOfRaw = row[idxAsOf];
-            if (asOfRaw) {
-                asOfDate = parseDate(asOfRaw);
-            }
-        }
-
-        if (asOfDate && (!maxDate || asOfDate > maxDate)) {
-            maxDate = asOfDate;
-        }
-
-        items.push({
-            client: client,
-            overdue: overdueVal,
-            asOf: asOfDate
-        });
-    }
-
-    if (!items.length) return [];
-
-    // Оставляем только записи за последнюю дату
-    let filtered = items;
-    if (maxDate) {
-        const maxKey = startOfDay(maxDate).getTime();
-        filtered = items.filter(it =>
-            it.asOf && startOfDay(it.asOf).getTime() === maxKey
-        );
-    }
-
-    // Агрегируем по клиенту
-    const sums = new Map();
-    for (const it of filtered) {
-        const key = String(it.client).trim();
-        const prev = sums.get(key) || 0;
-        sums.set(key, prev + it.overdue);
-    }
-
-    // Преобразуем в массив, сортируем и фильтруем только > 1 000 000 ₽
-    const result = Array.from(sums.entries())
-        .map(([client, overdue]) => ({ client, overdue }))
-        .filter(r => r.overdue > 1000000)          // 👈 только компании с просрочкой > 1 млн
-        .sort((a, b) => b.overdue - a.overdue);
-
-    return result;
-}
-
-
-// ==========================
-// 3. СБОРКА dashboardData
-// ==========================
-
-function buildDashboardDataFromRaw(rowObjs, monthPlanTotal) {
-    monthPlanTotal = monthPlanTotal || 0;
-    if (!rowObjs.length) {
-        return {
-            loading: {
-                loaded_wagons_month: 0,
-                planned_wagons_today: 0,
-                loaded_wagons_yesterday: 0,
-                plan_month: 0,
-                month_total_plan: monthPlanTotal,
-                progress_percent: 0
-            },
-            receivables: {
-                total_debt: 0,
-                overdue_debt: 0,
-                overdue_percent: 0
-            },
-            repairs: {
-                tr_count: 0,
-                kr_count: 0,
-                tor_count: 0,
-                fleet_total: 0,
-                tr_percent: 0,
-                kr_percent: 0,
-                tor_percent: 0
-            },
-            daily_trend: [],
-            last_update: '',
-            period_label: ''
-        };
-    }
-
-    const today = startOfDay(new Date());
-    const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
-    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-
-    // строки текущего месяца (с 1-го по вчера)
-    const rowsThisMonth = rowObjs.filter(r => {
-        const d = startOfDay(r.date);
-        return d >= monthStart && d <= yesterday;
-    });
-
-    const loadedMonth = rowsThisMonth.reduce((sum, r) => sum + (r.loaded_wagons || 0), 0);
-    const planMonth   = rowsThisMonth.reduce((sum, r) => sum + (r.planned_wagons || 0), 0);
-
-    const rowYesterday = rowObjs.find(r => startOfDay(r.date).getTime() === yesterday.getTime());
-    const loadedYesterday = rowYesterday ? rowYesterday.loaded_wagons : 0;
-
-    const rowToday = rowObjs.find(r => startOfDay(r.date).getTime() === today.getTime());
-    const plannedToday = rowToday ? rowToday.planned_wagons : 0;
-
-    // сортируем все строки по дате и берём последнюю
-    const sorted = rowObjs.slice().sort((a, b) => a.date - b.date);
-    const lastRow = sorted[sorted.length - 1];
-
-    // === НОВАЯ ЛОГИКА ДЛЯ ЗАДОЛЖЕННОСТИ ===
-    // 1) если на сегодня есть ненулевая задолженность — берём её
-    // 2) иначе берём последнюю строку до сегодня с ненулевой задолженностью
-    // 3) если не нашли — используем lastRow (как раньше)
-    const hasTodayDebt =
-        rowToday &&
-        (
-            (rowToday.total_debt  || 0) !== 0 ||
-            (rowToday.overdue_debt || 0) !== 0
-        );
-
-    let debtRow;
-    if (hasTodayDebt) {
-        debtRow = rowToday;
-    } else {
-        const reversed = sorted.slice().reverse();
-        debtRow = reversed.find(r => {
-            const d = startOfDay(r.date);
-            if (d.getTime() >= today.getTime()) return false; // только дни < сегодня
-            const td = r.total_debt || 0;
-            const od = r.overdue_debt || 0;
-            return td !== 0 || od !== 0;
-        }) || lastRow;
-    }
-
-    // период: с 1-го числа месяца последней записи по дату последней записи
-    const periodStart = new Date(lastRow.date.getFullYear(), lastRow.date.getMonth(), 1);
-    const periodLabel =
-        `Погрузка с ${formatDateDMY(periodStart)} по ${formatDateDMY(lastRow.date)}`;
-
-    // считаем задолженность по выбранной debtRow
-    const totalDebt = (debtRow && debtRow.total_debt) || 0;
-    const overdueDebt = (debtRow && debtRow.overdue_debt) || 0;
-    const overduePercent = totalDebt ? Math.round(overdueDebt / totalDebt * 100) : 0;
-
-    const fleetTotal = lastRow.fleet_total || 2000;
-
-    const tr = lastRow.tr_count || 0;
-    const kr = lastRow.kr_count || 0;
-    const tor = lastRow.tor_count || 0;
-
-    const trPercent  = fleetTotal ? Math.round(tr  / fleetTotal * 100) : 0;
-    const krPercent  = fleetTotal ? Math.round(kr  / fleetTotal * 100) : 0;
-    const torPercent = fleetTotal ? Math.round(tor / fleetTotal * 100) : 0;
-
-    const last7 = sorted.slice(-7);
-    const dailyTrend = last7.map(r => {
-        const d = r.date;
-        const dd = String(d.getDate()).padStart(2, '0');
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        return { label: `${dd}.${mm}`, wagons: r.loaded_wagons };
-    });
-
-    return {
-        loading: {
-            loaded_wagons_month: loadedMonth,
-            planned_wagons_today: plannedToday,
-            loaded_wagons_yesterday: loadedYesterday,
-            plan_month: planMonth,                // «По плану» (накопительный план)
-            month_total_plan: monthPlanTotal,     // План на месяц (из L1)
-            progress_percent: planMonth ? Math.round(loadedMonth / planMonth * 100) : 0
-        },
-
-        receivables: {
-            total_debt: totalDebt,
-            overdue_debt: overdueDebt,
-            overdue_percent: overduePercent
-        },
-        repairs: {
-            tr_count: tr,
-            kr_count: kr,
-            tor_count: tor,
-            fleet_total: fleetTotal,
-            tr_percent: trPercent,
-            kr_percent: krPercent,
-            tor_percent: torPercent
-        },
-        daily_trend: dailyTrend,
-        last_update: lastRow.timestamp,
-        period_label: periodLabel
-    };
-}
-
-
-
-async function loadDataFromSheet() {
-  let snapshotDate = null; // будет использоваться и для ремонтов
-  // 1) основной raw_data
-  const res = await fetch(SHEET_CSV_URL);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const csvText = await res.text();
-    const rows = parseCSV(csvText);
-   
-    // Ищем план на месяц в первой строке (как было)
-    let monthPlanFromHeader = 0;
-    if (rows.length) {
-        const headerRow = rows[0];
-        for (let i = headerRow.length - 1; i >= 0; i--) {
-            const cell = headerRow[i];
-            if (cell !== '') {
-                monthPlanFromHeader = toNumber(cell);
-                break;
-            }
-        }
-    }
-
-    const rowObjs = rowsToObjects(rows);
-    dashboardData = buildDashboardDataFromRaw(rowObjs, monthPlanFromHeader);
-        // 3) ar_payments_daily
-    if (SHEET_PAYMENTS_CSV_URL) {
-        try {
-            const resPay = await fetch(SHEET_PAYMENTS_CSV_URL);
-            if (resPay.ok) {
-                const csvTextPay = await resPay.text();
-                const rowsPay = parseCSV(csvTextPay);
-
-                const payments = buildPaymentsFromRows(rowsPay);
-                paymentsLastDate = payments.lastDate;
-                paymentsByClient = payments.items;
-            } else {
-                console.warn('Не удалось загрузить ar_payments_daily, статус:', resPay.status);
-            }
-        } catch (e) {
-            console.error('Ошибка загрузки ar_payments_daily:', e);
-        }
-    }
-    // 2) структура просрочки по клиентам + суммы из ar_agg_client_contract
-    receivablesByClient = [];
-
-    if (SHEET_CLIENTS_CSV_URL) {
-        try {
-            const resClients = await fetch(SHEET_CLIENTS_CSV_URL);
-            if (resClients.ok) {
-                const csvTextClients = await resClients.text();
-                const rowsClients = parseCSV(csvTextClients);
-                // дата среза (аналог G1 на листе ar_agg_client_contract)
-                  snapshotDate = getSnapshotDateFromAggRows(rowsClients);
-                if (snapshotDate && dashboardData) {
-                    dashboardData.receivables_date = snapshotDate;
-                }
-
-                // а) считаем общую и просроченную задолженность по agg-листу
-                const aggTotals = computeTotalsFromAggRows(rowsClients);
-                    if (dashboardData && dashboardData.receivables) {
-                        dashboardData.receivables.total_debt   = aggTotals.total;
-                        dashboardData.receivables.overdue_debt = aggTotals.overdue;
-                        dashboardData.receivables.overdue_percent =
-                            aggTotals.total
-                                ? Math.round(aggTotals.overdue / aggTotals.total * 100)
-                                : 0;
-                    }
-
-                // б) строим структуру по клиентам (ТОП > 1 млн)
-                receivablesByClient = buildReceivablesByClientFromRows(rowsClients);
-            } else {
-                console.warn('Не удалось загрузить ar_agg_client_contract, статус:', resClients.status);
-            }
-        } catch (e) {
-            console.error('Ошибка загрузки сводки по клиентам:', e);
-        }
-    }
-      // 4) repairs_snapshot (последним, когда уже есть snapshotDate)
-  try {
-    const repairsCsv = await fetch(SHEET_REPAIRS_CSV_URL).then(r => r.text());
-    const repRows = parseCSV(repairsCsv);
-    const repairsItems = buildRepairsFromSnapshot(repRows);
-    renderRepairsCard(repairsItems, snapshotDate);
-  } catch (e) {
-    console.error('Ошибка загрузки repairs_snapshot:', e);
-    renderRepairsCard([], snapshotDate);
-  }
-
-}
-
-// ==========================
-// 4. ФОРМАТИРОВАНИЕ / ВРЕМЯ
-// ==========================
-
-function formatNumber(num) {
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-}
-
-function formatCurrency(amount) {
-    const millions = (amount / 1000000).toFixed(1);
-    return `${millions} млн. р.`;
-}
-    function formatMillions(amount) {
-  const millions = (amount / 1_000_000).toFixed(1);
-  return millions;
-}
-
-function updateDateTime() {
-    const now = new Date();
-    const options = {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-    };
-    document.getElementById('currentDateTime').textContent =
-        now.toLocaleDateString('ru-RU', options);
-}
-    
-function formatUpdatedAt(date) {
-    const dd = String(date.getDate()).padStart(2, '0');
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    const yyyy = date.getFullYear();
-    const hh = String(date.getHours()).padStart(2, '0');
-    const min = String(date.getMinutes()).padStart(2, '0');
-    const ss = String(date.getSeconds()).padStart(2, '0');
-    return `${dd}-${mm}-${yyyy} ${hh}:${min}:${ss}`;
-}
-
-// ==========================
-// 5. ЗАПОЛНЕНИЕ КАРТОЧЕК
-// ==========================
-function renderReceivablesByClient() {
-    const panel = document.getElementById('clientsOverduePanel');
-    const tbody = document.getElementById('clientsOverdueBody');
-    const toggle = document.getElementById('toggleClientsOverdue');
-
-    if (!panel || !tbody || !toggle) return;
-
-    tbody.innerHTML = '';
-
-    if (!receivablesByClient || !receivablesByClient.length) {
-        const tr = document.createElement('tr');
-        const td = document.createElement('td');
-        td.colSpan = 3;
-        td.textContent = 'Нет данных по просроченной задолженности.';
-        td.style.fontSize = '12px';
-        td.style.color = 'var(--text-secondary)';
-        tr.appendChild(td);
-        tbody.appendChild(tr);
-        toggle.disabled = true;
-        return;
-    }
-
-    toggle.disabled = false;
-
-    const totalOverdue = receivablesByClient.reduce((sum, r) => sum + r.overdue, 0);
-
-    receivablesByClient.forEach(row => {
-        const tr = document.createElement('tr');
-
-        const tdClient = document.createElement('td');
-        tdClient.textContent = row.client;
-        tr.appendChild(tdClient);
-
-        const tdAmount = document.createElement('td');
-        tdAmount.className = 'amount';
-        tdAmount.textContent = formatCurrency(row.overdue);
-        tr.appendChild(tdAmount);
-
-        const tdPerc = document.createElement('td');
-        tdPerc.className = 'percent';
-        const p = totalOverdue ? Math.round(row.overdue / totalOverdue * 100) : 0;
-        tdPerc.textContent = p + '%';
-        tr.appendChild(tdPerc);
-
-        tbody.appendChild(tr);
-    });
-}
-    
-function renderPaymentsCard() {
-    const dateLabel = document.getElementById('paymentsDateLabel');
-    const selectEl  = document.getElementById('paymentsCompanySelect');
-    const amountEl  = document.getElementById('paymentsAmountValue');
-
-    if (!dateLabel || !selectEl || !amountEl) return;
-
-    // Подпись даты
-    if (paymentsLastDate) {
-        dateLabel.textContent = 'Данные на ' + formatDateRuShort(paymentsLastDate);
-    } else {
-        dateLabel.textContent = 'Нет данных о поступлениях';
-    }
-
-    // Наполняем список компаний
-    selectEl.innerHTML = '';
-
-    if (!paymentsByClient || !paymentsByClient.length) {
-        const opt = document.createElement('option');
-        opt.value = '';
-        opt.textContent = 'Нет данных';
-        selectEl.appendChild(opt);
-        amountEl.textContent = '0 ₽';
-        return;
-    }
-
-    paymentsByClient.forEach((item, idx) => {
-        const opt = document.createElement('option');
-        opt.value = idx; // индекс в массиве
-        opt.textContent = item.client;
-        selectEl.appendChild(opt);
-    });
-
-    // обработчик выбора
-    selectEl.onchange = function() {
-        const idx = Number(this.value);
-        if (isNaN(idx) || !paymentsByClient[idx]) {
-            amountEl.textContent = '0 ₽';
-            return;
-        }
-        const amount = paymentsByClient[idx].amount || 0;
-        amountEl.textContent = formatCurrency(amount);
-    };
-
-    // выставляем первичного клиента
-    selectEl.value = '0';
-    const first = paymentsByClient[0];
-    amountEl.textContent = formatCurrency(first.amount || 0);
-}
 function renderRepairsCard(items, dateStr) {
-  const order = ['ТОР','ДР','КР','ДРА','промывка'];
-  const mapName = {
-    TOR: 'ТОР', DR:'ДР', KR:'КР', DRA:'ДРА', WASH:'промывка'
+  const order = ['TOR','DR','KR','DRA','WASH'];
+  const labels = {
+    TOR: 'ТОР',
+    DR:  'ДР',
+    KR:  'КР',
+    DRA: 'ДРА',
+    WASH:'Промывка'
   };
 
-  // Тоталы
   const list = document.getElementById('repairsTotalsList');
+  if (!list) return;
   list.innerHTML = '';
-  const normalized = {};
-  items.forEach(x => { normalized[x.type.toLowerCase()] = x; });
 
-  order.forEach(name => {
-    const key = name.toLowerCase();
+  const normalized = {};
+  (items || []).forEach(x => {
+    if (!x || !x.type) return;
+    const key = String(x.type).toUpperCase().trim();
+    normalized[key] = x;
+  });
+
+  // Тоталы по видам
+  order.forEach(code => {
+    const x = normalized[code] || { total: 0 };
     const row = document.createElement('div');
     row.className = 'metric-row';
     row.innerHTML = `
-      <span class="metric-label">${name}</span>
-      <span class="metric-value">${(normalized[key]?.total || 0)}</span>
+      <span class="metric-label">${labels[code] || code}</span>
+      <span class="metric-value">${formatNumber(x.total || 0)}</span>
     `;
     list.appendChild(row);
   });
 
   // Таблица по стадиям
   const tbody = document.getElementById('repairsTableBody');
-  tbody.innerHTML = '';
-  order.forEach(name=>{
-    const key = name.toLowerCase();
-    const x = normalized[key] || {in_repair:0,in_transit:0,await_reg:0,await_dispatch:0,total:0};
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${name}</td>
-      <td>${x.in_repair}</td>
-      <td>${x.in_transit}</td>
-      <td>${x.await_reg}</td>
-      <td>${x.await_dispatch}</td>
-      <td><b>${x.total}</b></td>
-    `;
-    tbody.appendChild(tr);
-  });
+  if (tbody) {
+    tbody.innerHTML = '';
+    order.forEach(code => {
+      const x = normalized[code] || {
+        in_repair: 0,
+        in_transit: 0,
+        await_reg: 0,
+        await_dispatch: 0,
+        total: 0,
+      };
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${labels[code] || code}</td>
+        <td>${x.in_repair || 0}</td>
+        <td>${x.in_transit || 0}</td>
+        <td>${x.await_reg || 0}</td>
+        <td>${x.await_dispatch || 0}</td>
+        <td><b>${x.total || 0}</b></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
 
   const dateEl = document.getElementById('repairsDate');
-  dateEl.textContent = dateStr ? ('Данные на ' + formatDateRuShort(dateStr)) : '';
+  if (dateEl) {
+    dateEl.textContent = dateStr ? ('Данные на ' + formatDateRuShort(dateStr)) : '';
+  }
 
   const btn = document.getElementById('toggleRepairsTable');
-  btn.onclick = ()=> document.getElementById('repairsTablePanel').classList.toggle('hidden');
-}
-function populateDashboard() {
-    if (!dashboardData) return;
-
-    // --- Погрузка ---
-    document.getElementById('loadedWagonsMonth').textContent =
-        formatNumber(dashboardData.loading.loaded_wagons_month);
-    document.getElementById('progressPercent').textContent =
-        `${dashboardData.loading.progress_percent}%`;
-    document.getElementById('progressFill').style.width =
-        `${dashboardData.loading.progress_percent}%`;
-    document.getElementById('planMonth').textContent =
-        formatNumber(dashboardData.loading.plan_month);
-    document.getElementById('fullMonthPlan').textContent =
-        formatNumber(dashboardData.loading.month_total_plan || 0);
-    document.getElementById('loadedYesterday').textContent =
-        formatNumber(dashboardData.loading.loaded_wagons_yesterday);
-
-    // --- Задолженность ---
-    document.getElementById('totalDebt').textContent =
-        formatCurrency(dashboardData.receivables.total_debt);
-    document.getElementById('overdueDebt').textContent =
-        formatCurrency(dashboardData.receivables.overdue_debt);
-    document.getElementById('overduePercent').textContent =
-        `${dashboardData.receivables.overdue_percent}%`;
-    document.getElementById('overdueProgressFill').style.width =
-        `${dashboardData.receivables.overdue_percent}%`;
-
-    // Подпись под заголовком "ЗАДОЛЖЕННОСТЬ"
-    const dateEl = document.getElementById('receivablesDate');
-    if (dateEl) {
-        if (dashboardData.receivables_date) {
-            dateEl.textContent = 'Данные на ' + formatDateRuShort(dashboardData.receivables_date);
-        } else {
-            dateEl.textContent = '';
-        }
-    }
-
-    // Структура просрочки по клиентам
-    renderReceivablesByClient();
-
-    // --- Поступления (общая сумма + таблица по клиентам) ---
-    if (paymentsByClient && paymentsByClient.length) {
-        const totalPayments = paymentsByClient.reduce(
-            (sum, p) => sum + (p.amount || 0), 0
-        );
-        updatePaymentsTotal(totalPayments);
-        renderPaymentsByClient(paymentsByClient);
-    } else {
-        updatePaymentsTotal(0);
-        renderPaymentsByClient([]);
-    }
-
-    // --- Ремонты ---
-
-    document.getElementById('fleetTotal').textContent =
-        formatNumber(dashboardData.repairs.fleet_total);
-
-    document.getElementById('lastUpdate').textContent =
-        dashboardData.period_label || '—';
-}
-
-
-// ==========================
-// 6. ГРАФИК
-// ==========================
-
-function createTrendChart() {
-    const ctx = document.getElementById('trendChart').getContext('2d');
-    if (trendChart) trendChart.destroy();
-
-    const labels = dashboardData.daily_trend.map(d => d.label);
-    const data = dashboardData.daily_trend.map(d => d.wagons);
-
-    trendChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels,
-            datasets: [{
-                label: 'Погружено вагонов',
-                data,
-                borderColor: '#20b2aa',
-                backgroundColor: 'rgba(32, 178, 170, 0.12)',
-                borderWidth: 3,
-                tension: 0.3,
-                fill: true,
-                pointBackgroundColor: '#20b2aa',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-                pointRadius: 4,
-                pointHoverRadius: 6
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: true, position: 'top' },
-                tooltip: {
-                    callbacks: {
-                        label: ctx => 'Вагонов: ' + formatNumber(ctx.parsed.y)
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    ticks: {
-                        callback: value => formatNumber(value)
-                    }
-                }
-            }
-        }
-    });
+  if (btn) {
+    btn.onclick = () => {
+      const panel = document.getElementById('repairsTablePanel');
+      if (panel) panel.classList.toggle('hidden');
+    };
+  }
 }
 
 // ==========================
-// 7. ОБНОВЛЕНИЕ ПО КНОПКЕ
+// 9. ОБНОВЛЕНИЕ ДАННЫХ
 // ==========================
-
 async function refreshData() {
-    const btn = document.querySelector('.refresh-btn');
-    if (btn) btn.disabled = true;
+  const btn = document.querySelector('.refresh-btn');
+  if (btn) btn.disabled = true;
 
-    try {
-        await loadDataFromSheet();
-        populateDashboard();
-        createTrendChart();
+  try {
+    await loadDataFromSheet();
+    populateDashboard();
 
-        // ставим время последнего успешного обновления
-        const updatedEl = document.getElementById('dataUpdatedAt');
-        if (updatedEl) {
-            const now = new Date();
-            updatedEl.textContent = 'Данные обновлены: ' + formatUpdatedAt(now);
-        }
-
-        if (btn) {
-            btn.textContent = '✓ Обновлено!';
-            setTimeout(() => {
-                btn.textContent = '🔄 Обновить данные';
-                btn.disabled = false;
-            }, 1500);
-        }
-    } catch (e) {
-        console.error('Ошибка обновления данных:', e);
-        const updatedEl = document.getElementById('dataUpdatedAt');
-        if (updatedEl) {
-            updatedEl.textContent = 'Ошибка обновления данных';
-        }
-        const lastUpdEl = document.getElementById('lastUpdate');
-        if (lastUpdEl) {
-            lastUpdEl.textContent = 'Ошибка загрузки';
-        }
-        if (btn) {
-            btn.textContent = 'Ошибка 😕';
-            setTimeout(() => {
-                btn.textContent = '🔄 Обновить данные';
-                btn.disabled = false;
-            }, 2000);
-        }
+    const updatedEl = document.getElementById('dataUpdatedAt');
+    if (updatedEl) {
+      const now = new Date();
+      updatedEl.textContent = 'Данные обновлены: ' + formatUpdatedAt(now);
     }
-}
 
-// === Поступления: рендер суммы и списка клиентов ===
+    const lastUpdEl = document.getElementById('lastUpdate');
+    if (lastUpdEl && dashboardData && dashboardData.date) {
+      lastUpdEl.textContent = 'Срез на ' + formatDateRuShort(dashboardData.date);
+    }
 
-// Подставляем сумму поступлений на карточку (общая)
-function updatePaymentsTotal(sum) {
-  const el = document.getElementById('paymentsTotal');
-  if (!el) return;
-  el.textContent = formatMillions(sum) + ' млн. р.';
-}
-
-// Рендер таблицы поступлений по клиентам
-function renderPaymentsByClient(paymentsData) {
-  const panel = document.getElementById('clientsPaymentsPanel');
-  const tbody = document.getElementById('clientsPaymentsBody');
-  const toggle = document.getElementById('toggleClientsPayments');
-
-  if (!panel || !tbody || !toggle) return;
-
-  tbody.innerHTML = '';
-
-  if (!paymentsData || !paymentsData.length) {
-    const tr = document.createElement('tr');
-    const td = document.createElement('td');
-    td.colSpan = 3;
-    td.textContent = 'Нет данных о поступлениях по клиентам.';
-    td.style.fontSize = '12px';
-    td.style.color = 'var(--text-secondary)';
-    tr.appendChild(td);
-    tbody.appendChild(tr);
-    return;
+    if (btn) {
+      btn.textContent = 'Обновлено ✔';
+      setTimeout(() => {
+        btn.textContent = '🔄 Обновить данные';
+        btn.disabled = false;
+      }, 1500);
+    }
+  } catch (e) {
+    console.error('Ошибка обновления данных:', e);
+    const updatedEl = document.getElementById('dataUpdatedAt');
+    if (updatedEl) {
+      updatedEl.textContent = 'Ошибка обновления данных';
+    }
+    const lastUpdEl = document.getElementById('lastUpdate');
+    if (lastUpdEl) {
+      lastUpdEl.textContent = 'Ошибка загрузки';
+    }
+    if (btn) {
+      btn.textContent = 'Ошибка 😕';
+      setTimeout(() => {
+        btn.textContent = '🔄 Обновить данные';
+        btn.disabled = false;
+      }, 2000);
+    }
   }
-
-  const total = paymentsData.reduce((sum, r) => sum + (r.amount || 0), 0);
-
-  paymentsData.forEach(row => {
-    const tr = document.createElement('tr');
-
-    const tdClient = document.createElement('td');
-    tdClient.textContent = row.client;
-    tr.appendChild(tdClient);
-
-    const tdAmount = document.createElement('td');
-    tdAmount.className = 'amount';
-    tdAmount.textContent = formatMillions(row.amount) + ' млн. р.';
-    tr.appendChild(tdAmount);
-
-    const tdPercent = document.createElement('td');
-    tdPercent.className = 'percent';
-    const p = total ? Math.round((row.amount / total) * 100) : 0;
-    tdPercent.textContent = p + '%';
-    tr.appendChild(tdPercent);
-
-    tbody.appendChild(tr);
-  });
 }
 
-// === Обработчики кнопок раскрытия ===
+// ==========================
+// 10. ИНИЦИАЛИЗАЦИЯ
+// ==========================
 document.addEventListener('DOMContentLoaded', () => {
-  const btnOverdue = document.getElementById('toggleClientsOverdue');
-  const btnPayments = document.getElementById('toggleClientsPayments');
-
-  if (btnOverdue) {
-    btnOverdue.addEventListener('click', () => {
-      document.getElementById('clientsOverduePanel').classList.toggle('hidden');
+  const btn = document.querySelector('.refresh-btn');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      refreshData();
     });
   }
-
-  if (btnPayments) {
-    btnPayments.addEventListener('click', () => {
-      document.getElementById('clientsPaymentsPanel').classList.toggle('hidden');
-    });
-  }
+  refreshData();
 });
 
-// ==========================
-// 8. ИНИЦИАЛИЗАЦИЯ
-// ==========================
-
-async function initDashboard() {
-    // обновляем часы
-    updateDateTime();
-    setInterval(updateDateTime, 1000);
-
-    try {
-        // первый старт — сразу тянем данные
-        await refreshData();
-
-        // дальше обновляем каждые 5 минут
-        setInterval(() => {
-            refreshData();
-        }, 5 * 60 * 1000);
-    } catch (e) {
-        console.error('Ошибка инициализации:', e);
-        const el = document.getElementById('lastUpdate');
-        if (el) {
-            el.textContent = 'Ошибка загрузки';
-        }
-    }
-}
-
-document.addEventListener('DOMContentLoaded', initDashboard);
 
 </script>
 </body>
