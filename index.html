@@ -889,9 +889,7 @@ body {
               </div>
             </div>
 
-            <!-- Card 3: Repairs -->
-            <div class="metric-card">
-                              <!-- Card 3: Repairs -->
+                     <!-- Card 3: Repairs -->
             <div class="metric-card">
               <div class="card-header">
                 <div class="card-icon">🛠️</div>
@@ -903,38 +901,37 @@ body {
                   <div id="repairsDate" class="metric-label"></div>
                 </div>
               </div>
-              
+
               <div class="card-body">
                 <div id="repairsTotalsList" class="repairs-totals-grid"></div>
 
-                    <div id="repairsTotalsList" class="repairs-totals-grid"></div>
-                
-                    <div class="metric-row mt-2">
-                      <button id="toggleRepairsTable" class="link-button">▼ Развернуть структуру по ремонтам</button>
-                    </div>
-                
-                    <div id="repairsTablePanel" class="hidden">
-                      <table class="metric-table">
-                        <thead>
-                          <tr>
-                            <th>Вид ремонта</th>
-                            <th>В ремонте</th>
-                            <th>В пути</th>
-                            <th>В ожидании оформления</th>
-                            <th>В ожидании отправки</th>
-                            <th>Итого</th>
-                          </tr>
-                        </thead>
-                        <tbody id="repairsTableBody"></tbody>
-                      </table>
-                    </div>
-                      <div class="metric-row mt-2">
-                        <span class="metric-label">Всего вагонов в парке:</span>
-                        <span class="metric-value" id="fleetTotal">—</span>
-                      </div>
-                  </div>
+                <div class="metric-row mt-2">
+                  <button id="toggleRepairsTable" class="link-button">
+                    ▼ Развернуть структуру по ремонтам
+                  </button>
                 </div>
+
+                <div id="repairsTablePanel" class="hidden">
+                  <table class="metric-table">
+                    <thead>
+                      <tr>
+                        <th>Вид ремонта</th>
+                        <th>В ремонте</th>
+                        <th>В пути</th>
+                        <th>В ожидании оформления</th>
+                        <th>В ожидании отправки</th>
+                        <th>Итого</th>
+                      </tr>
+                    </thead>
+                    <tbody id="repairsTableBody"></tbody>
+                  </table>
                 </div>
+
+                <div class="metric-row mt-2">
+                  <span class="metric-label">Всего вагонов в парке:</span>
+                  <span class="metric-value" id="fleetTotal">—</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1809,6 +1806,33 @@ function renderRepairsCard(items, dateStr) {
 }
 
 
+function populateDashboard() {
+    if (!dashboardData) return;
+
+    // --- Погрузка ---
+    document.getElementById('loadedWagonsMonth').textContent =
+        formatNumber(dashboardData.loading.loaded_wagons_month);
+    document.getElementById('progressPercent').textContent =
+        `${dashboardData.loading.progress_percent}%`;
+    document.getElementById('progressFill').style.width =
+        `${dashboardData.loading.progress_percent}%`;
+    document.getElementById('planMonth').textContent =
+        formatNumber(dashboardData.loading.plan_month);
+    document.getElementById('fullMonthPlan').textContent =
+        formatNumber(dashboardData.loading.month_total_plan || 0);
+    document.getElementById('loadedYesterday').textContent =
+        formatNumber(dashboardData.loading.loaded_wagons_yesterday);
+
+    // --- Задолженность ---
+    document.getElementById('totalDebt').textContent =
+        formatCurrency(dashboardData.receivables.total_debt);
+    document.getElementById('overdueDebt').textContent =
+        formatCurrency(dashboardData.receivables.overdue_debt);
+    document.getElementById('overduePercent').textContent =
+        `${dashboardData.receivables.overdue_percent}%`;
+    document.getElementById('overdueProgressFill').style.width =
+        `${dashboardData.receivables.overdue_percent}%`;
+
     // Подпись под заголовком "ЗАДОЛЖЕННОСТЬ"
     const dateEl = document.getElementById('receivablesDate');
     if (dateEl) {
@@ -1835,13 +1859,13 @@ function renderRepairsCard(items, dateStr) {
     }
 
     // --- Ремонты ---
-
     document.getElementById('fleetTotal').textContent =
         formatNumber(dashboardData.repairs.fleet_total);
 
     document.getElementById('lastUpdate').textContent =
         dashboardData.period_label || '—';
 }
+
 
 
 // ==========================
