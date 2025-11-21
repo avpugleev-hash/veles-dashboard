@@ -320,8 +320,8 @@ body {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    flex: 1;
 }
-
 .card-header-text .metric-label {
     font-size: var(--font-size-xs);
     color: var(--text-secondary);
@@ -331,14 +331,11 @@ body {
 }
 .card-title-row {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  align-items: center;
 }
 
 .card-title-suffix {
-  font-size: var(--font-size-sm);
-  color: var(--text-secondary);
-  font-weight: var(--font-weight-medium);
+  margin-left: auto;
 }
 
 .card-title {
