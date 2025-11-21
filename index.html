@@ -331,11 +331,15 @@ body {
 }
 .card-title-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  gap: 8px;
 }
 
 .card-title-suffix {
   margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
 }
 
 .card-title {
@@ -1784,13 +1788,15 @@ function renderRepairsCard(items, dateStr) {
     if (totalInRepairs > 0) {
       const totalFormatted = formatNumber(totalInRepairs);
       if (percent > 0) {
-        headerSummaryEl.textContent = `${totalFormatted}; ${percent}%`;
+        headerSummaryEl.innerHTML =
+          `${totalFormatted}<div class="metric-label">(${percent}% от общего парка)</div>`;
       } else {
         headerSummaryEl.textContent = `${totalFormatted}`;
       }
     } else {
       headerSummaryEl.textContent = '';
     }
+
   }
 
   const btn = document.getElementById('toggleRepairsTable');
