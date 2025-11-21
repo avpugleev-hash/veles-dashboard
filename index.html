@@ -262,12 +262,29 @@ body {
 }
 .repairs-totals-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px 16px;
+  text-align: center;
 }
-.repairs-totals-grid .metric-row {
-  display: flex; justify-content: space-between;
+
+.repair-total-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
 }
+
+.repair-type-label {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.repair-type-value {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
 
 /* Metrics Grid */
 .metrics-grid {
@@ -311,6 +328,17 @@ body {
 }
 .card-icon {
     font-size: 32px;
+}
+.card-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.card-title-suffix {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
 }
 
 .card-title {
@@ -863,13 +891,22 @@ body {
 
             <!-- Card 3: Repairs -->
             <div class="metric-card">
-                  <div class="card-header">
-                    <div class="card-icon">🛠️</div>
+                              <!-- Card 3: Repairs -->
+            <div class="metric-card">
+              <div class="card-header">
+                <div class="card-icon">🛠️</div>
+                <div class="card-header-text">
+                  <div class="card-title-row">
                     <h2 class="card-title">РЕМОНТЫ</h2>
-                    <div id="repairsDate" class="metric-label"></div>
+                    <span id="repairsHeaderSummary" class="card-title-suffix"></span>
                   </div>
-                
-                  <div class="card-body">
+                  <div id="repairsDate" class="metric-label"></div>
+                </div>
+              </div>
+              
+              <div class="card-body">
+                <div id="repairsTotalsList" class="repairs-totals-grid"></div>
+
                     <div id="repairsTotalsList" class="repairs-totals-grid"></div>
                 
                     <div class="metric-row mt-2">
@@ -1671,7 +1708,7 @@ function renderPaymentsCard() {
 }
 function renderRepairsCard(items, dateStr) {
   // Коды из таблицы: TOR, DR, KR, DRA, WASH
-  const order = ['TOR','DR','KR','DRA','WASH'];
+  const order = ['TOR', 'DR', 'KR', 'DRA', 'WASH'];
   const labels = {
     TOR: 'ТОР',
     DR:  'ДР',
@@ -1685,20 +1722,24 @@ function renderRepairsCard(items, dateStr) {
   list.innerHTML = '';
 
   const normalized = {};
+  let totalInRepairs = 0;
+
   (items || []).forEach(x => {
     if (!x || !x.type) return;
     const key = String(x.type).toUpperCase().trim(); // TOR/DR/...
-    normalized[key] = x;
+    const total = Number(x.total) || 0;
+    normalized[key] = Object.assign({}, x, { total });
+    totalInRepairs += total;
   });
 
-  // Тоталы по видам ремонта
+  // Тоталы по видам ремонта (верхняя строка карточки)
   order.forEach(code => {
     const x = normalized[code] || { total: 0 };
     const row = document.createElement('div');
-    row.className = 'metric-row';
+    row.className = 'repair-total-item';
     row.innerHTML = `
-      <span class="metric-label">${labels[code] || code}</span>
-      <span class="metric-value">${x.total || 0}</span>
+      <div class="repair-type-label">${labels[code] || code}</div>
+      <div class="repair-type-value">${x.total || 0}</div>
     `;
     list.appendChild(row);
   });
@@ -1728,9 +1769,34 @@ function renderRepairsCard(items, dateStr) {
     });
   }
 
+  // Подпись "Данные на ..." под заголовком
   const dateEl = document.getElementById('repairsDate');
   if (dateEl) {
     dateEl.textContent = dateStr ? ('Данные на ' + formatDateRuShort(dateStr)) : '';
+  }
+
+  // Итог по ремонтам в заголовке: (N; X%)
+  const headerSummaryEl = document.getElementById('repairsHeaderSummary');
+  if (headerSummaryEl) {
+    const fleetTotal =
+      dashboardData &&
+      dashboardData.repairs &&
+      dashboardData.repairs.fleet_total
+        ? dashboardData.repairs.fleet_total
+        : 0;
+
+    const percent = fleetTotal ? Math.round((totalInRepairs / fleetTotal) * 100) : 0;
+
+    if (totalInRepairs > 0) {
+      const totalFormatted = formatNumber(totalInRepairs);
+      if (percent > 0) {
+        headerSummaryEl.textContent = `(${totalFormatted}; ${percent}%)`;
+      } else {
+        headerSummaryEl.textContent = `(${totalFormatted})`;
+      }
+    } else {
+      headerSummaryEl.textContent = '';
+    }
   }
 
   const btn = document.getElementById('toggleRepairsTable');
@@ -1742,32 +1808,6 @@ function renderRepairsCard(items, dateStr) {
   }
 }
 
-function populateDashboard() {
-    if (!dashboardData) return;
-
-    // --- Погрузка ---
-    document.getElementById('loadedWagonsMonth').textContent =
-        formatNumber(dashboardData.loading.loaded_wagons_month);
-    document.getElementById('progressPercent').textContent =
-        `${dashboardData.loading.progress_percent}%`;
-    document.getElementById('progressFill').style.width =
-        `${dashboardData.loading.progress_percent}%`;
-    document.getElementById('planMonth').textContent =
-        formatNumber(dashboardData.loading.plan_month);
-    document.getElementById('fullMonthPlan').textContent =
-        formatNumber(dashboardData.loading.month_total_plan || 0);
-    document.getElementById('loadedYesterday').textContent =
-        formatNumber(dashboardData.loading.loaded_wagons_yesterday);
-
-    // --- Задолженность ---
-    document.getElementById('totalDebt').textContent =
-        formatCurrency(dashboardData.receivables.total_debt);
-    document.getElementById('overdueDebt').textContent =
-        formatCurrency(dashboardData.receivables.overdue_debt);
-    document.getElementById('overduePercent').textContent =
-        `${dashboardData.receivables.overdue_percent}%`;
-    document.getElementById('overdueProgressFill').style.width =
-        `${dashboardData.receivables.overdue_percent}%`;
 
     // Подпись под заголовком "ЗАДОЛЖЕННОСТЬ"
     const dateEl = document.getElementById('receivablesDate');
