@@ -1086,8 +1086,35 @@ function toNumber(value) {
 }
 
 function parseCSV(csvText) {
-    const lines = csvText.trim().split(/\r?\n/);
-    return lines.map(line => line.split(',').map(c => c.trim()));
+  const lines = csvText.trim().split(/\r?\n/);
+
+  return lines.map((line) => {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+
+      if (ch === '"') {
+        // удвоенные кавычки внутри поля
+        if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (ch === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += ch;
+      }
+    }
+
+    result.push(current.trim());
+    return result;
+  });
 }
 
 function parseDate(dateStr) {
