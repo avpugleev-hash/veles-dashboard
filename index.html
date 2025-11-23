@@ -680,13 +680,17 @@ body {
     color: var(--text-secondary);
 }
 
-/* Chart Section */
+/* Chart Section — скрываем полностью */
 .chart-section {
+    display: none; /* график и весь блок больше не виден на дашборде */
+
+    /* остальные стили можно оставить/удалить по желанию */
     background: var(--bg-card);
     border-radius: var(--radius-lg);
     padding: var(--space-24);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    border: 1px solid var(--border-color);
+    flex-direction: column;
+    gap: var(--space-16);
 }
 
 .chart-header {
