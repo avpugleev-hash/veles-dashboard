@@ -1323,11 +1323,15 @@ function buildPayablesFromRows(rows) {
   let idxOver = header.indexOf('overdue_balance');
   if (idxOver === -1) idxOver = header.indexOf('overdue_balanc'); // на всякий случай
 
- let idxMax = header.indexOf('max_days_overdue');
+let idxMax = header.indexOf('max_days_overdue');
 if (idxMax === -1) idxMax = header.indexOf('max_days_overd');
 
 let idxAvg = header.indexOf('avg_days_overdue');
 if (idxAvg === -1) idxAvg = header.indexOf('avg_days_overd');
+
+// колонка с суммой документа с максимальной отсрочкой
+let idxMaxDoc = header.indexOf('max_doc_balance');
+if (idxMaxDoc === -1) idxMaxDoc = header.indexOf('max_doc_balanc');
 
 // какую колонку использовать для отображения отсрочки
 const idxDelay = idxMax !== -1 ? idxMax : idxAvg;
@@ -1361,6 +1365,7 @@ const idxDelay = idxMax !== -1 ? idxMax : idxAvg;
       total: toNumber(r[idxTotal]),
       overdue: idxOver !== -1 ? toNumber(r[idxOver]) : 0,
       avg_overdue: idxDelay !== -1 ? toNumber(r[idxDelay]) : 0,
+      max_doc_balance: idxMaxDoc !== -1 ? toNumber(r[idxMaxDoc]) : 0,
     });
   }
 
@@ -1386,11 +1391,12 @@ const idxDelay = idxMax !== -1 ? idxMax : idxAvg;
     overdue += r.overdue;
 
     // в список для раскрытия — только поставщики с долгом > 1 млн
-    if (r.total > 1_000_000) {
+       if (r.total > 1_000_000) {
       suppliers.push({
         supplier: r.supplier,
         total: r.total,
         avg_overdue: r.avg_overdue,
+        max_doc_balance: r.max_doc_balance,
       });
     }
   }
@@ -1870,9 +1876,18 @@ function renderPayablesSuppliers() {
 
     const tdAvg = document.createElement('td');
     tdAvg.className = 'percent';
-    tdAvg.textContent = row.avg_overdue
-      ? Math.round(row.avg_overdue) + ' д.'
-      : '—';
+
+    if (row.avg_overdue) {
+      const days = Math.round(row.avg_overdue);
+      let text = days + ' д.';
+      if (row.max_doc_balance) {
+        text += ' (' + formatMillions(row.max_doc_balance) + ' млн)';
+      }
+      tdAvg.textContent = text;
+    } else {
+      tdAvg.textContent = '—';
+    }
+
     tr.appendChild(tdAvg);
 
     tbody.appendChild(tr);
