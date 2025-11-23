@@ -421,6 +421,16 @@ body {
     align-items: center;
     margin-bottom: var(--space-8);
 }
+.subsection-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: var(--space-8);
+}
+.subsection-header .metric-label:first-child {
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
 
 .metric-value {
     font-size: var(--font-size-lg);
@@ -807,145 +817,144 @@ body {
                     </div>
                 </div>
             </div>
-<!-- Card: Receivables (Задолженность + Поступления) -->
-            <div class="metric-card">
-              <div class="card-header">
-                <div class="card-icon">💳</div>
-                <div class="card-header-text">
-                  <h2 class="card-title">ЗАДОЛЖЕННОСТЬ</h2>
-                  <div id="receivablesDate" class="metric-label"></div>
-                </div>
-              </div>
-            
-              <div class="card-body">
-                <!-- Общая задолженность -->
-                <div class="metric-row">
-                  <span class="metric-label">Общая задолженность:</span>
-                  <span id="totalDebt" class="metric-value">0 млн. р.</span>
-                </div>
-            
-                <!-- Просроченная -->
-                <div class="metric-row">
-                  <span class="metric-label">Просроченная:</span>
-                  <span id="overdueDebt" class="metric-value text-accent">0 млн. р.</span>
-                </div>
-            
-                <!-- Доля просроченной -->
-                <div class="metric-row">
-                  <span class="metric-label">Доля просроченной</span>
-                  <span id="overduePercent" class="metric-value text-accent">0%</span>
-                </div>
-            
-                <div class="progress-bar">
-                  <div id="overdueProgressFill" class="progress-fill"></div>
-                </div>
-            
-                <!-- Кнопка: структура по клиентам -->
-                <div class="metric-row mt-2">
-                  <button id="toggleClientsOverdue" class="link-button">
-                    ▼ Развернуть структуру по клиентам
-                  </button>
-                </div>
-            
-                <!-- Панель: структура просроченной задолженности по клиентам -->
-                <div id="clientsOverduePanel" class="hidden">
-                  <table class="metric-table">
-                    <thead>
-                      <tr>
-                        <th>Клиент</th>
-                        <th>Просроченная</th>
-                        <th>%</th>
-                      </tr>
-                    </thead>
-                    <tbody id="clientsOverdueBody"></tbody>
-                  </table>
-                </div>
-            
-                <!-- Блок поступлений: опускаем ниже структуры -->
-                <div class="metric-row mt-4">
-                  <span class="metric-label">Поступления:</span>
-                  <span id="paymentsTotal" class="metric-value">0 млн. р.</span>
-                </div>
-            
-                <!-- Кнопка: поступления по клиентам -->
-                <div class="metric-row mt-1">
-                  <button id="toggleClientsPayments" class="link-button">
-                    ▼ Развернуть поступления по клиентам
-                  </button>
-                </div>
-            
-                <!-- Панель: поступления по клиентам -->
-                <div id="clientsPaymentsPanel" class="hidden">
-                  <table class="metric-table">
-                    <thead>
-                      <tr>
-                        <th>Клиент</th>
-                        <th>Поступления</th>
-                        <th>%</th>
-                      </tr>
-                    </thead>
-                    <tbody id="clientsPaymentsBody"></tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-
-                     <!-- Card 3: Repairs -->
-            <div class="metric-card">
-              <div class="card-header">
-                <div class="card-icon">🛠️</div>
-                <div class="card-header-text">
-                  <div class="card-title-row">
-                    <h2 class="card-title">РЕМОНТЫ</h2>
-                    <span id="repairsHeaderSummary" class="metric-value card-title-suffix"></span>
-                  </div>
-                  <div id="repairsDate" class="metric-label"></div>
-                </div>
-              </div>
-
-              <div class="card-body">
-                <div id="repairsTotalsList" class="repairs-totals-grid"></div>
-
-                <div class="metric-row mt-2">
-                  <button id="toggleRepairsTable" class="link-button">
-                    ▼ Развернуть структуру по ремонтам
-                  </button>
-                </div>
-
-                <div id="repairsTablePanel" class="hidden">
-                  <table class="metric-table">
-                    <thead>
-                      <tr>
-                        <th>Вид ремонта</th>
-                        <th>В ремонте</th>
-                        <th>В пути</th>
-                        <th>В ожидании оформления</th>
-                        <th>В ожидании отправки</th>
-                        <th>Итого</th>
-                      </tr>
-                    </thead>
-                    <tbody id="repairsTableBody"></tbody>
-                  </table>
-                </div>
-
-                <div class="metric-row mt-2">
-                  <span class="metric-label">Всего вагонов в парке:</span>
-                  <span class="metric-value" id="fleetTotal">—</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-        <!-- Chart Section -->
-        <div class="chart-section">
-            <div class="chart-header">
-                <h3 class="chart-title">Динамика погрузки за последние 7 дней</h3>
-            </div>
-            <div class="chart-container">
-                <canvas id="trendChart"></canvas>
-            </div>
-        </div>
+<!-- Card: Receivables (Дебиторка) + Payables (Кредиторка) -->
+<div class="metric-card">
+  <div class="card-header">
+    <div class="card-icon">💳</div>
+    <div class="card-header-text">
+      <h2 class="card-title">ЗАДОЛЖЕННОСТЬ</h2>
     </div>
+  </div>
+
+  <div class="card-body">
+
+    <!-- == БЛОК 1: ДЕБИТОРСКАЯ ЗАДОЛЖЕННОСТЬ == -->
+    <div class="subsection-header">
+      <span class="metric-label"><strong>Дебиторская задолженность</strong></span>
+      <span id="receivablesDate" class="metric-label"></span>
+    </div>
+
+    <!-- Общая задолженность -->
+    <div class="metric-row">
+      <span class="metric-label">Общая задолженность:</span>
+      <span id="totalDebt" class="metric-value">0 млн. р.</span>
+    </div>
+
+    <!-- Просроченная -->
+    <div class="metric-row">
+      <span class="metric-label">Просроченная:</span>
+      <span id="overdueDebt" class="metric-value text-accent">0 млн. р.</span>
+    </div>
+
+    <!-- Доля просроченной -->
+    <div class="metric-row">
+      <span class="metric-label">Доля просроченной</span>
+      <span id="overduePercent" class="metric-value text-accent">0%</span>
+    </div>
+
+    <div class="progress-bar">
+      <div id="overdueProgressFill" class="progress-fill warning"></div>
+    </div>
+
+    <!-- Кнопка: структура по клиентам -->
+    <div class="metric-row mt-2">
+      <button id="toggleClientsOverdue" class="link-button">
+        ▼ Развернуть структуру по клиентам
+      </button>
+    </div>
+
+    <!-- Панель: структура просроченной задолженности по клиентам -->
+    <div id="clientsOverduePanel" class="hidden">
+      <table class="metric-table">
+        <thead>
+          <tr>
+            <th>Клиент</th>
+            <th>Просроченная</th>
+            <th>%</th>
+          </tr>
+        </thead>
+        <tbody id="clientsOverdueBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Поступления -->
+    <div class="metric-row mt-4">
+      <span class="metric-label">Поступления:</span>
+      <span id="paymentsTotal" class="metric-value">0 млн. р.</span>
+    </div>
+
+    <!-- Кнопка: поступления по клиентам -->
+    <div class="metric-row mt-1">
+      <button id="toggleClientsPayments" class="link-button">
+        ▼ Развернуть поступления по клиентам
+      </button>
+    </div>
+
+    <!-- Панель: поступления по клиентам -->
+    <div id="clientsPaymentsPanel" class="hidden">
+      <table class="metric-table">
+        <thead>
+          <tr>
+            <th>Клиент</th>
+            <th>Поступления</th>
+            <th>%</th>
+          </tr>
+        </thead>
+        <tbody id="clientsPaymentsBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Разделитель между дебиторкой и кредиторкой -->
+    <div class="mt-4" style="border-top: 1px dashed rgba(148, 163, 184, 0.6); padding-top: var(--space-16);">
+
+      <!-- == БЛОК 2: КРЕДИТОРСКАЯ ЗАДОЛЖЕННОСТЬ == -->
+      <div class="subsection-header">
+        <span class="metric-label"><strong>Кредиторская задолженность</strong></span>
+        <span id="payablesDate" class="metric-label"></span>
+      </div>
+
+      <div class="metric-row">
+        <span class="metric-label">Общий долг:</span>
+        <span id="apTotalDebt" class="metric-value">0 млн. р.</span>
+      </div>
+
+      <div class="metric-row">
+        <span class="metric-label">Просроченная:</span>
+        <span id="apOverdueDebt" class="metric-value text-accent">0 млн. р.</span>
+      </div>
+
+      <div class="metric-row">
+        <span class="metric-label">Доля просроченной</span>
+        <span id="apOverduePercent" class="metric-value text-accent">0%</span>
+      </div>
+
+      <div class="progress-bar">
+        <div id="apOverdueProgressFill" class="progress-fill warning"></div>
+      </div>
+
+      <!-- Кнопка: поставщики с долгом > 1 млн -->
+      <div class="metric-row mt-2">
+        <button id="toggleSuppliersPayables" class="link-button">
+          ▼ Развернуть структуру по поставщикам (&gt; 1 млн)
+        </button>
+      </div>
+
+      <div id="suppliersPayablesPanel" class="hidden">
+        <table class="metric-table">
+          <thead>
+            <tr>
+              <th>Поставщик</th>
+              <th>Долг</th>
+              <th>Средняя просрочка, дней</th>
+            </tr>
+          </thead>
+          <tbody id="suppliersPayablesBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
@@ -962,12 +971,15 @@ const SHEET_CLIENTS_CSV_URL =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vRy08FvutySDNk8yvn0QKdT92-uWjRqaxqi2057Tl42Ai2zLS4L833E2g2GdgBnpFX-t5uwX6JUcmg4/pub?gid=57311955&single=true&output=csv';
 const SHEET_PAYMENTS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRy08FvutySDNk8yvn0QKdT92-uWjRqaxqi2057Tl42Ai2zLS4L833E2g2GdgBnpFX-t5uwX6JUcmg4/pub?gid=740110225&single=true&output=csv';
 const SHEET_REPAIRS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRy08FvutySDNk8yvn0QKdT92-uWjRqaxqi2057Tl42Ai2zLS4L833E2g2GdgBnpFX-t5uwX6JUcmg4/pub?gid=1619190380&single=true&output=csv';
-
+const SHEET_AP_SUPPLIERS_CSV_URL =
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vQGmHCtGV63YTyIyH-st7Rs43FQq47sz466WxHjNmqM7FXgj422K5qHY2rK4SCalmqDPR6aTiTts-A4/pub?gid=579148005&single=true&output=csv'; // ap_suppliers: задолженность по поставщикам
+    
 let dashboardData = null;
 let trendChart = null;
 let receivablesByClient = [];   // сюда положим структуру просрочки по клиентам
 let paymentsLastDate = null;
 let paymentsByClient = []; // [{ client, amount }]
+let payablesBySupplier = []; // [{ supplier, total, avg_overdue }]
 
 // ==========================
 // 2. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
@@ -1252,6 +1264,95 @@ function formatDateRuShort(date) {
     const day = date.getDate();
     const monthName = months[date.getMonth()];
     return day + ' ' + monthName;
+}
+function buildPayablesFromRows(rows) {
+  // ожидаем колонки:
+  // as_of_date, supplier_name, total_balance, overdue_balance, avg_days_overdue / avg_days_overd
+  if (!rows || rows.length < 2) {
+    return { date: null, total: 0, overdue: 0, suppliers: [] };
+  }
+
+  const header = rows[0];
+
+  const idxAsOf = header.indexOf('as_of_date');
+  const idxSupp =
+    header.indexOf('supplier_name') !== -1
+      ? header.indexOf('supplier_name')
+      : header.indexOf('supplier');
+
+  const idxTotal = header.indexOf('total_balance');
+  let idxOver = header.indexOf('overdue_balance');
+  if (idxOver === -1) idxOver = header.indexOf('overdue_balanc'); // на всякий случай
+
+  let idxAvg = header.indexOf('avg_days_overdue');
+  if (idxAvg === -1) idxAvg = header.indexOf('avg_days_overd');
+
+  if (idxSupp === -1 || idxTotal === -1) {
+    console.warn('Не найдены нужные колонки в ap_suppliers');
+    return { date: null, total: 0, overdue: 0, suppliers: [] };
+  }
+
+  let maxDate = null;
+  const rowsNorm = [];
+
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r || !r.length) continue;
+
+    const supplier = r[idxSupp];
+    if (!supplier) continue;
+
+    let asOf = null;
+    if (idxAsOf !== -1 && r[idxAsOf]) {
+      asOf = parseDate(r[idxAsOf]);
+      if (asOf && (!maxDate || asOf > maxDate)) {
+        maxDate = asOf;
+      }
+    }
+
+    rowsNorm.push({
+      asOf,
+      supplier: supplier,
+      total: toNumber(r[idxTotal]),
+      overdue: idxOver !== -1 ? toNumber(r[idxOver]) : 0,
+      avg_overdue: idxAvg !== -1 ? toNumber(r[idxAvg]) : 0,
+    });
+  }
+
+  if (!rowsNorm.length) {
+    return { date: maxDate, total: 0, overdue: 0, suppliers: [] };
+  }
+
+  // оставляем только записи последней даты
+  let filtered = rowsNorm;
+  if (maxDate) {
+    const key = startOfDay(maxDate).getTime();
+    filtered = rowsNorm.filter(
+      (r) => r.asOf && startOfDay(r.asOf).getTime() === key
+    );
+  }
+
+  let total = 0;
+  let overdue = 0;
+  const suppliers = [];
+
+  for (const r of filtered) {
+    total += r.total;
+    overdue += r.overdue;
+
+    // в список для раскрытия — только поставщики с долгом > 1 млн
+    if (r.total > 1_000_000) {
+      suppliers.push({
+        supplier: r.supplier,
+        total: r.total,
+        avg_overdue: r.avg_overdue,
+      });
+    }
+  }
+
+  suppliers.sort((a, b) => b.total - a.total);
+
+  return { date: maxDate, total, overdue, suppliers };
 }
     
 function buildReceivablesByClientFromRows(rows) {
@@ -1549,6 +1650,37 @@ async function loadDataFromSheet() {
             console.error('Ошибка загрузки сводки по клиентам:', e);
         }
     }
+        // 3) Кредиторка: ap_suppliers
+    if (SHEET_AP_SUPPLIERS_CSV_URL) {
+      try {
+        const resAp = await fetch(SHEET_AP_SUPPLIERS_CSV_URL);
+        if (resAp.ok) {
+          const csvAp = await resAp.text();
+          const rowsAp = parseCSV(csvAp);
+          const ap = buildPayablesFromRows(rowsAp);
+
+          if (!dashboardData.payables) {
+            dashboardData.payables = {};
+          }
+
+          dashboardData.payables.total_debt = ap.total;
+          dashboardData.payables.overdue_debt = ap.overdue;
+          dashboardData.payables.overdue_percent =
+            ap.total ? Math.round((ap.overdue / ap.total) * 100) : 0;
+          dashboardData.payables_date = ap.date;
+
+          payablesBySupplier = ap.suppliers;
+        } else {
+          console.warn(
+            'Не удалось загрузить ap_suppliers, статус:',
+            resAp.status
+          );
+        }
+      } catch (e) {
+        console.error('Ошибка загрузки ap_suppliers:', e);
+      }
+    }
+
       // 4) repairs_snapshot (последним, когда уже есть snapshotDate)
   try {
     const repairsCsv = await fetch(SHEET_REPAIRS_CSV_URL).then(r => r.text());
@@ -1653,6 +1785,53 @@ function renderReceivablesByClient() {
 
         tbody.appendChild(tr);
     });
+}
+function renderPayablesSuppliers() {
+  const panel = document.getElementById('suppliersPayablesPanel');
+  const tbody = document.getElementById('suppliersPayablesBody');
+  const toggle = document.getElementById('toggleSuppliersPayables');
+
+  if (!panel || !tbody || !toggle) return;
+
+  tbody.innerHTML = '';
+
+  if (!payablesBySupplier || !payablesBySupplier.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 3;
+    td.textContent =
+      'Нет данных по кредиторской задолженности (или нет поставщиков с долгом > 1 млн).';
+    td.style.fontSize = '12px';
+    td.style.color = 'var(--text-secondary)';
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    toggle.disabled = true;
+    return;
+  }
+
+  toggle.disabled = false;
+
+  payablesBySupplier.forEach((row) => {
+    const tr = document.createElement('tr');
+
+    const tdSupplier = document.createElement('td');
+    tdSupplier.textContent = row.supplier;
+    tr.appendChild(tdSupplier);
+
+    const tdAmount = document.createElement('td');
+    tdAmount.className = 'amount';
+    tdAmount.textContent = formatCurrency(row.total);
+    tr.appendChild(tdAmount);
+
+    const tdAvg = document.createElement('td');
+    tdAvg.className = 'percent';
+    tdAvg.textContent = row.avg_overdue
+      ? Math.round(row.avg_overdue) + ' д.'
+      : '—';
+    tr.appendChild(tdAvg);
+
+    tbody.appendChild(tr);
+  });
 }
     
 function renderPaymentsCard() {
@@ -1835,6 +2014,43 @@ function populateDashboard() {
         `${dashboardData.receivables.overdue_percent}%`;
     document.getElementById('overdueProgressFill').style.width =
         `${dashboardData.receivables.overdue_percent}%`;
+    // Подпись под заголовком "Дебиторская задолженность"
+    const dateEl = document.getElementById('receivablesDate');
+    if (dateEl) {
+      if (dashboardData.receivables_date) {
+        dateEl.textContent =
+          'Данные на ' + formatDateRuShort(dashboardData.receivables_date);
+      } else {
+        dateEl.textContent = '';
+      }
+    }
+
+    // --- Кредиторская задолженность ---
+    const payDateEl = document.getElementById('payablesDate');
+    if (payDateEl) {
+      payDateEl.textContent = dashboardData.payables_date
+        ? 'Данные на ' + formatDateRuShort(dashboardData.payables_date)
+        : '';
+    }
+
+    const apTotalEl = document.getElementById('apTotalDebt');
+    const apOverdueEl = document.getElementById('apOverdueDebt');
+    const apPercentEl = document.getElementById('apOverduePercent');
+    const apFillEl = document.getElementById('apOverdueProgressFill');
+
+    if (apTotalEl && dashboardData.payables) {
+      const totalAp = dashboardData.payables.total_debt || 0;
+      const overAp = dashboardData.payables.overdue_debt || 0;
+      const percAp = dashboardData.payables.overdue_percent || 0;
+
+      apTotalEl.textContent = formatCurrency(totalAp);
+      apOverdueEl.textContent = formatCurrency(overAp);
+      apPercentEl.textContent = percAp + '%';
+      if (apFillEl) apFillEl.style.width = percAp + '%';
+    }
+
+    // Структура кредиторки по поставщикам
+    renderPayablesSuppliers();
 
     // Подпись под заголовком "ЗАДОЛЖЕННОСТЬ"
     const dateEl = document.getElementById('receivablesDate');
@@ -2029,6 +2245,7 @@ function renderPaymentsByClient(paymentsData) {
 document.addEventListener('DOMContentLoaded', () => {
   const btnOverdue = document.getElementById('toggleClientsOverdue');
   const btnPayments = document.getElementById('toggleClientsPayments');
+  const btnSuppliers = document.getElementById('toggleSuppliersPayables');
 
   if (btnOverdue) {
     btnOverdue.addEventListener('click', () => {
@@ -2038,10 +2255,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnPayments) {
     btnPayments.addEventListener('click', () => {
-      document.getElementById('clientsPaymentsPanel').classList.toggle('hidden');
+      document
+        .getElementById('clientsPaymentsPanel')
+        .classList.toggle('hidden');
+    });
+  }
+
+  if (btnSuppliers) {
+    btnSuppliers.addEventListener('click', () => {
+      document
+        .getElementById('suppliersPayablesPanel')
+        .classList.toggle('hidden');
     });
   }
 });
+
 
 // ==========================
 // 8. ИНИЦИАЛИЗАЦИЯ
