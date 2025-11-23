@@ -527,6 +527,32 @@ body {
     font-weight: var(--font-weight-semibold);
     color: var(--text-primary);
 }
+/* Вчерашняя погрузка: клик и список станций */
+#toggleLoadingYesterday {
+    cursor: pointer;
+    text-decoration: underline dotted;
+}
+
+#toggleLoadingYesterday:hover {
+    color: var(--navy-primary);
+}
+
+.loading-yesterday-panel {
+    margin-top: var(--space-8);
+    padding-top: var(--space-8);
+    border-top: 1px dashed rgba(148, 163, 184, 0.6);
+    font-size: var(--font-size-xs);
+}
+
+.loading-yesterday-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.loading-yesterday-list li {
+    margin-bottom: 2px;
+}
 
 /* Debt card specific */
 .debt-amount {
@@ -814,21 +840,24 @@ body {
                         </div>
                     </div>
                     
-                    <div class="secondary-metrics">
                         <div class="secondary-metric">
                             <span class="secondary-metric-label">По плану:</span>
                             <span class="secondary-metric-value" id="planMonth">—</span>
                         </div>
+                        
                         <div class="secondary-metric">
-                            <span class="secondary-metric-label">Вчера погружено:</span>
+                            <span class="secondary-metric-label" id="toggleLoadingYesterday">Вчера погружено:</span>
                             <span class="secondary-metric-value" id="loadedYesterday">—</span>
                         </div>
-                       <div class="secondary-metric month-plan">
+                        
+                        <div id="loadingYesterdayPanel" class="loading-yesterday-panel hidden">
+                            <ul id="loadingYesterdayList" class="loading-yesterday-list"></ul>
+                        </div>
+                        
+                        <div class="secondary-metric month-plan">
                             <span class="secondary-metric-label">План на месяц:</span>
                             <span class="secondary-metric-value" id="fullMonthPlan">—</span>
                         </div>
-                    </div>
-
                       <!-- Card 3: Repairs -->
                       <div class="metric-card repairs-card">
                         <div class="card-header">
@@ -1025,6 +1054,8 @@ let receivablesByClient = [];   // сюда положим структуру п
 let paymentsLastDate = null;
 let paymentsByClient = []; // [{ client, amount }]
 let payablesBySupplier = []; // [{ supplier, total, avg_overdue }]
+let yesterdayLoadingStations = []; // [{ station, count }]
+let yesterdayLoadingDate = null;
 
 // ==========================
 // 2. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
@@ -1438,6 +1469,53 @@ const idxDelay = idxMax !== -1 ? idxMax : idxAvg;
 
   return { date: maxDate, total, overdue, suppliers };
 }
+function buildYesterdayLoadingFromRows(rows) {
+    if (!rows || rows.length < 2) return { date: null, items: [] };
+
+    const header = rows[0];
+    const idxDate    = header.indexOf('op_date');
+    const idxStation = header.indexOf('station_from');
+    const idxStatus  = header.indexOf('status');
+
+    if (idxDate === -1 || idxStation === -1) {
+        console.warn('Журнал погрузки: нет колонок op_date / station_from');
+        return { date: null, items: [] };
+    }
+
+    const today = startOfDay(new Date());
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const keyYest = yesterday.getTime();
+
+    const byStation = new Map();
+
+    for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row || !row.length) continue;
+
+        const d = parseDate(row[idxDate]);
+        if (!d || startOfDay(d).getTime() !== keyYest) continue;
+
+        if (idxStatus !== -1) {
+            const status = String(row[idxStatus] || '').toLowerCase();
+            // оставляем только реальные погрузки
+            if (status && status !== 'loaded') continue;
+        }
+
+        const st = row[idxStation];
+        if (!st) continue;
+
+        const key = String(st).trim();
+        byStation.set(key, (byStation.get(key) || 0) + 1);
+    }
+
+    const items = Array.from(byStation.entries())
+        .map(([station, count]) => ({ station, count }))
+        // сортировка по убыванию, как просил: "Красный Гуляй — 50" и т.д.
+        .sort((a, b) => b.count - a.count || a.station.localeCompare(b.station, 'ru'));
+
+    return { date: yesterday, items };
+}
     
 function buildReceivablesByClientFromRows(rows) {
     if (!rows || !rows.length) return [];
@@ -1764,6 +1842,26 @@ async function loadDataFromSheet() {
         console.error('Ошибка загрузки ap_suppliers:', e);
       }
     }
+    // 4) Журнал погрузки: разбивка "вчера погружено" по станциям
+    yesterdayLoadingStations = [];
+    yesterdayLoadingDate = null;
+
+    if (SHEET_LOADING_JOURNAL_CSV_URL) {
+        try {
+            const resLog = await fetch(SHEET_LOADING_JOURNAL_CSV_URL);
+            if (resLog.ok) {
+                const csvLog = await resLog.text();
+                const rowsLog = parseCSV(csvLog);
+                const result = buildYesterdayLoadingFromRows(rowsLog);
+                yesterdayLoadingDate = result.date;
+                yesterdayLoadingStations = result.items;
+            } else {
+                console.warn('Не удалось загрузить журнал погрузки, статус:', resLog.status);
+            }
+        } catch (e) {
+            console.error('Ошибка загрузки журнала погрузки:', e);
+        }
+    }
 
       // 4) repairs_snapshot (последним, когда уже есть snapshotDate)
   try {
@@ -1823,6 +1921,30 @@ function formatUpdatedAt(date) {
 // ==========================
 // 5. ЗАПОЛНЕНИЕ КАРТОЧЕК
 // ==========================
+    function renderYesterdayLoadingList() {
+    const panel = document.getElementById('loadingYesterdayPanel');
+    const listEl = document.getElementById('loadingYesterdayList');
+
+    if (!panel || !listEl) return;
+
+    listEl.innerHTML = '';
+
+    if (!yesterdayLoadingStations || !yesterdayLoadingStations.length) {
+        const li = document.createElement('li');
+        li.textContent = 'Нет данных по погрузке за вчера.';
+        li.style.fontSize = '12px';
+        li.style.color = 'var(--text-secondary)';
+        listEl.appendChild(li);
+        return;
+    }
+
+    yesterdayLoadingStations.forEach(row => {
+        const li = document.createElement('li');
+        li.textContent = `${row.station} — ${row.count}`;
+        listEl.appendChild(li);
+    });
+}
+
 function renderReceivablesByClient() {
     const panel = document.getElementById('clientsOverduePanel');
     const tbody = document.getElementById('clientsOverdueBody');
@@ -2097,6 +2219,7 @@ function populateDashboard() {
         formatNumber(dashboardData.loading.month_total_plan || 0);
     document.getElementById('loadedYesterday').textContent =
         formatNumber(dashboardData.loading.loaded_wagons_yesterday);
+    renderYesterdayLoadingList();
 
     // --- Задолженность ---
     document.getElementById('totalDebt').textContent =
@@ -2277,6 +2400,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnOverdue = document.getElementById('toggleClientsOverdue');
   const btnPayments = document.getElementById('toggleClientsPayments');
   const btnSuppliers = document.getElementById('toggleSuppliersPayables');
+  const btnLoadingYesterday = document.getElementById('toggleLoadingYesterday');
+  if (btnLoadingYesterday) {
+    btnLoadingYesterday.addEventListener('click', () => {
+      const panel = document.getElementById('loadingYesterdayPanel');
+      if (panel) {
+        panel.classList.toggle('hidden');
+      }
+    });
+  }
 
   if (btnOverdue) {
     btnOverdue.addEventListener('click', () => {
