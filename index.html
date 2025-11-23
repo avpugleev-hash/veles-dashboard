@@ -2135,60 +2135,6 @@ function populateDashboard() {
         dashboardData.period_label || '—';
 }
 
-
-
-// ==========================
-// 6. ГРАФИК
-// ==========================
-
-function createTrendChart() {
-    const ctx = document.getElementById('trendChart').getContext('2d');
-    if (trendChart) trendChart.destroy();
-
-    const labels = dashboardData.daily_trend.map(d => d.label);
-    const data = dashboardData.daily_trend.map(d => d.wagons);
-
-    trendChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels,
-            datasets: [{
-                label: 'Погружено вагонов',
-                data,
-                borderColor: '#20b2aa',
-                backgroundColor: 'rgba(32, 178, 170, 0.12)',
-                borderWidth: 3,
-                tension: 0.3,
-                fill: true,
-                pointBackgroundColor: '#20b2aa',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-                pointRadius: 4,
-                pointHoverRadius: 6
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: true, position: 'top' },
-                tooltip: {
-                    callbacks: {
-                        label: ctx => 'Вагонов: ' + formatNumber(ctx.parsed.y)
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    ticks: {
-                        callback: value => formatNumber(value)
-                    }
-                }
-            }
-        }
-    });
-}
-
 // ==========================
 // 7. ОБНОВЛЕНИЕ ПО КНОПКЕ
 // ==========================
@@ -2200,7 +2146,6 @@ async function refreshData() {
     try {
         await loadDataFromSheet();
         populateDashboard();
-        createTrendChart();
 
         // ставим время последнего успешного обновления
         const updatedEl = document.getElementById('dataUpdatedAt');
