@@ -2069,24 +2069,17 @@ function populateDashboard() {
         : '';
     }
 
+      // Блок Кредиторка: цифры сверху (оставляем только общий долг)
     const apTotalEl = document.getElementById('apTotalDebt');
-    const apOverdueEl = document.getElementById('apOverdueDebt');
-    const apPercentEl = document.getElementById('apOverduePercent');
-    const apFillEl = document.getElementById('apOverdueProgressFill');
 
     if (apTotalEl && dashboardData.payables) {
-      const totalAp = dashboardData.payables.total_debt || 0;
-      const overAp = dashboardData.payables.overdue_debt || 0;
-      const percAp = dashboardData.payables.overdue_percent || 0;
-
-      apTotalEl.textContent = formatCurrency(totalAp);
-      apOverdueEl.textContent = formatCurrency(overAp);
-      apPercentEl.textContent = percAp + '%';
-      if (apFillEl) apFillEl.style.width = percAp + '%';
+        const totalAp = dashboardData.payables.total_debt || 0;
+        apTotalEl.textContent = formatCurrency(totalAp);
     }
 
     // Структура кредиторки по поставщикам
     renderPayablesSuppliers();
+
 
     // Подпись под заголовком "ЗАДОЛЖЕННОСТЬ"
 
