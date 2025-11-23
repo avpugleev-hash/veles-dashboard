@@ -2103,7 +2103,7 @@ function populateDashboard() {
     renderPayablesSuppliers();
 
     // Подпись под заголовком "ЗАДОЛЖЕННОСТЬ"
-    const dateEl = document.getElementById('receivablesDate');
+
     if (dateEl) {
         if (dashboardData.receivables_date) {
             dateEl.textContent = 'Данные на ' + formatDateRuShort(dashboardData.receivables_date);
