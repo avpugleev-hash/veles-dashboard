@@ -819,7 +819,53 @@ body {
                             <span class="secondary-metric-value" id="fullMonthPlan">—</span>
                         </div>
                     </div>
-                </div>
+
+                      <!-- Card 3: Repairs -->
+                      <div class="metric-card">
+                        <div class="card-header">
+                          <div class="card-icon">🛠️</div>
+                          <div class="card-header-text">
+                            <div class="card-title-row">
+                              <h2 class="card-title">РЕМОНТЫ</h2>
+                              <span id="repairsHeaderSummary" class="metric-value card-title-suffix"></span>
+                            </div>
+                            <div id="repairsDate" class="metric-label"></div>
+                          </div>
+                        </div>
+            
+                        <div class="card-body">
+                          <div id="repairsTotalsList" class="repairs-totals-grid"></div>
+            
+                          <div class="metric-row mt-2">
+                            <button id="toggleRepairsTable" class="link-button">
+                              ▼ Развернуть структуру по ремонтам
+                            </button>
+                          </div>
+            
+                          <div id="repairsTablePanel" class="hidden">
+                            <table class="metric-table">
+                              <thead>
+                                <tr>
+                                  <th>Вид ремонта</th>
+                                  <th>В ремонте</th>
+                                  <th>В пути</th>
+                                  <th>В ожидании оформления</th>
+                                  <th>В ожидании отправки</th>
+                                  <th>Итого</th>
+                                </tr>
+                              </thead>
+                              <tbody id="repairsTableBody"></tbody>
+                            </table>
+                          </div>
+            
+                          <div class="metric-row mt-2">
+                            <span class="metric-label">Всего вагонов в парке:</span>
+                            <span class="metric-value" id="fleetTotal">—</span>
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
             </div>
 <!-- Card: Receivables (Дебиторка) + Payables (Кредиторка) -->
 <div class="metric-card">
