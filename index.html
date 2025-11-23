@@ -821,7 +821,7 @@ body {
                     </div>
 
                       <!-- Card 3: Repairs -->
-                      <div class="metric-card">
+                      <div class="metric-card repairs-card">
                         <div class="card-header">
                           <div class="card-icon">🛠️</div>
                           <div class="card-header-text">
@@ -832,7 +832,7 @@ body {
                             <div id="repairsDate" class="metric-label"></div>
                           </div>
                         </div>
-            
+
                         <div class="card-body">
                           <div id="repairsTotalsList" class="repairs-totals-grid"></div>
             
@@ -981,7 +981,7 @@ body {
             <tr>
               <th>Поставщик</th>
               <th>Долг</th>
-              <th>Средняя отсрочка, дней</th>
+              <th>MAX отсрочка, дней</th>
             </tr>
           </thead>
           <tbody id="suppliersPayablesBody"></tbody>
@@ -1320,8 +1320,14 @@ function buildPayablesFromRows(rows) {
   let idxOver = header.indexOf('overdue_balance');
   if (idxOver === -1) idxOver = header.indexOf('overdue_balanc'); // на всякий случай
 
-  let idxAvg = header.indexOf('avg_days_overdue');
-  if (idxAvg === -1) idxAvg = header.indexOf('avg_days_overd');
+ let idxMax = header.indexOf('max_days_overdue');
+if (idxMax === -1) idxMax = header.indexOf('max_days_overd');
+
+let idxAvg = header.indexOf('avg_days_overdue');
+if (idxAvg === -1) idxAvg = header.indexOf('avg_days_overd');
+
+// какую колонку использовать для отображения отсрочки
+const idxDelay = idxMax !== -1 ? idxMax : idxAvg;
 
   if (idxSupp === -1 || idxTotal === -1) {
     console.warn('Не найдены нужные колонки в ap_suppliers');
@@ -1351,7 +1357,7 @@ function buildPayablesFromRows(rows) {
       supplier: supplier,
       total: toNumber(r[idxTotal]),
       overdue: idxOver !== -1 ? toNumber(r[idxOver]) : 0,
-      avg_overdue: idxAvg !== -1 ? toNumber(r[idxAvg]) : 0,
+      avg_overdue: idxDelay !== -1 ? toNumber(r[idxDelay]) : 0,
     });
   }
 
