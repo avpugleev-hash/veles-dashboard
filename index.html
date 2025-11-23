@@ -229,7 +229,7 @@ body {
     display: flex;
     align-items: center;
     gap: var(--space-8);
-    justify-content: flex-end;
+    justify-content: flex-start;
 }
         
 .data-updated {
@@ -772,10 +772,6 @@ body {
                 </div>
                 <div class="header-right">
                     <div class="current-datetime" id="currentDateTime">—</div>
-                    <div class="last-update">
-                        <span>⏱</span>
-                        <span id="lastUpdate">Погрузка с — по —</span>
-                    </div>
                     <div class="data-updated">
                         <span>🕒</span>
                         <span id="dataUpdatedAt">Данные обновлены: —</span>
@@ -793,7 +789,11 @@ body {
                 <div class="card-header">
                     <div class="card-icon">📦</div>
                     <h2 class="card-title">ПОГРУЗКА</h2>
-                </div>
+                    </div>
+                <div class="last-update">
+                        <span>⏱</span>
+                        <span id="lastUpdate">Погрузка с — по —</span>
+                    </div>
                 <div class="card-body">
                     <div class="main-metric" id="loadedWagonsMonth">—</div>
                     <div class="metric-label">Погружено вагонов (месяц)</div>
