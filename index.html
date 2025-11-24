@@ -1157,25 +1157,39 @@ function parseCSV(csvText) {
 }
 
 function parseDate(dateStr) {
-    if (!dateStr) return null;
+  if (dateStr === null || dateStr === undefined) return null;
 
-    // YYYY-MM-DD
-    let m = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (m) {
-        const [, y, mo, d] = m;
-        return new Date(Number(y), Number(mo) - 1, Number(d));
-    }
+  const raw = String(dateStr).trim();
+  if (!raw) return null;
 
-    // DD.MM.YYYY
-    m = dateStr.match(/^(\d{2})\.(\d{2})\.(\d{4})/);
-    if (m) {
-        const [, d, mo, y] = m;
-        return new Date(Number(y), Number(mo) - 1, Number(d));
-    }
+  // 1) Формат YYYY-MM-DD
+  let m = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) {
+    const [, y, mo, d] = m;
+    return new Date(Number(y), Number(mo) - 1, Number(d));
+  }
 
-    const d = new Date(dateStr);
-    return isNaN(d.getTime()) ? null : d;
+  // 2) Формат DD.MM.YYYY
+  m = raw.match(/^(\d{2})\.(\d{2})\.(\d{4})/);
+  if (m) {
+    const [, d, mo, y] = m;
+    return new Date(Number(y), Number(mo) - 1, Number(d));
+  }
+
+  // 3) Серийный номер даты из Google Sheets / Excel (например 45985)
+  const num = Number(raw.replace(',', '.'));
+  if (!Number.isNaN(num) && num > 20000 && num < 60000) {
+    // База для Google Sheets / Excel: 1899-12-30
+    const base = new Date(1899, 11, 30);
+    const ms = Math.round(num * 24 * 60 * 60 * 1000);
+    return new Date(base.getTime() + ms);
+  }
+
+  // 4) Последняя попытка – стандартный парсер JS
+  const d = new Date(raw);
+  return isNaN(d.getTime()) ? null : d;
 }
+
 
 function startOfDay(d) {
     return new Date(d.getFullYear(), d.getMonth(), d.getDate());
