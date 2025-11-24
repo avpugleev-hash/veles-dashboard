@@ -1227,23 +1227,43 @@ function rowsToObjects(rows) {
     return result;
 }
 function buildRepairsFromSnapshot(rows) {
-  if (!rows || !rows.length) return [];
+  // Возвращаем и данные, и дату среза
+  if (!rows || !rows.length) {
+    return { items: [], date: null };
+  }
 
-  // Ищем строку с заголовком, где есть "вид ремонта"
+  // 1) Ищем максимальную дату во всех ячейках файла ремонтов
+  let maxDate = null;
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row) continue;
+
+    for (let j = 0; j < row.length; j++) {
+      const d = parseDate(row[j]);
+      if (d && (!maxDate || d > maxDate)) {
+        maxDate = d;
+      }
+    }
+  }
+
+  // 2) Ищем строку с заголовком, где есть "вид ремонта"
   let headerRowIndex = rows.findIndex(r =>
     r && r.some(cell => cell && cell.toString().toLowerCase().includes('вид ремонта'))
   );
   if (headerRowIndex === -1) {
     console.warn('Не удалось найти строку заголовка в repairs_snapshot');
-    return [];
+    return { items: [], date: maxDate };
   }
 
-  const hdr = rows[headerRowIndex].map(h => (h || '').toString().toLowerCase().trim());
+  const hdr = rows[headerRowIndex].map(h =>
+    (h || '').toString().toLowerCase().trim()
+  );
+
   const idx = {
     type: hdr.indexOf('вид ремонта'),
-    r: hdr.indexOf('в ремонте'),
-    t: hdr.indexOf('в пути'),
-    reg: hdr.indexOf('в ожидании оформления в ремонт'),
+    r:    hdr.indexOf('в ремонте'),
+    t:    hdr.indexOf('в пути'),
+    reg:  hdr.indexOf('в ожидании оформления в ремонт'),
     disp: hdr.indexOf('в ожидании отправки из ремонта'),
   };
 
@@ -1256,13 +1276,15 @@ function buildRepairsFromSnapshot(rows) {
 
   if (idx.type === -1) {
     console.warn('В repairs_snapshot нет колонки "вид ремонта"');
-    return [];
+    return { items: [], date: maxDate };
   }
 
   const items = [];
+
   for (let i = headerRowIndex + 1; i < rows.length; i++) {
     const r = rows[i];
     if (!r || !r.length) continue;
+
     const typeVal = r[idx.type];
     if (!typeVal) continue;
 
@@ -1274,7 +1296,7 @@ function buildRepairsFromSnapshot(rows) {
     };
 
     items.push({
-      type: String(typeVal).trim(),
+      type:           String(typeVal).trim(),
       in_repair:      safeNum(r, idx.r),
       in_transit:     safeNum(r, idx.t),
       await_reg:      safeNum(r, idx.reg),
@@ -1283,8 +1305,9 @@ function buildRepairsFromSnapshot(rows) {
     });
   }
 
-  return items;
+  return { items, date: maxDate };
 }
+
 
 
 // ==========================
@@ -1865,16 +1888,19 @@ async function loadDataFromSheet() {
         }
     }
 
-      // 4) repairs_snapshot (последним, когда уже есть snapshotDate)
-  try {
-    const repairsCsv = await fetch(SHEET_REPAIRS_CSV_URL).then(r => r.text());
-    const repRows = parseCSV(repairsCsv);
-    const repairsItems = buildRepairsFromSnapshot(repRows);
-    renderRepairsCard(repairsItems, snapshotDate);
-  } catch (e) {
-    console.error('Ошибка загрузки repairs_snapshot:', e);
-    renderRepairsCard([], snapshotDate);
-  }
+ // 4) repairs_snapshot (последним, когда уже есть snapshotDate)
+try {
+  const repairsCsv = await fetch(SHEET_REPAIRS_CSV_URL).then(r => r.text());
+  const repRows = parseCSV(repairsCsv);
+
+  const repairsData = buildRepairsFromSnapshot(repRows);
+  const repairsDate = repairsData.date || snapshotDate || null;
+
+  renderRepairsCard(repairsData.items, repairsDate);
+} catch (e) {
+  console.error('Ошибка загрузки repairs_snapshot:', e);
+  renderRepairsCard([], snapshotDate);
+}
 
 }
 
