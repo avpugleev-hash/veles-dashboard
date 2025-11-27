@@ -351,6 +351,11 @@ body {
     color: var(--navy-primary);
     letter-spacing: 0.5px;
 }
+.card-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
 
 .card-body {
     margin-bottom: var(--space-16);
@@ -911,14 +916,13 @@ body {
 <div class="card-header">
   <div class="card-icon">💳</div>
   <div class="card-header-text">
-    <div class="card-title-row">
-      <h2 class="card-title">ЗАДОЛЖЕННОСТЬ</h2>
-      <span id="cashSummary" class="metric-label card-title-suffix"></span>
-    </div>
+    <h2 class="card-title">ЗАДОЛЖЕННОСТЬ</h2>
+    <!-- Остатки ДС сразу под заголовком -->
+    <div id="cashSummary" class="metric-label card-subtitle"></div>
   </div>
 </div>
 
-  <div class="card-body">
+<div class="card-body">
 
     <!-- == БЛОК 1: ДЕБИТОРСКАЯ ЗАДОЛЖЕННОСТЬ == -->
     <div class="subsection-header">
@@ -2344,16 +2348,17 @@ function populateDashboard() {
       }
     }
         // --- Остатки денежных средств в шапке карточки ---
-    const cashEl = document.getElementById('cashSummary');
-    if (cashEl && dashboardData.cash) {
-      const textAmount = formatCurrency(dashboardData.cash.total);
-      const textDate = dashboardData.cash.date
-        ? formatDateRuShort(dashboardData.cash.date)
-        : '';
-      cashEl.textContent = textDate
-        ? `Остатки ДС: ${textAmount} на ${textDate}`
-        : `Остатки ДС: ${textAmount}`;
-    }
+const cashEl = document.getElementById('cashSummary');
+if (cashEl && dashboardData.cash) {
+  const textAmount = formatCurrency(dashboardData.cash.total);
+  const textDate = dashboardData.cash.date
+    ? formatDateRuShort(dashboardData.cash.date)
+    : '';
+  cashEl.textContent = textDate
+    ? `Остатки ДС: ${textAmount} на ${textDate}`
+    : `Остатки ДС: ${textAmount}`;
+}
+
 
     // --- Кредиторская задолженность ---
     const payDateEl = document.getElementById('payablesDate');
