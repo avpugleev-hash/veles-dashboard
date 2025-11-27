@@ -908,12 +908,15 @@ body {
             </div>
 <!-- Card: Receivables (Дебиторка) + Payables (Кредиторка) -->
 <div class="metric-card">
-  <div class="card-header">
-    <div class="card-icon">💳</div>
-    <div class="card-header-text">
+<div class="card-header">
+  <div class="card-icon">💳</div>
+  <div class="card-header-text">
+    <div class="card-title-row">
       <h2 class="card-title">ЗАДОЛЖЕННОСТЬ</h2>
+      <span id="cashSummary" class="metric-label card-title-suffix"></span>
     </div>
   </div>
+</div>
 
   <div class="card-body">
 
@@ -1063,6 +1066,43 @@ let yesterdayLoadingDate = null;
 // ==========================
 // 2. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 // ==========================
+function buildCashFromRows(rows) {
+  if (!rows || rows.length < 2) return null;
+
+  const header = rows[0];
+  const idxDate  = header.indexOf('as_of_date');
+  const idxTotal = header.indexOf('cash_total');
+
+  if (idxDate === -1 || idxTotal === -1) {
+    console.warn('cash_balances: нет колонок as_of_date / cash_total');
+    return null;
+  }
+
+  let maxDate = null;
+  let lastRow = null;
+
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || !row.length) continue;
+
+    const d = parseDate(row[idxDate]);
+    if (!d) continue;
+
+    if (!maxDate || d > maxDate) {
+      maxDate = d;
+      lastRow = row;
+    }
+  }
+
+  if (!lastRow || !maxDate) return null;
+
+  const total = toNumber(lastRow[idxTotal]);
+
+  return {
+    date: maxDate,
+    total: total
+  };
+}
     
 function buildPaymentsFromRows(rows) {
     if (!rows || rows.length < 2) return { lastDate: null, items: [] };
@@ -1903,6 +1943,25 @@ async function loadDataFromSheet() {
             console.error('Ошибка загрузки журнала погрузки:', e);
         }
     }
+// 5) Остатки денежных средств
+if (SHEET_CASH_CSV_URL) {
+  try {
+    const resCash = await fetch(SHEET_CASH_CSV_URL);
+    if (resCash.ok) {
+      const csvCash = await resCash.text();
+      const rowsCash = parseCSV(csvCash);
+      const cash = buildCashFromRows(rowsCash);
+      if (cash) {
+        if (!dashboardData) dashboardData = {};
+        dashboardData.cash = cash;
+      }
+    } else {
+      console.warn('Не удалось загрузить cash_balances, статус:', resCash.status);
+    }
+  } catch (e) {
+    console.error('Ошибка загрузки cash_balances:', e);
+  }
+}
 
  // 4) repairs_snapshot (последним, когда уже есть snapshotDate)
 try {
@@ -2283,6 +2342,17 @@ function populateDashboard() {
       } else {
         dateEl.textContent = '';
       }
+    }
+        // --- Остатки денежных средств в шапке карточки ---
+    const cashEl = document.getElementById('cashSummary');
+    if (cashEl && dashboardData.cash) {
+      const textAmount = formatCurrency(dashboardData.cash.total);
+      const textDate = dashboardData.cash.date
+        ? formatDateRuShort(dashboardData.cash.date)
+        : '';
+      cashEl.textContent = textDate
+        ? `Остатки ДС: ${textAmount} на ${textDate}`
+        : `Остатки ДС: ${textAmount}`;
     }
 
     // --- Кредиторская задолженность ---
