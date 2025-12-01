@@ -1716,17 +1716,7 @@ function buildDashboardDataFromRaw(rowObjs, monthPlanTotal) {
     const today = startOfDay(new Date());
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
-    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-
-    // строки текущего месяца (с 1-го по вчера)
-    const rowsThisMonth = rowObjs.filter(r => {
-        const d = startOfDay(r.date);
-        return d >= monthStart && d <= yesterday;
-    });
-
-    const loadedMonth = rowsThisMonth.reduce((sum, r) => sum + (r.loaded_wagons || 0), 0);
-    const planMonth   = rowsThisMonth.reduce((sum, r) => sum + (r.planned_wagons || 0), 0);
-
+    
     const rowYesterday = rowObjs.find(r => startOfDay(r.date).getTime() === yesterday.getTime());
     const loadedYesterday = rowYesterday ? rowYesterday.loaded_wagons : 0;
 
@@ -1736,6 +1726,17 @@ function buildDashboardDataFromRaw(rowObjs, monthPlanTotal) {
     // сортируем все строки по дате и берём последнюю
     const sorted = rowObjs.slice().sort((a, b) => a.date - b.date);
     const lastRow = sorted[sorted.length - 1];
+const lastDate = startOfDay(lastRow.date);
+const monthStart = new Date(lastDate.getFullYear(), lastDate.getMonth(), 1);
+const monthEnd = lastDate;
+
+const rowsThisMonth = rowObjs.filter(r => {
+    const d = startOfDay(r.date);
+    return d >= monthStart && d <= monthEnd;
+});
+
+const loadedMonth = rowsThisMonth.reduce((sum, r) => sum + (r.loaded_wagons || 0), 0);
+const planMonth   = rowsThisMonth.reduce((sum, r) => sum + (r.planned_wagons || 0), 0);
 
     // === НОВАЯ ЛОГИКА ДЛЯ ЗАДОЛЖЕННОСТИ ===
     // 1) если на сегодня есть ненулевая задолженность — берём её
