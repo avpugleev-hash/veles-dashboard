@@ -2987,7 +2987,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Кнопка "Структура просрочки по клиентам"
   const overdueBtn = document.getElementById('toggleClientsOverdue');
-  const overduePanel = document.querySelector('.clients-overdue-panel');
+  const overduePanel = document.getElementById('clientsOverduePanel');
   if (overdueBtn && overduePanel) {
     overdueBtn.addEventListener('click', () => {
       overduePanel.classList.toggle('hidden');
@@ -3035,6 +3035,15 @@ document.addEventListener('DOMContentLoaded', () => {
   if (budgetCommBtn && budgetCommPanel) {
     budgetCommBtn.addEventListener('click', () => {
       budgetCommPanel.classList.toggle('hidden');
+    });
+  }
+
+  // Кнопка "Поступления по клиентам"
+  const paymentsBtn = document.getElementById('toggleClientsPayments');
+  const paymentsPanel = document.getElementById('clientsPaymentsPanel');
+  if (paymentsBtn && paymentsPanel) {
+    paymentsBtn.addEventListener('click', () => {
+      paymentsPanel.classList.toggle('hidden');
     });
   }
 
