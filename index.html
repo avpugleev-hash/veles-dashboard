@@ -292,10 +292,19 @@ body {
 /* Metrics Grid */
 .metrics-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    /* Две карточки равной ширины на всю доступную область */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-24);
     margin-bottom: var(--space-32);
 }
+
+/* На планшетах и телефонах — по одной карточке в ряд */
+@media (max-width: 1024px) {
+    .metrics-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 
 /* Бюджет: на широких экранах — отдельная строка на всю ширину */
 @media (min-width: 1200px) {
@@ -1128,7 +1137,7 @@ body {
 
         <!-- Правая колонка: Тариф -->
         <div>
-          <h4 class="subsection-header">Доходы</h4>
+          <h4 class="subsection-header">Тариф</h4>
           <table class="metric-table">
             <thead>
               <tr>
