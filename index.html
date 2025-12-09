@@ -2756,8 +2756,6 @@ function renderBudgetProductionCard() {
     commPanel.classList.add('hidden');
   }
 }
-
-
 function populateDashboard() {
     if (!dashboardData) return;
 
@@ -2785,6 +2783,7 @@ function populateDashboard() {
         `${dashboardData.receivables.overdue_percent}%`;
     document.getElementById('overdueProgressFill').style.width =
         `${dashboardData.receivables.overdue_percent}%`;
+
     // Подпись под заголовком "Дебиторская задолженность"
     const dateEl = document.getElementById('receivablesDate');
     if (dateEl) {
@@ -2795,18 +2794,18 @@ function populateDashboard() {
         dateEl.textContent = '';
       }
     }
-        // --- Остатки денежных средств в шапке карточки ---
-const cashEl = document.getElementById('cashSummary');
-if (cashEl && dashboardData.cash) {
-  const textAmount = formatCurrency(dashboardData.cash.total);
-  const textDate = dashboardData.cash.date
-    ? formatDateRuShort(dashboardData.cash.date)
-    : '';
-  cashEl.textContent = textDate
-    ? `Остатки ДС: ${textAmount} на ${textDate}`
-    : `Остатки ДС: ${textAmount}`;
-}
 
+    // --- Остатки денежных средств в шапке карточки ---
+    const cashEl = document.getElementById('cashSummary');
+    if (cashEl && dashboardData.cash) {
+      const textAmount = formatCurrency(dashboardData.cash.total);
+      const textDate = dashboardData.cash.date
+        ? formatDateRuShort(dashboardData.cash.date)
+        : '';
+      cashEl.textContent = textDate
+        ? `Остатки ДС: ${textAmount} на ${textDate}`
+        : `Остатки ДС: ${textAmount}`;
+    }
 
     // --- Кредиторская задолженность ---
     const payDateEl = document.getElementById('payablesDate');
@@ -2816,9 +2815,8 @@ if (cashEl && dashboardData.cash) {
         : '';
     }
 
-      // Блок Кредиторка: цифры сверху (оставляем только общий долг)
+    // Блок Кредиторка: цифры сверху (оставляем только общий долг)
     const apTotalEl = document.getElementById('apTotalDebt');
-
     if (apTotalEl && dashboardData.payables) {
         const totalAp = dashboardData.payables.total_debt || 0;
         apTotalEl.textContent = formatCurrency(totalAp);
@@ -2827,9 +2825,7 @@ if (cashEl && dashboardData.cash) {
     // Структура кредиторки по поставщикам
     renderPayablesSuppliers();
 
-
-    // Подпись под заголовком "ЗАДОЛЖЕННОСТЬ"
-
+    // Ещё раз аккуратно выставляем дату для дебиторки (если нужно)
     if (dateEl) {
         if (dashboardData.receivables_date) {
             dateEl.textContent = 'Данные на ' + formatDateRuShort(dashboardData.receivables_date);
@@ -2852,6 +2848,7 @@ if (cashEl && dashboardData.cash) {
         updatePaymentsTotal(0);
         renderPaymentsByClient([]);
     }
+
     // --- Бюджет производственной службы ---
     renderBudgetProductionCard();
 
@@ -2863,13 +2860,6 @@ if (cashEl && dashboardData.cash) {
         dashboardData.period_label || '—';
 }
 
-    // --- Ремонты ---
-    document.getElementById('fleetTotal').textContent =
-        formatNumber(dashboardData.repairs.fleet_total);
-
-    document.getElementById('lastUpdate').textContent =
-        dashboardData.period_label || '—';
-}
 
 // ==========================
 // 7. ОБНОВЛЕНИЕ ПО КНОПКЕ
