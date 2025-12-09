@@ -484,6 +484,24 @@ body {
 .metric-table tr:nth-child(even) {
     background-color: rgba(15, 23, 42, 0.02);
 }
+/* Бюджет: сетка и служебные строки */
+.budget-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: var(--space-12);
+}
+
+.metric-table tr.group-row td {
+    padding-top: 6px;
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-secondary);
+}
+
+.metric-table tr.total-row td {
+    border-top: 1px solid rgba(148, 163, 184, 0.6);
+    font-weight: var(--font-weight-bold);
+}
 
 /* Кнопки-ссылки под карточкой */
 .link-button {
@@ -1177,7 +1195,6 @@ const SHEET_CASH_CSV_URL =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vRy08FvutySDNk8yvn0QKdT92-uWjRqaxqi2057Tl42Ai2zLS4L833E2g2GdgBnpFX-t5uwX6JUcmg4/pub?gid=676880520&single=true&output=csv';  
 const SHEET_BUDGET_PROD_CSV_URL =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=0&single=true&output=csv';
-
     
 let dashboardData = null;
 let trendChart = null;
@@ -1187,6 +1204,7 @@ let paymentsByClient = []; // [{ client, amount }]
 let payablesBySupplier = []; // [{ supplier, total, avg_overdue }]
 let yesterdayLoadingStations = []; // [{ station, count }]
 let yesterdayLoadingDate = null;
+let budgetProduction = null; // бюджет производственной службы
 
 // ==========================
 // 2. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
@@ -1226,6 +1244,124 @@ function buildCashFromRows(rows) {
   return {
     date: maxDate,
     total: total
+  };
+}
+function buildBudgetProductionFromRows(rows) {
+  // Ожидаем CSV с колонками:
+  // year, month, months_total, section, line_code, line_name, plan, fact, order
+  if (!rows || rows.length < 2) return null;
+
+  const header = rows[0];
+  const idxYear        = header.indexOf('year');
+  const idxMonth       = header.indexOf('month');
+  const idxMonthsTotal = header.indexOf('months_total');
+  const idxSection     = header.indexOf('section');
+  const idxCode        = header.indexOf('line_code');
+  const idxName        = header.indexOf('line_name');
+  const idxPlan        = header.indexOf('plan');
+  const idxFact        = header.indexOf('fact');
+  const idxOrder       = header.indexOf('order');
+
+  if (idxYear === -1 || idxMonth === -1 || idxSection === -1 || idxCode === -1) {
+    console.warn('budget_production: нет нужных колонок (year, month, section, line_code)');
+    return null;
+  }
+
+  const normalizedRows = [];
+  let maxKey = null;
+
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || !row.length) continue;
+
+    const year  = Number(row[idxYear])  || 0;
+    const month = Number(row[idxMonth]) || 0;
+    if (!year || !month) continue;
+
+    const key = year * 12 + month;
+
+    const item = {
+      year,
+      month,
+      key,
+      monthsTotal: idxMonthsTotal !== -1 ? Number(row[idxMonthsTotal]) || null : null,
+      section: String(idxSection !== -1 ? row[idxSection] : '').trim(),
+      code:    String(idxCode    !== -1 ? row[idxCode]    : '').trim(),
+      name:
+        idxName !== -1 && row[idxName]
+          ? String(row[idxName]).trim()
+          : String(row[idxCode] || '').trim(),
+      plan:  idxPlan !== -1 ? toNumber(row[idxPlan]) : 0,
+      fact:  idxFact !== -1 ? toNumber(row[idxFact]) : 0,
+      order: idxOrder !== -1 ? Number(row[idxOrder]) || 0 : 0
+    };
+
+    normalizedRows.push(item);
+
+    if (maxKey === null || key > maxKey) {
+      maxKey = key;
+    }
+  }
+
+  if (!normalizedRows.length || maxKey === null) return null;
+
+  const latestRows = normalizedRows.filter(r => r.key === maxKey);
+  if (!latestRows.length) return null;
+
+  const any = latestRows[0];
+  const period = {
+    year: any.year,
+    month: any.month,
+    monthsTotal: any.monthsTotal
+  };
+
+  function pickSection(sectionName) {
+    return latestRows
+      .filter(r => r.section === sectionName)
+      .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, 'ru'));
+  }
+
+  const expensesMain  = pickSection('expenses_main');
+  const expensesOther = pickSection('expenses_other');
+  const expensesTotal = pickSection('expenses_total');
+  const expensesAvg   = pickSection('expenses_avg');
+  const revenue       = pickSection('revenue');
+  const revenueAvg    = pickSection('revenue_avg');
+
+  let expSummary = null;
+  if (expensesTotal.length) {
+    const t = expensesTotal[0];
+    expSummary = { plan: t.plan, fact: t.fact, name: t.name };
+  } else {
+    const all = expensesMain.concat(expensesOther);
+    const sumPlan = all.reduce((s, r) => s + (r.plan || 0), 0);
+    const sumFact = all.reduce((s, r) => s + (r.fact || 0), 0);
+    expSummary = { plan: sumPlan, fact: sumFact, name: 'Итого расходы' };
+  }
+
+  let revSummary = null;
+  if (revenue.length) {
+    // Если есть строка TOTAL_REV — берём её, иначе первый элемент/сумму
+    const totalRow = revenue.find(r => r.code === 'TOTAL_REV') || revenue[0];
+    if (totalRow) {
+      revSummary = {
+        plan: totalRow.plan,
+        fact: totalRow.fact,
+        name: totalRow.name || 'Выручка всего'
+      };
+    }
+  }
+
+  return {
+    period,
+    expensesMain,
+    expensesOther,
+    expensesTotal,
+    expensesAvg,
+    revenue,
+    revenueAvg,
+    expSummary,
+    revSummary
   };
 }
     
@@ -2094,6 +2230,23 @@ if (SHEET_CASH_CSV_URL) {
     console.error('Ошибка загрузки cash_balances:', e);
   }
 }
+// 6) budget_production (бюджет производственной службы)
+budgetProduction = null;
+
+if (typeof SHEET_BUDGET_PROD_CSV_URL !== 'undefined' && SHEET_BUDGET_PROD_CSV_URL) {
+  try {
+    const resBudget = await fetch(SHEET_BUDGET_PROD_CSV_URL);
+    if (resBudget.ok) {
+      const csvBudget = await resBudget.text();
+      const rowsBudget = parseCSV(csvBudget);
+      budgetProduction = buildBudgetProductionFromRows(rowsBudget);
+    } else {
+      console.warn('Не удалось загрузить budget_production, статус:', resBudget.status);
+    }
+  } catch (e) {
+    console.error('Ошибка загрузки budget_production:', e);
+  }
+}
 
  // 4) repairs_snapshot (последним, когда уже есть snapshotDate)
 try {
@@ -2436,6 +2589,173 @@ function renderRepairsCard(items, dateStr) {
     };
   }
 }
+function renderBudgetProductionCard() {
+  const card = document.getElementById('budget-card');
+  if (!card) return;
+
+  // Если данных ещё нет — ничего не делаем
+  if (!budgetProduction) {
+    return;
+  }
+
+  const period = budgetProduction.period || {};
+  const monthsNames = [
+    'января','февраля','марта','апреля','мая','июня',
+    'июля','августа','сентября','октября','ноября','декабря'
+  ];
+
+  const subtitleEl = document.getElementById('budgetSubtitle');
+  if (subtitleEl) {
+    const m = period.month;
+    const y = period.year;
+    const monthsTotal = period.monthsTotal || m;
+    let text = '';
+
+    if (y && monthsTotal && m) {
+      const mName = monthsNames[m - 1] || '';
+      text = `Бюджет ${y} г., ${monthsTotal} мес. (по ${mName})`;
+    } else if (y && monthsTotal) {
+      text = `Бюджет ${y} г., ${monthsTotal} мес.`;
+    } else if (y) {
+      text = `Бюджет ${y} г.`;
+    }
+
+    subtitleEl.textContent = text;
+  }
+
+  const monthsEl = document.getElementById('budgetProdMonths');
+  if (monthsEl) {
+    const monthsTotal = period.monthsTotal || period.month;
+    monthsEl.textContent = monthsTotal ? `${monthsTotal} месяцев` : '—';
+  }
+
+  const commMonthsEl = document.getElementById('budgetCommMonths');
+  if (commMonthsEl) {
+    const monthsTotal = period.monthsTotal || period.month;
+    commMonthsEl.textContent = monthsTotal ? `${monthsTotal} месяцев` : '—';
+  }
+
+  const commSummaryEl = document.getElementById('budgetCommSummary');
+  if (commSummaryEl) {
+    // пока коммерческий бюджет не подключаем — оставим прочерк
+    commSummaryEl.textContent = '— / —';
+  }
+
+  const expSummaryEl = document.getElementById('budgetProdExpSummary');
+  if (expSummaryEl && budgetProduction.expSummary) {
+    const s = budgetProduction.expSummary;
+    expSummaryEl.textContent =
+      `${formatMillions(s.plan)} / ${formatMillions(s.fact)} млн. р.`;
+  }
+
+  const revSummaryEl = document.getElementById('budgetProdRevSummary');
+  if (revSummaryEl && budgetProduction.revSummary) {
+    const s = budgetProduction.revSummary;
+    revSummaryEl.textContent =
+      `${formatMillions(s.plan)} / ${formatMillions(s.fact)} млн. р.`;
+  }
+
+  function formatCellValue(value) {
+    if (value === null || value === undefined || value === 0) return '—';
+    return formatMillions(value) + ' млн. р.';
+  }
+
+  // --- Левая таблица: Расходы (плюс блок "Переходящие" и итог) ---
+  const expBody = document.getElementById('budgetProdExpBody');
+  if (expBody) {
+    expBody.innerHTML = '';
+
+    const makeRow = (name, plan, fact, extraClass) => {
+      const tr = document.createElement('tr');
+      if (extraClass) tr.classList.add(extraClass);
+
+      if (extraClass === 'group-row') {
+        const td = document.createElement('td');
+        td.colSpan = 3;
+        td.textContent = name;
+        tr.appendChild(td);
+      } else {
+        const tdName = document.createElement('td');
+        tdName.textContent = name;
+        tr.appendChild(tdName);
+
+        const tdPlan = document.createElement('td');
+        tdPlan.className = 'amount';
+        tdPlan.textContent = formatCellValue(plan);
+        tr.appendChild(tdPlan);
+
+        const tdFact = document.createElement('td');
+        tdFact.className = 'amount';
+        tdFact.textContent = formatCellValue(fact);
+        tr.appendChild(tdFact);
+      }
+
+      expBody.appendChild(tr);
+    };
+
+    const mainRows  = budgetProduction.expensesMain  || [];
+    const otherRows = budgetProduction.expensesOther || [];
+    const totalRows = budgetProduction.expensesTotal || [];
+
+    // Основные
+    mainRows.forEach(r => makeRow(r.name, r.plan, r.fact));
+
+    // Переходящие
+    if (otherRows.length) {
+      makeRow('Переходящие', null, null, 'group-row');
+      otherRows.forEach(r => makeRow(r.name, r.plan, r.fact));
+    }
+
+    // Итог
+    if (totalRows.length) {
+      const t = totalRows[0];
+      makeRow(t.name || 'Итого расходы', t.plan, t.fact, 'total-row');
+    }
+  }
+
+  // --- Простые таблицы (средние расходы, выручка, средняя выручка) ---
+  function fillSimpleTable(tbodyId, rows) {
+    const tbody = document.getElementById(tbodyId);
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    (rows || []).forEach(r => {
+      const tr = document.createElement('tr');
+
+      const tdName = document.createElement('td');
+      tdName.textContent = r.name;
+      tr.appendChild(tdName);
+
+      const tdPlan = document.createElement('td');
+      tdPlan.className = 'amount';
+      tdPlan.textContent = formatCellValue(r.plan);
+      tr.appendChild(tdPlan);
+
+      const tdFact = document.createElement('td');
+      tdFact.className = 'amount';
+      tdFact.textContent = formatCellValue(r.fact);
+      tr.appendChild(tdFact);
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  fillSimpleTable('budgetProdExpAvgBody', budgetProduction.expensesAvg);
+  fillSimpleTable('budgetProdRevBody',     budgetProduction.revenue);
+  fillSimpleTable('budgetProdRevAvgBody',  budgetProduction.revenueAvg);
+
+  // Панели по умолчанию можно скрыть
+  const prodPanel = document.getElementById('budgetProdPanel');
+  if (prodPanel) {
+    prodPanel.classList.add('hidden');
+  }
+
+  const commPanel = document.getElementById('budgetCommPanel');
+  if (commPanel) {
+    commPanel.classList.add('hidden');
+  }
+}
 
 
 function populateDashboard() {
@@ -2532,6 +2852,16 @@ if (cashEl && dashboardData.cash) {
         updatePaymentsTotal(0);
         renderPaymentsByClient([]);
     }
+    // --- Бюджет производственной службы ---
+    renderBudgetProductionCard();
+
+    // --- Ремонты ---
+    document.getElementById('fleetTotal').textContent =
+        formatNumber(dashboardData.repairs.fleet_total);
+
+    document.getElementById('lastUpdate').textContent =
+        dashboardData.period_label || '—';
+}
 
     // --- Ремонты ---
     document.getElementById('fleetTotal').textContent =
@@ -2644,41 +2974,67 @@ function renderPaymentsByClient(paymentsData) {
 
 // === Обработчики кнопок раскрытия ===
 document.addEventListener('DOMContentLoaded', () => {
-  const btnOverdue = document.getElementById('toggleClientsOverdue');
-  const btnPayments = document.getElementById('toggleClientsPayments');
-  const btnSuppliers = document.getElementById('toggleSuppliersPayables');
-  const btnLoadingYesterday = document.getElementById('toggleLoadingYesterday');
-  if (btnLoadingYesterday) {
-    btnLoadingYesterday.addEventListener('click', () => {
-      const panel = document.getElementById('loadingYesterdayPanel');
-      if (panel) {
-        panel.classList.toggle('hidden');
-      }
+  // Обновление текущей даты/времени в шапке
+  updateDateTime();
+  setInterval(updateDateTime, 60 * 1000);
+
+  // Кнопка "Структура просрочки по клиентам"
+  const overdueBtn = document.getElementById('toggleClientsOverdue');
+  const overduePanel = document.querySelector('.clients-overdue-panel');
+  if (overdueBtn && overduePanel) {
+    overdueBtn.addEventListener('click', () => {
+      overduePanel.classList.toggle('hidden');
     });
   }
 
-  if (btnOverdue) {
-    btnOverdue.addEventListener('click', () => {
-      document.getElementById('clientsOverduePanel').classList.toggle('hidden');
+  // Кнопка "Структура кредиторки по поставщикам"
+  const suppliersBtn = document.getElementById('toggleSuppliersPayables');
+  const suppliersPanel = document.getElementById('suppliersPayablesPanel');
+  if (suppliersBtn && suppliersPanel) {
+    suppliersBtn.addEventListener('click', () => {
+      suppliersPanel.classList.toggle('hidden');
     });
   }
 
-  if (btnPayments) {
-    btnPayments.addEventListener('click', () => {
-      document
-        .getElementById('clientsPaymentsPanel')
-        .classList.toggle('hidden');
+  // Кнопка "Структура по ремонтам"
+  const repairsBtn = document.getElementById('toggleRepairsTable');
+  const repairsPanel = document.getElementById('repairsTablePanel');
+  if (repairsBtn && repairsPanel) {
+    repairsBtn.addEventListener('click', () => {
+      repairsPanel.classList.toggle('hidden');
     });
   }
 
-  if (btnSuppliers) {
-    btnSuppliers.addEventListener('click', () => {
-      document
-        .getElementById('suppliersPayablesPanel')
-        .classList.toggle('hidden');
+  // Вчерашняя погрузка: показать/скрыть список по станциям
+  const yestBtn = document.getElementById('toggleLoadingYesterday');
+  const yestPanel = document.getElementById('loadingYesterdayPanel');
+  if (yestBtn && yestPanel) {
+    yestBtn.addEventListener('click', () => {
+      yestPanel.classList.toggle('hidden');
     });
   }
+
+  // Бюджет: раскрытие панелей "Производственная / Коммерческая служба"
+  const budgetProdBtn = document.getElementById('toggleBudgetProd');
+  const budgetProdPanel = document.getElementById('budgetProdPanel');
+  if (budgetProdBtn && budgetProdPanel) {
+    budgetProdBtn.addEventListener('click', () => {
+      budgetProdPanel.classList.toggle('hidden');
+    });
+  }
+
+  const budgetCommBtn = document.getElementById('toggleBudgetComm');
+  const budgetCommPanel = document.getElementById('budgetCommPanel');
+  if (budgetCommBtn && budgetCommPanel) {
+    budgetCommBtn.addEventListener('click', () => {
+      budgetCommPanel.classList.toggle('hidden');
+    });
+  }
+
+  // Сразу грузим данные
+  refreshData();
 });
+
 
 
 // ==========================
