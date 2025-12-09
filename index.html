@@ -1225,18 +1225,24 @@ function parseDate(dateStr) {
 
   // 3) Серийный номер даты из Google Sheets / Excel (например 45985)
   const num = Number(raw.replace(',', '.'));
-  if (!Number.isNaN(num) && num > 20000 && num < 60000) {
-    // База для Google Sheets / Excel: 1899-12-30
-    const base = new Date(1899, 11, 30);
-    const ms = Math.round(num * 24 * 60 * 60 * 1000);
-    return new Date(base.getTime() + ms);
+  if (!Number.isNaN(num)) {
+    // нормальная серийная дата
+    if (num > 20000 && num < 60000) {
+      const base = new Date(1899, 11, 30); // 1899-12-30
+      const ms = Math.round(num * 24 * 60 * 60 * 1000);
+      return new Date(base.getTime() + ms);
+    }
+
+    // а вот "260", "77", "5" и т.п. — просто числа, НЕ даты
+    if (/^\d+(\.\d+)?$/.test(raw)) {
+      return null;
+    }
   }
 
-  // 4) Последняя попытка – стандартный парсер JS
+  // 4) Последняя попытка – стандартный парсер JS для строк вроде "2025/12/09"
   const d = new Date(raw);
   return isNaN(d.getTime()) ? null : d;
 }
-
 
 function startOfDay(d) {
     return new Date(d.getFullYear(), d.getMonth(), d.getDate());
