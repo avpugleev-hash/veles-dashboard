@@ -1038,10 +1038,126 @@ body {
   </div>
 </div>
 
+<!-- Card: Бюджет -->
+<div class="metric-card" id="budget-card">
+  <div class="card-header">
+    <div class="card-icon">💰</div>
+    <div class="card-header-text">
+      <h2 class="card-title">БЮДЖЕТ</h2>
+      <div id="budgetSubtitle" class="metric-label"></div>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <!-- Производственная служба -->
+    <div class="subsection-header">
+      <span class="metric-label"><strong>Производственная служба</strong></span>
+      <span id="budgetProdMonths" class="metric-label"></span>
+    </div>
+
+    <div class="metric-row">
+      <span class="metric-label">Расходы всего (план / факт):</span>
+      <span class="metric-value" id="budgetProdExpSummary">— / —</span>
+    </div>
+
+    <div class="metric-row">
+      <span class="metric-label">Доходы всего (план / факт):</span>
+      <span class="metric-value" id="budgetProdRevSummary">— / —</span>
+    </div>
+
+    <div class="metric-row mt-2">
+      <button id="toggleBudgetProd" class="link-button">
+        ▼ Развернуть структуру производственной службы
+      </button>
+    </div>
+
+    <div id="budgetProdPanel" class="hidden">
+      <div class="budget-grid">
+        <!-- Левая колонка: расходы -->
+        <div>
+          <h4 class="subsection-header">Расходы</h4>
+          <table class="metric-table">
+            <thead>
+              <tr>
+                <th>Статья</th>
+                <th>План</th>
+                <th>Факт</th>
+              </tr>
+            </thead>
+            <tbody id="budgetProdExpBody"></tbody>
+          </table>
+
+          <h4 class="subsection-header mt-2">Среднее значение (расходы)</h4>
+          <table class="metric-table">
+            <thead>
+              <tr>
+                <th>Статья</th>
+                <th>План</th>
+                <th>Факт</th>
+              </tr>
+            </thead>
+            <tbody id="budgetProdExpAvgBody"></tbody>
+          </table>
+        </div>
+
+        <!-- Правая колонка: доходы -->
+        <div>
+          <h4 class="subsection-header">Доходы</h4>
+          <table class="metric-table">
+            <thead>
+              <tr>
+                <th>Статья</th>
+                <th>План</th>
+                <th>Факт</th>
+              </tr>
+            </thead>
+            <tbody id="budgetProdRevBody"></tbody>
+          </table>
+
+          <h4 class="subsection-header mt-2">Среднее значение (доходы)</h4>
+          <table class="metric-table">
+            <thead>
+              <tr>
+                <th>Показатель</th>
+                <th>План</th>
+                <th>Факт</th>
+              </tr>
+            </thead>
+            <tbody id="budgetProdRevAvgBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Коммерческая служба -->
+    <div class="subsection-header mt-4">
+      <span class="metric-label"><strong>Коммерческая служба</strong></span>
+      <span id="budgetCommMonths" class="metric-label"></span>
+    </div>
+
+    <div class="metric-row">
+      <span class="metric-label">Сводно (план / факт):</span>
+      <span class="metric-value" id="budgetCommSummary">— / —</span>
+    </div>
+
+    <div class="metric-row mt-2">
+      <button id="toggleBudgetComm" class="link-button">
+        ▼ Развернуть структуру коммерческой службы
+      </button>
+    </div>
+
+    <div id="budgetCommPanel" class="hidden">
+      <p class="metric-label">
+        Структура бюджета коммерческой службы будет настроена отдельно.
+      </p>
+    </div>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 'use strict';
+
 
 // ==========================
 // 1. ССЫЛКА НА GOOGLE SHEETS
@@ -1058,7 +1174,11 @@ const SHEET_AP_SUPPLIERS_CSV_URL =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vQGmHCtGV63YTyIyH-st7Rs43FQq47sz466WxHjNmqM7FXgj422K5qHY2rK4SCalmqDPR6aTiTts-A4/pub?gid=579148005&single=true&output=csv'; // ap_suppliers: задолженность по поставщикам
 const SHEET_LOADING_JOURNAL_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRy08FvutySDNk8yvn0QKdT92-uWjRqaxqi2057Tl42Ai2zLS4L833E2g2GdgBnpFX-t5uwX6JUcmg4/pub?gid=1603902040&single=true&output=csv';
 const SHEET_CASH_CSV_URL =
-  'https://docs.google.com/spreadsheets/d/e/2PACX-1vRy08FvutySDNk8yvn0QKdT92-uWjRqaxqi2057Tl42Ai2zLS4L833E2g2GdgBnpFX-t5uwX6JUcmg4/pub?gid=676880520&single=true&output=csv';    
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vRy08FvutySDNk8yvn0QKdT92-uWjRqaxqi2057Tl42Ai2zLS4L833E2g2GdgBnpFX-t5uwX6JUcmg4/pub?gid=676880520&single=true&output=csv';  
+const SHEET_BUDGET_PROD_CSV_URL =
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=0&single=true&output=csv';
+
+    
 let dashboardData = null;
 let trendChart = null;
 let receivablesByClient = [];   // сюда положим структуру просрочки по клиентам
