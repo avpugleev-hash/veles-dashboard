@@ -1345,28 +1345,37 @@ function buildBudgetProductionFromRows(rows) {
   const revenue       = pickSection('revenue');
   const revenueAvg    = pickSection('revenue_avg');
 
-  let expSummary = null;
-  if (expensesTotal.length) {
-    const t = expensesTotal[0];
-    expSummary = { plan: t.plan, fact: t.fact, name: t.name };
-  } else {
-    const all = expensesMain.concat(expensesOther);
-    const sumPlan = all.reduce((s, r) => s + (r.plan || 0), 0);
-    const sumFact = all.reduce((s, r) => s + (r.fact || 0), 0);
-    expSummary = { plan: sumPlan, fact: sumFact, name: 'Итого расходы' };
+  // --- Итог по расходам: суммируем все строки, а строку "Всего" используем только как подпись ---
+  const allExpenses = expensesMain.concat(expensesOther);
+  const sumExpPlan = allExpenses.reduce((s, r) => s + (r.plan || 0), 0);
+  const sumExpFact = allExpenses.reduce((s, r) => s + (r.fact || 0), 0);
+
+  let expSummaryName = 'Итого расходы';
+  if (expensesTotal.length && expensesTotal[0].name) {
+    expSummaryName = expensesTotal[0].name;
   }
 
+  const expSummary = {
+    plan: sumExpPlan,
+    fact: sumExpFact,
+    name: expSummaryName
+  };
+
+  // --- Итог по тарифу/доходам ---
   let revSummary = null;
   if (revenue.length) {
-    // Если есть строка TOTAL_REV — берём её, иначе первый элемент/сумму
-    const totalRow = revenue.find(r => r.code === 'TOTAL_REV') || revenue[0];
-    if (totalRow) {
-      revSummary = {
-        plan: totalRow.plan,
-        fact: totalRow.fact,
-        name: totalRow.name || 'Выручка всего'
-      };
-    }
+    const sumRevPlan = revenue.reduce((s, r) => s + (r.plan || 0), 0);
+    const sumRevFact = revenue.reduce((s, r) => s + (r.fact || 0), 0);
+
+    let revName = 'Выручка всего';
+    const totalRow = revenue.find(r => r.code === 'TOTAL_REV');
+    if (totalRow && totalRow.name) revName = totalRow.name;
+
+    revSummary = {
+      plan: sumRevPlan,
+      fact: sumRevFact,
+      name: revName
+    };
   }
 
   return {
@@ -1381,6 +1390,7 @@ function buildBudgetProductionFromRows(rows) {
     revSummary
   };
 }
+
     
 function buildPaymentsFromRows(rows) {
     if (!rows || rows.length < 2) return { lastDate: null, items: [] };
