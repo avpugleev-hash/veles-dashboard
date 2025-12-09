@@ -297,6 +297,14 @@ body {
     margin-bottom: var(--space-32);
 }
 
+/* Бюджет: на широких экранах — отдельная строка на всю ширину */
+@media (min-width: 1200px) {
+    #budget-card {
+        grid-column: 1 / -1;
+    }
+}
+
+
 .metric-card {
     background: var(--bg-card);
     border-radius: var(--radius-lg);
