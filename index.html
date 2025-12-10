@@ -2345,12 +2345,6 @@ function formatMillions(amount) {
   return millions;
 }
 
-// теперь это форматирование СУММЫ В РУБЛЯХ (без деления на 1000)
-function formatMillions(amount) {
-  const millions = (amount / 1_000_000).toFixed(1); // тут остаётся в млн
-  return millions;
-}
-
 // форматирование суммы в рублях (без деления на 1000)
 function formatThousands(amount) {
   if (amount === null || amount === undefined || isNaN(amount)) return '0';
@@ -2832,7 +2826,7 @@ function formatCellThousands(value) {
 
     tbody.innerHTML = '';
 
-    // Для средних значений используем тыс. руб.
+    // Для средних значений используем рублях.
     const useThousands =
       tbodyId === 'budgetProdExpAvgBody' ||
       tbodyId === 'budgetProdRevAvgBody';
