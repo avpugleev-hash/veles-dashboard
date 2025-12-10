@@ -2719,72 +2719,50 @@ function populateDashboard() {
   renderBudgetProductionCard();
 }
 
+// ==========================
+// 7. ОБНОВЛЕНИЕ ПО КНОПКЕ
+// ==========================
+async function refreshData() {
+    const btn = document.querySelector('.refresh-btn');
+    if (btn) btn.disabled = true;
 
-    // --- Остатки денежных средств в шапке карточки ---
-    const cashEl = document.getElementById('cashSummary');
-    if (cashEl && dashboardData.cash) {
-      const textAmount = formatCurrency(dashboardData.cash.total);
-      const textDate = dashboardData.cash.date
-        ? formatDateRuShort(dashboardData.cash.date)
-        : '';
-      cashEl.textContent = textDate
-        ? `Остатки ДС: ${textAmount} на ${textDate}`
-        : `Остатки ДС: ${textAmount}`;
-    }
+    try {
+        await loadDataFromSheet();
+        populateDashboard();
 
-    // --- Кредиторская задолженность ---
-    const payDateEl = document.getElementById('payablesDate');
-    if (payDateEl) {
-      payDateEl.textContent = dashboardData.payables_date
-        ? 'Данные на ' + formatDateRuShort(dashboardData.payables_date)
-        : '';
-    }
+        // ставим время последнего успешного обновления
+        const updatedEl = document.getElementById('dataUpdatedAt');
+        if (updatedEl) {
+            const now = new Date();
+            updatedEl.textContent = 'Данные обновлены: ' + formatUpdatedAt(now);
+        }
 
-    // Блок Кредиторка: цифры сверху (оставляем только общий долг)
-    const apTotalEl = document.getElementById('apTotalDebt');
-    if (apTotalEl && dashboardData.payables) {
-        const totalAp = dashboardData.payables.total_debt || 0;
-        apTotalEl.textContent = formatCurrency(totalAp);
-    }
-
-    // Структура кредиторки по поставщикам
-    renderPayablesSuppliers();
-
-    // Ещё раз аккуратно выставляем дату для дебиторки (если нужно)
-    if (dateEl) {
-        if (dashboardData.receivables_date) {
-            dateEl.textContent = 'Данные на ' + formatDateRuShort(dashboardData.receivables_date);
-        } else {
-            dateEl.textContent = '';
+        if (btn) {
+            btn.textContent = '✓ Обновлено!';
+            setTimeout(() => {
+                btn.textContent = '🔄 Обновить данные';
+                btn.disabled = false;
+            }, 1500);
+        }
+    } catch (e) {
+        console.error('Ошибка обновления данных:', e);
+        const updatedEl = document.getElementById('dataUpdatedAt');
+        if (updatedEl) {
+            updatedEl.textContent = 'Ошибка обновления данных';
+        }
+        const lastUpdEl = document.getElementById('lastUpdate');
+        if (lastUpdEl) {
+            lastUpdEl.textContent = 'Ошибка загрузки';
+        }
+        if (btn) {
+            btn.textContent = 'Ошибка 😕';
+            setTimeout(() => {
+                btn.textContent = '🔄 Обновить данные';
+                btn.disabled = false;
+            }, 2000);
         }
     }
-
-    // Структура просрочки по клиентам
-    renderReceivablesByClient();
-
-    // --- Поступления (общая сумма + таблица по клиентам) ---
-    if (paymentsByClient && paymentsByClient.length) {
-        const totalPayments = paymentsByClient.reduce(
-            (sum, p) => sum + (p.amount || 0), 0
-        );
-        updatePaymentsTotal(totalPayments);
-        renderPaymentsByClient(paymentsByClient);
-    } else {
-        updatePaymentsTotal(0);
-        renderPaymentsByClient([]);
-    }
-
-    // --- Бюджет производственной службы ---
-    renderBudgetProductionCard();
-
-    // --- Ремонты ---
-    document.getElementById('fleetTotal').textContent =
-        formatNumber(dashboardData.repairs.fleet_total);
-
-    document.getElementById('lastUpdate').textContent =
-        dashboardData.period_label || '—';
 }
-
 
 // ==========================
 // 7. ОБНОВЛЕНИЕ ПО КНОПКЕ
