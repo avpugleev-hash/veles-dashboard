@@ -508,6 +508,12 @@ body {
     gap: 16px;
     margin-top: var(--space-12);
 }
+/* На телефонах блоки бюджета (Расходы / Тариф) встают друг под другом */
+@media (max-width: 768px) {
+    .budget-grid {
+        grid-template-columns: 1fr;
+    }
+}
 
 .metric-table tr.group-row td {
     padding-top: 6px;
@@ -1111,16 +1117,18 @@ body {
         <!-- Левая колонка: расходы -->
         <div>
           <h4 class="subsection-header">Расходы</h4>
-          <table class="metric-table">
-            <thead>
-              <tr>
-                <th>Статья</th>
-                <th>План</th>
-                <th>Факт</th>
-              </tr>
-            </thead>
-            <tbody id="budgetProdExpBody"></tbody>
-          </table>
+         <table class="metric-table">
+              <thead>
+                <tr>
+                  <th>Статья</th>
+                  <th>План, шт</th>
+                  <th>Факт, шт</th>
+                  <th>План</th>
+                  <th>Факт</th>
+                </tr>
+              </thead>
+              <tbody id="budgetProdExpBody"></tbody>
+            </table>
 
           <h4 class="subsection-header mt-2">Среднее значение (ремонт)</h4>
           <table class="metric-table">
@@ -1278,6 +1286,9 @@ function buildBudgetProductionFromRows(rows) {
   const idxPlan        = header.indexOf('plan');
   const idxFact        = header.indexOf('fact');
   const idxOrder       = header.indexOf('order');
+  const idxQtyPlan     = header.indexOf('qty_plan');
+  const idxQtyFact     = header.indexOf('qty_fact');
+
 
   if (idxYear === -1 || idxMonth === -1 || idxSection === -1 || idxCode === -1) {
     console.warn('budget_production: нет нужных колонок (year, month, section, line_code)');
@@ -1297,7 +1308,7 @@ function buildBudgetProductionFromRows(rows) {
 
     const key = year * 12 + month;
 
-    const item = {
+        const item = {
       year,
       month,
       key,
@@ -1308,9 +1319,11 @@ function buildBudgetProductionFromRows(rows) {
         idxName !== -1 && row[idxName]
           ? String(row[idxName]).trim()
           : String(row[idxCode] || '').trim(),
-      plan:  idxPlan !== -1 ? toNumber(row[idxPlan]) : 0,
-      fact:  idxFact !== -1 ? toNumber(row[idxFact]) : 0,
-      order: idxOrder !== -1 ? Number(row[idxOrder]) || 0 : 0
+      plan:    idxPlan    !== -1 ? toNumber(row[idxPlan])    : 0,
+      fact:    idxFact    !== -1 ? toNumber(row[idxFact])    : 0,
+      order:   idxOrder   !== -1 ? Number(row[idxOrder]) || 0 : 0,
+      qtyPlan: idxQtyPlan !== -1 ? toNumber(row[idxQtyPlan]) : null,
+      qtyFact: idxQtyFact !== -1 ? toNumber(row[idxQtyFact]) : null
     };
 
     normalizedRows.push(item);
@@ -2707,19 +2720,34 @@ function renderBudgetProductionCard() {
   if (expBody) {
     expBody.innerHTML = '';
 
-    const makeRow = (name, plan, fact, extraClass) => {
+    const formatQty = (value) => {
+      if (value === null || value === undefined || value === 0) return '—';
+      return formatNumber(Math.round(value));
+    };
+
+    const makeRow = (name, qtyPlan, qtyFact, plan, fact, extraClass) => {
       const tr = document.createElement('tr');
       if (extraClass) tr.classList.add(extraClass);
 
       if (extraClass === 'group-row') {
         const td = document.createElement('td');
-        td.colSpan = 3;
+        td.colSpan = 5;
         td.textContent = name;
         tr.appendChild(td);
       } else {
         const tdName = document.createElement('td');
         tdName.textContent = name;
         tr.appendChild(tdName);
+
+        const tdQtyPlan = document.createElement('td');
+        tdQtyPlan.className = 'amount';
+        tdQtyPlan.textContent = formatQty(qtyPlan);
+        tr.appendChild(tdQtyPlan);
+
+        const tdQtyFact = document.createElement('td');
+        tdQtyFact.className = 'amount';
+        tdQtyFact.textContent = formatQty(qtyFact);
+        tr.appendChild(tdQtyFact);
 
         const tdPlan = document.createElement('td');
         tdPlan.className = 'amount';
@@ -2739,19 +2767,30 @@ function renderBudgetProductionCard() {
     const otherRows = budgetProduction.expensesOther || [];
     const totalRows = budgetProduction.expensesTotal || [];
 
-    // Основные
-    mainRows.forEach(r => makeRow(r.name, r.plan, r.fact));
+    // Основные (ДР, КР, ТОР, З.Ч.)
+    mainRows.forEach(r =>
+      makeRow(r.name, r.qtyPlan, r.qtyFact, r.plan, r.fact)
+    );
 
-    // Переходящие
+    // Переходящие + прочие (страхование и т.д.)
     if (otherRows.length) {
-      makeRow('Переходящие', null, null, 'group-row');
-      otherRows.forEach(r => makeRow(r.name, r.plan, r.fact));
+      makeRow('Переходящие', null, null, null, null, 'group-row');
+      otherRows.forEach(r =>
+        makeRow(r.name, r.qtyPlan, r.qtyFact, r.plan, r.fact)
+      );
     }
 
-    // Итог
+    // Итоговая строка "Всего" — количество оставим пустым
     if (totalRows.length) {
       const t = totalRows[0];
-      makeRow(t.name || 'Итого расходы', t.plan, t.fact, 'total-row');
+      makeRow(
+        t.name || 'Итого расходы',
+        null,
+        null,
+        t.plan,
+        t.fact,
+        'total-row'
+      );
     }
   }
 
