@@ -2335,7 +2335,10 @@ function formatCurrency(amount) {
   const millions = (amount / 1_000_000).toFixed(1);
   return millions;
 }
-
+function formatThousands(amount) {
+  const thousands = (amount / 1_000).toFixed(1);
+  return thousands;
+}
 function updateDateTime() {
     const now = new Date();
     const options = {
