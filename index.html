@@ -1144,8 +1144,8 @@ body {
             <thead>
               <tr>
                 <th>Статья</th>
-                <th class="amount">План, тыс. р.</th>
-                <th class="amount">Факт, тыс. р.</th>
+                <th class="amount">План, р.</th>
+                <th class="amount">Факт, р.</th>
               </tr>
             </thead>
             <tbody id="budgetProdExpAvgBody"></tbody>
@@ -1171,8 +1171,8 @@ body {
             <thead>
               <tr>
                 <th>Показатель</th>
-                <th class="amount">План, тыс. р.</th>
-                <th class="amount">Факт, тыс. р.</th>
+                <th class="amount">План, р.</th>
+                <th class="amount">Факт, р.</th>
               </tr>
             </thead>
             <tbody id="budgetProdRevAvgBody"></tbody>
@@ -2346,18 +2346,18 @@ function formatMillions(amount) {
 }
 
 // теперь это форматирование СУММЫ В РУБЛЯХ (без деления на 1000)
-function formatThousands(amount) {
-  if (amount === null || amount === undefined || isNaN(amount)) return '0';
-  const rounded = Math.round(amount);            // до рублей
-  return formatNumber(rounded);                  // пробелы: 2 442
+function formatMillions(amount) {
+  const millions = (amount / 1_000_000).toFixed(1); // тут остаётся в млн
+  return millions;
 }
 
-  // Переводим в тысячи и округляем до целого
-  const thousands = amount / 1_000;
-  const rounded = Math.round(thousands);
-  // formatNumber добавит пробелы-разделители разрядов, если нужно
-  return formatNumber(rounded);
+// форматирование суммы в рублях (без деления на 1000)
+function formatThousands(amount) {
+  if (amount === null || amount === undefined || isNaN(amount)) return '0';
+  const rounded = Math.round(amount);      // округляем до рубля
+  return formatNumber(rounded);            // 2 442, 2 150 и т.п.
 }
+
 function updateDateTime() {
     const now = new Date();
     const options = {
@@ -2739,7 +2739,7 @@ function renderBudgetProductionCard() {
     return formatMillions(value) + ' млн. р.';
   }
 
-  function formatCellThousands(value) {
+function formatCellThousands(value) {
   if (value === null || value === undefined || value === 0) return '—';
   return formatThousands(value) + ' руб.';
 }
