@@ -310,16 +310,7 @@ body {
         grid-template-columns: 1fr;
     }
 }
-
-
-/* Бюджет: на широких экранах — отдельная строка на всю ширину */
-@media (min-width: 1200px) {
-    #budget-card {
-        grid-column: 1 / -1;
-    }
-}
-
-
+        
 .metric-card {
     background: var(--bg-card);
     border-radius: var(--radius-lg);
@@ -875,174 +866,172 @@ body {
 
         <!-- Metrics Grid -->
         <div class="metrics-grid">
-                     <!-- Card 3: Repairs -->
-                      <div class="metric-card repairs-card">
-                        <div class="card-header">
-                          <div class="card-icon">🛠️</div>
-                          <div class="card-header-text">
-                            <div class="card-title-row">
-                              <h2 class="card-title">РЕМОНТЫ</h2>
-                              <span id="repairsHeaderSummary" class="metric-value card-title-suffix"></span>
-                            </div>
-                            <div id="repairsDate" class="metric-label"></div>
-                          </div>
-                        </div>
-
-                        <div class="card-body">
-                          <div id="repairsTotalsList" class="repairs-totals-grid"></div>
-            
-                          <div class="metric-row mt-2">
-                            <button id="toggleRepairsTable" class="link-button">
-                              ▼ Развернуть структуру по ремонтам
-                            </button>
-                          </div>
-            
-                          <div id="repairsTablePanel" class="hidden">
-                            <table class="metric-table">
-                              <thead>
-                                <tr>
-                                  <th>Вид ремонта</th>
-                                  <th>В ремонте</th>
-                                  <th>В пути</th>
-                                  <th>В ожидании оформления</th>
-                                  <th>В ожидании отправки</th>
-                                  <th>Итого</th>
-                                </tr>
-                              </thead>
-                              <tbody id="repairsTableBody"></tbody>
-                            </table>
-                          </div>
-            
-                          <div class="metric-row mt-2">
-                            <span class="metric-label">Всего вагонов в парке:</span>
-                            <span class="metric-value" id="fleetTotal">—</span>
-                          </div>
-                        </div>
-                      </div>
-
-                    </div>
+          <!-- Card: Ремонты -->
+          <div class="metric-card repairs-card">
+            <div class="card-header">
+              <div class="card-icon">🛠️</div>
+              <div class="card-header-text">
+                <div class="card-title-row">
+                  <h2 class="card-title">РЕМОНТЫ</h2>
+                  <span id="repairsHeaderSummary" class="metric-value card-title-suffix"></span>
+                </div>
+                <div id="repairsDate" class="metric-label"></div>
+              </div>
             </div>
 
-<!-- Card: Бюджет -->
-<div class="metric-card" id="budget-card">
-  <div class="card-header">
-    <div class="card-icon">💰</div>
-    <div class="card-header-text">
-      <h2 class="card-title">БЮДЖЕТ</h2>
-      <div id="budgetSubtitle" class="metric-label"></div>
+            <div class="card-body">
+              <div id="repairsTotalsList" class="repairs-totals-grid"></div>
+
+              <div class="metric-row mt-2">
+                <button id="toggleRepairsTable" class="link-button">
+                  ▼ Развернуть структуру по ремонтам
+                </button>
+              </div>
+
+              <div id="repairsTablePanel" class="hidden">
+                <table class="metric-table">
+                  <thead>
+                    <tr>
+                      <th>Вид ремонта</th>
+                      <th>В ремонте</th>
+                      <th>В пути</th>
+                      <th>В ожидании оформления</th>
+                      <th>В ожидании отправки</th>
+                      <th>Итого</th>
+                    </tr>
+                  </thead>
+                  <tbody id="repairsTableBody"></tbody>
+                </table>
+              </div>
+
+              <div class="metric-row mt-2">
+                <span class="metric-label">Всего вагонов в парке:</span>
+                <span class="metric-value" id="fleetTotal">—</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card: Бюджет -->
+          <div class="metric-card" id="budget-card">
+            <div class="card-header">
+              <div class="card-icon">💰</div>
+              <div class="card-header-text">
+                <h2 class="card-title">БЮДЖЕТ</h2>
+                <div id="budgetSubtitle" class="metric-label"></div>
+              </div>
+            </div>
+
+            <div class="subsection-header">
+              <span class="metric-label budget-service-title">
+                <strong>Производственная служба</strong>
+              </span>
+              <span id="budgetProdMonths" class="metric-label"></span>
+            </div>
+
+            <div class="metric-row">
+              <span class="metric-label">Расходы ремонт (план / факт):</span>
+              <span class="metric-value" id="budgetProdExpSummary">— / —</span>
+            </div>
+
+            <div class="metric-row">
+              <span class="metric-label">Расходы тариф (план / факт):</span>
+              <span class="metric-value" id="budgetProdRevSummary">— / —</span>
+            </div>
+
+            <div class="metric-row mt-2">
+              <button id="toggleBudgetProd" class="link-button">
+                ▼ Развернуть структуру производственной службы
+              </button>
+            </div>
+
+            <div id="budgetProdPanel" class="hidden">
+              <div class="budget-grid">
+                <!-- Левая колонка: расходы -->
+                <div>
+                  <h4 class="subsection-header">Расходы</h4>
+                  <table class="metric-table">
+                    <thead>
+                      <tr>
+                        <th>Статья</th>
+                        <th class="amount">План, шт</th>
+                        <th class="amount">Факт, шт</th>
+                        <th class="amount">План</th>
+                        <th class="amount">Факт</th>
+                      </tr>
+                    </thead>
+                    <tbody id="budgetProdExpBody"></tbody>
+                  </table>
+
+                  <h4 class="subsection-header mt-4">Среднее значение (ремонт)</h4>
+                  <table class="metric-table">
+                    <thead>
+                      <tr>
+                        <th>Статья</th>
+                        <th class="amount">План, р.</th>
+                        <th class="amount">Факт, р.</th>
+                      </tr>
+                    </thead>
+                    <tbody id="budgetProdExpAvgBody"></tbody>
+                  </table>
+                </div>
+
+                <!-- Правая колонка: Тариф -->
+                <div>
+                  <h4 class="subsection-header">Тариф</h4>
+                  <table class="metric-table">
+                    <thead>
+                      <tr>
+                        <th>Статья</th>
+                        <th class="amount">План</th>
+                        <th class="amount">Факт</th>
+                      </tr>
+                    </thead>
+                    <tbody id="budgetProdRevBody"></tbody>
+                  </table>
+
+                  <h4 class="subsection-header mt-4">Среднее значение (тариф)</h4>
+                  <table class="metric-table">
+                    <thead>
+                      <tr>
+                        <th>Показатель</th>
+                        <th class="amount">План, р.</th>
+                        <th class="amount">Факт, р.</th>
+                      </tr>
+                    </thead>
+                    <tbody id="budgetProdRevAvgBody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Коммерческая служба -->
+            <div class="subsection-header mt-4">
+              <span class="metric-label budget-service-title">
+                <strong>Коммерческая служба</strong>
+              </span>
+              <span id="budgetCommMonths" class="metric-label"></span>
+            </div>
+
+            <div class="metric-row">
+              <span class="metric-label">Сводно (план / факт):</span>
+              <span class="metric-value" id="budgetCommSummary">— / —</span>
+            </div>
+
+            <div class="metric-row mt-2">
+              <button id="toggleBudgetComm" class="link-button">
+                ▼ Развернуть структуру коммерческой службы
+              </button>
+            </div>
+
+            <div id="budgetCommPanel" class="hidden">
+              <p class="metric-label">
+                Структура бюджета коммерческой службы будет настроена отдельно.
+              </p>
+            </div>
+          </div>
+        </div> <!-- конец .metrics-grid и .dashboard-container -->
     </div>
-  </div>
 
-    <div class="subsection-header">
-      <span class="metric-label budget-service-title">
-        <strong>Производственная служба</strong>
-      </span>
-      <span id="budgetProdMonths" class="metric-label"></span>
-    </div>
-
-    <div class="metric-row">
-      <span class="metric-label">Расходы ремонт (план / факт):</span>
-      <span class="metric-value" id="budgetProdExpSummary">— / —</span>
-    </div>
-
-    <div class="metric-row">
-      <span class="metric-label">Расходы тариф (план / факт):</span>
-      <span class="metric-value" id="budgetProdRevSummary">— / —</span>
-    </div>
-
-    <div class="metric-row mt-2">
-      <button id="toggleBudgetProd" class="link-button">
-        ▼ Развернуть структуру производственной службы
-      </button>
-    </div>
-
-        <div id="budgetProdPanel" class="hidden">
-      <div class="budget-grid">
-        <!-- Левая колонка: расходы -->
-        <div>
-          <h4 class="subsection-header">Расходы</h4>
-          <table class="metric-table">
-             <thead>
-                <tr>
-                  <th>Статья</th>
-                  <th class="amount">План, шт</th>
-                  <th class="amount">Факт, шт</th>
-                  <th class="amount">План</th>
-                  <th class="amount">Факт</th>
-                </tr>
-              </thead>
-
-            <tbody id="budgetProdExpBody"></tbody>
-          </table>
-
-          <h4 class="subsection-header mt-4">Среднее значение (ремонт)</h4>
-          <table class="metric-table">
-            <thead>
-              <tr>
-                <th>Статья</th>
-                <th class="amount">План, р.</th>
-                <th class="amount">Факт, р.</th>
-              </tr>
-            </thead>
-            <tbody id="budgetProdExpAvgBody"></tbody>
-          </table>
-        </div>
-
-        <!-- Правая колонка: Тариф -->
-        <div>
-          <h4 class="subsection-header">Тариф</h4>
-          <table class="metric-table">
-            <thead>
-              <tr>
-                <th>Статья</th>
-                <th class="amount">План</th>
-                <th class="amount">Факт</th>
-              </tr>
-            </thead>
-            <tbody id="budgetProdRevBody"></tbody>
-          </table>
-
-          <h4 class="subsection-header mt-4">Среднее значение (тариф)</h4>
-          <table class="metric-table">
-            <thead>
-              <tr>
-                <th>Показатель</th>
-                <th class="amount">План, р.</th>
-                <th class="amount">Факт, р.</th>
-              </tr>
-            </thead>
-            <tbody id="budgetProdRevAvgBody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Коммерческая служба -->
-    <div class="subsection-header mt-4">
-      <span class="metric-label budget-service-title">
-        <strong>Коммерческая служба</strong>
-      </span>
-      <span id="budgetCommMonths" class="metric-label"></span>
-    </div>
-
-    <div class="metric-row">
-      <span class="metric-label">Сводно (план / факт):</span>
-      <span class="metric-value" id="budgetCommSummary">— / —</span>
-    </div>
-
-    <div class="metric-row mt-2">
-      <button id="toggleBudgetComm" class="link-button">
-        ▼ Развернуть структуру коммерческой службы
-      </button>
-    </div>
-
-    <div id="budgetCommPanel" class="hidden">
-      <p class="metric-label">
-        Структура бюджета коммерческой службы будет настроена отдельно.
-      </p>
-    </div>
-  </div>
-</div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
@@ -2718,43 +2707,18 @@ function formatCellThousands(value) {
 }
 
 function populateDashboard() {
-    if (!dashboardData) return;
+  if (!dashboardData) return;
 
-    // --- Погрузка ---
-    document.getElementById('loadedWagonsMonth').textContent =
-        formatNumber(dashboardData.loading.loaded_wagons_month);
-    document.getElementById('progressPercent').textContent =
-        `${dashboardData.loading.progress_percent}%`;
-    document.getElementById('progressFill').style.width =
-        `${dashboardData.loading.progress_percent}%`;
-    document.getElementById('planMonth').textContent =
-        formatNumber(dashboardData.loading.plan_month);
-    document.getElementById('fullMonthPlan').textContent =
-        formatNumber(dashboardData.loading.month_total_plan || 0);
-    document.getElementById('loadedYesterday').textContent =
-        formatNumber(dashboardData.loading.loaded_wagons_yesterday);
-    renderYesterdayLoadingList();
+  // --- Ремонты: всего вагонов в парке ---
+  const fleetEl = document.getElementById('fleetTotal');
+  if (fleetEl && dashboardData.repairs) {
+    fleetEl.textContent = formatNumber(dashboardData.repairs.fleet_total || 0);
+  }
 
-    // --- Задолженность ---
-    document.getElementById('totalDebt').textContent =
-        formatCurrency(dashboardData.receivables.total_debt);
-    document.getElementById('overdueDebt').textContent =
-        formatCurrency(dashboardData.receivables.overdue_debt);
-    document.getElementById('overduePercent').textContent =
-        `${dashboardData.receivables.overdue_percent}%`;
-    document.getElementById('overdueProgressFill').style.width =
-        `${dashboardData.receivables.overdue_percent}%`;
+  // --- Бюджет производственной службы ---
+  renderBudgetProductionCard();
+}
 
-    // Подпись под заголовком "Дебиторская задолженность"
-    const dateEl = document.getElementById('receivablesDate');
-    if (dateEl) {
-      if (dashboardData.receivables_date) {
-        dateEl.textContent =
-          'Данные на ' + formatDateRuShort(dashboardData.receivables_date);
-      } else {
-        dateEl.textContent = '';
-      }
-    }
 
     // --- Остатки денежных средств в шапке карточки ---
     const cashEl = document.getElementById('cashSummary');
