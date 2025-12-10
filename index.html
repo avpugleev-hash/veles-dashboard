@@ -2340,14 +2340,18 @@ function formatCurrency(amount) {
     const millions = (amount / 1000000).toFixed(1);
     return `${millions} млн. р.`;
 }
-    function formatMillions(amount) {
-  const millions = (amount / 1_000_000).toFixed(1);
+function formatMillions(amount) {
+  const millions = (amount / 1_000_000).toFixed(1); // тут остаётся в млн
   return millions;
 }
+
+// теперь это форматирование СУММЫ В РУБЛЯХ (без деления на 1000)
 function formatThousands(amount) {
-  if (amount === null || amount === undefined || isNaN(amount)) {
-    return '0';
-  }
+  if (amount === null || amount === undefined || isNaN(amount)) return '0';
+  const rounded = Math.round(amount);            // до рублей
+  return formatNumber(rounded);                  // пробелы: 2 442
+}
+
   // Переводим в тысячи и округляем до целого
   const thousands = amount / 1_000;
   const rounded = Math.round(thousands);
