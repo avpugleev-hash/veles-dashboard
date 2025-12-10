@@ -1345,37 +1345,51 @@ function buildBudgetProductionFromRows(rows) {
   const revenue       = pickSection('revenue');
   const revenueAvg    = pickSection('revenue_avg');
 
-  // --- Итог по расходам: суммируем все строки, а строку "Всего" используем только как подпись ---
-  const allExpenses = expensesMain.concat(expensesOther);
-  const sumExpPlan = allExpenses.reduce((s, r) => s + (r.plan || 0), 0);
-  const sumExpFact = allExpenses.reduce((s, r) => s + (r.fact || 0), 0);
+  // --- Итог по расходам (ремонт): используем строку TOTAL_EXP, если она есть ---
+  let expSummary = null;
+  if (expensesTotal && expensesTotal.length) {
+    const totalRow =
+      expensesTotal.find(r => r.code === 'TOTAL_EXP') || expensesTotal[0];
 
-  let expSummaryName = 'Итого расходы';
-  if (expensesTotal.length && expensesTotal[0].name) {
-    expSummaryName = expensesTotal[0].name;
+    expSummary = {
+      plan: totalRow.plan || 0,
+      fact: totalRow.fact || 0,
+      name: totalRow.name || 'Итого расходы'
+    };
+  } else {
+    // если секции expenses_total нет — суммируем все строки расходов
+    const allExpenses = expensesMain.concat(expensesOther);
+    const sumExpPlan = allExpenses.reduce((s, r) => s + (r.plan || 0), 0);
+    const sumExpFact = allExpenses.reduce((s, r) => s + (r.fact || 0), 0);
+
+    expSummary = {
+      plan: sumExpPlan,
+      fact: sumExpFact,
+      name: 'Итого расходы'
+    };
   }
 
-  const expSummary = {
-    plan: sumExpPlan,
-    fact: sumExpFact,
-    name: expSummaryName
-  };
-
-  // --- Итог по тарифу/доходам ---
+  // --- Итог по тарифу/доходам: используем строку TOTAL_REV, если она есть ---
   let revSummary = null;
-  if (revenue.length) {
-    const sumRevPlan = revenue.reduce((s, r) => s + (r.plan || 0), 0);
-    const sumRevFact = revenue.reduce((s, r) => s + (r.fact || 0), 0);
+  if (revenue && revenue.length) {
+    const totalRevRow = revenue.find(r => r.code === 'TOTAL_REV');
 
-    let revName = 'Выручка всего';
-    const totalRow = revenue.find(r => r.code === 'TOTAL_REV');
-    if (totalRow && totalRow.name) revName = totalRow.name;
+    if (totalRevRow) {
+      revSummary = {
+        plan: totalRevRow.plan || 0,
+        fact: totalRevRow.fact || 0,
+        name: totalRevRow.name || 'Выручка всего'
+      };
+    } else {
+      const sumRevPlan = revenue.reduce((s, r) => s + (r.plan || 0), 0);
+      const sumRevFact = revenue.reduce((s, r) => s + (r.fact || 0), 0);
 
-    revSummary = {
-      plan: sumRevPlan,
-      fact: sumRevFact,
-      name: revName
-    };
+      revSummary = {
+        plan: sumRevPlan,
+        fact: sumRevFact,
+        name: 'Выручка всего'
+      };
+    }
   }
 
   return {
@@ -1390,6 +1404,7 @@ function buildBudgetProductionFromRows(rows) {
     revSummary
   };
 }
+
 
     
 function buildPaymentsFromRows(rows) {
