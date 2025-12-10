@@ -1130,17 +1130,18 @@ body {
               <tbody id="budgetProdExpBody"></tbody>
             </table>
 
-          <h4 class="subsection-header mt-2">Среднее значение (ремонт)</h4>
-          <table class="metric-table">
-            <thead>
-              <tr>
-                <th>Статья</th>
-                <th>План</th>
-                <th>Факт</th>
-              </tr>
-            </thead>
-            <tbody id="budgetProdExpAvgBody"></tbody>
-          </table>
+          <h4 class="subsection-header mt-4">Среднее значение (тариф)</h4>
+<table class="metric-table">
+  <thead>
+    <tr>
+      <th>Показатель</th>
+      <th>План, тыс. р.</th>
+      <th>Факт, тыс. р.</th>
+    </tr>
+  </thead>
+  <tbody id="budgetProdRevAvgBody"></tbody>
+</table>
+
         </div>
 
         <!-- Правая колонка: Тариф -->
@@ -2700,17 +2701,23 @@ function renderBudgetProductionCard() {
   }
 
   const expSummaryEl = document.getElementById('budgetProdExpSummary');
-  if (expSummaryEl && budgetProduction.expSummary) {
+  if (expSummaryEl && budgetProduction && budgetProduction.expSummary) {
     const s = budgetProduction.expSummary;
-    expSummaryEl.textContent =
-      `${formatMillions(s.plan)} / ${formatMillions(s.fact)} млн. р.`;
+    const factBad = s.plan != null && s.fact != null && s.fact > s.plan;
+
+    expSummaryEl.innerHTML =
+      `${formatMillions(s.plan)} / ` +
+      `<span class="${factBad ? 'text-negative' : ''}">${formatMillions(s.fact)}</span> млн. р.`;
   }
 
   const revSummaryEl = document.getElementById('budgetProdRevSummary');
-  if (revSummaryEl && budgetProduction.revSummary) {
+  if (revSummaryEl && budgetProduction && budgetProduction.revSummary) {
     const s = budgetProduction.revSummary;
-    revSummaryEl.textContent =
-      `${formatMillions(s.plan)} / ${formatMillions(s.fact)} млн. р.`;
+    const factBad = s.plan != null && s.fact != null && s.fact > s.plan;
+
+    revSummaryEl.innerHTML =
+      `${formatMillions(s.plan)} / ` +
+      `<span class="${factBad ? 'text-negative' : ''}">${formatMillions(s.fact)}</span> млн. р.`;
   }
 
   function formatCellValue(value) {
@@ -2777,7 +2784,7 @@ function renderBudgetProductionCard() {
 
     // Переходящие + прочие (страхование и т.д.)
     if (otherRows.length) {
-      makeRow('Переходящие', null, null, null, null, 'group-row');
+   
       otherRows.forEach(r =>
         makeRow(r.name, r.qtyPlan, r.qtyFact, r.plan, r.fact)
       );
@@ -2827,7 +2834,11 @@ function renderBudgetProductionCard() {
 
   fillSimpleTable('budgetProdExpAvgBody', budgetProduction.expensesAvg);
   fillSimpleTable('budgetProdRevBody',     budgetProduction.revenue);
-  fillSimpleTable('budgetProdRevAvgBody',  budgetProduction.revenueAvg);
+  // убираем строку "Кол. вагонов (среднее)"
+  const revenueAvgFiltered = (budgetProduction.revenueAvg || []).filter(
+    r => r.code !== 'WAGONS_AVG' && r.name !== 'Кол. вагонов (среднее)'
+  );
+  fillSimpleTable('budgetProdRevAvgBody', revenueAvgFiltered);
 
   // Панели по умолчанию можно скрыть
   const prodPanel = document.getElementById('budgetProdPanel');
