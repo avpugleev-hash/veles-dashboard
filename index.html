@@ -2345,8 +2345,14 @@ function formatCurrency(amount) {
   return millions;
 }
 function formatThousands(amount) {
-  const thousands = (amount / 1_000).toFixed(1);
-  return thousands;
+  if (amount === null || amount === undefined || isNaN(amount)) {
+    return '0';
+  }
+  // Переводим в тысячи и округляем до целого
+  const thousands = amount / 1_000;
+  const rounded = Math.round(thousands);
+  // formatNumber добавит пробелы-разделители разрядов, если нужно
+  return formatNumber(rounded);
 }
 function updateDateTime() {
     const now = new Date();
