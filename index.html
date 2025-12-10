@@ -497,6 +497,10 @@ body {
     text-align: right;
     white-space: nowrap;
 }
+/* Числовые заголовки таблиц выравниваем так же, как цифры */
+.metric-table th.amount {
+    text-align: right;
+}
 
 .metric-table td.percent {
     color: var(--warning-orange);
@@ -1122,15 +1126,16 @@ body {
         <div>
           <h4 class="subsection-header">Расходы</h4>
           <table class="metric-table">
-            <thead>
-              <tr>
-                <th>Статья</th>
-                <th>План, шт</th>
-                <th>Факт, шт</th>
-                <th>План</th>
-                <th>Факт</th>
-              </tr>
-            </thead>
+             <thead>
+                <tr>
+                  <th>Статья</th>
+                  <th class="amount">План, шт</th>
+                  <th class="amount">Факт, шт</th>
+                  <th class="amount">План</th>
+                  <th class="amount">Факт</th>
+                </tr>
+              </thead>
+
             <tbody id="budgetProdExpBody"></tbody>
           </table>
 
@@ -1139,8 +1144,8 @@ body {
             <thead>
               <tr>
                 <th>Статья</th>
-                <th>План, тыс. р.</th>
-                <th>Факт, тыс. р.</th>
+                <th class="amount">План, тыс. р.</th>
+                <th class="amount">Факт, тыс. р.</th>
               </tr>
             </thead>
             <tbody id="budgetProdExpAvgBody"></tbody>
@@ -1154,8 +1159,8 @@ body {
             <thead>
               <tr>
                 <th>Статья</th>
-                <th>План</th>
-                <th>Факт</th>
+                <th class="amount">План</th>
+                <th class="amount">Факт</th>
               </tr>
             </thead>
             <tbody id="budgetProdRevBody"></tbody>
@@ -1166,8 +1171,8 @@ body {
             <thead>
               <tr>
                 <th>Показатель</th>
-                <th>План, тыс. р.</th>
-                <th>Факт, тыс. р.</th>
+                <th class="amount">План, тыс. р.</th>
+                <th class="amount">Факт, тыс. р.</th>
               </tr>
             </thead>
             <tbody id="budgetProdRevAvgBody"></tbody>
