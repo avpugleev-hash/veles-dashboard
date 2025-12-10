@@ -222,6 +222,12 @@ body {
     font-weight: var(--font-weight-semibold);
     margin-bottom: var(--space-4);
 }
+/* Крупнее заголовки "Производственная / Коммерческая служба" */
+#budget-card .budget-service-title {
+    font-size: var(--font-size-base);        /* чуть больше, чем у "Расходы" */
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+}
 
 .last-update {
     font-size: var(--font-size-sm);
@@ -1097,10 +1103,10 @@ body {
     </div>
   </div>
 
-  <div class="card-body">
-    <!-- Производственная служба -->
     <div class="subsection-header">
-      <span class="metric-label"><strong>Производственная служба</strong></span>
+      <span class="metric-label budget-service-title">
+        <strong>Производственная служба</strong>
+      </span>
       <span id="budgetProdMonths" class="metric-label"></span>
     </div>
 
@@ -1183,7 +1189,9 @@ body {
 
     <!-- Коммерческая служба -->
     <div class="subsection-header mt-4">
-      <span class="metric-label"><strong>Коммерческая служба</strong></span>
+      <span class="metric-label budget-service-title">
+        <strong>Коммерческая служба</strong>
+      </span>
       <span id="budgetCommMonths" class="metric-label"></span>
     </div>
 
@@ -2667,9 +2675,9 @@ function renderBudgetProductionCard() {
 
   const period = budgetProduction.period || {};
   const monthsNames = [
-    'января','февраля','марта','апреля','мая','июня',
-    'июля','августа','сентября','октября','ноября','декабря'
-  ];
+  'январь','февраль','март','апрель','май','июнь',
+  'июль','август','сентябрь','октябрь','ноябрь','декабрь'
+];
 
   // Подзаголовок "Бюджет 2025 г., 10 мес. (по октябрю)"
   const subtitleEl = document.getElementById('budgetSubtitle');
