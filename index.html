@@ -3154,28 +3154,6 @@ document.addEventListener('DOMContentLoaded', () => {
 // 8. ИНИЦИАЛИЗАЦИЯ
 // ==========================
 
-async function initDashboard() {
-    // обновляем часы
-    updateDateTime();
-    setInterval(updateDateTime, 1000);
-
-    try {
-        // первый старт — сразу тянем данные
-        await refreshData();
-
-        // дальше обновляем каждые 5 минут
-        setInterval(() => {
-            refreshData();
-        }, 5 * 60 * 1000);
-    } catch (e) {
-        console.error('Ошибка инициализации:', e);
-        const el = document.getElementById('lastUpdate');
-        if (el) {
-            el.textContent = 'Ошибка загрузки';
-        }
-    }
-}
-
 document.addEventListener('DOMContentLoaded', initDashboard);
 
 </script>
