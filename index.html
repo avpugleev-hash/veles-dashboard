@@ -468,6 +468,10 @@ body {
 .text-accent {
     color: var(--warning-orange);
 }
+/* Факт больше плана */
+.text-negative {
+    color: var(--color-red-500);
+}
 
 /* Таблицы в панелях (клиенты, поступления) */
 .metric-table {
@@ -1112,36 +1116,35 @@ body {
       </button>
     </div>
 
-    <div id="budgetProdPanel" class="hidden">
+        <div id="budgetProdPanel" class="hidden">
       <div class="budget-grid">
         <!-- Левая колонка: расходы -->
         <div>
           <h4 class="subsection-header">Расходы</h4>
-         <table class="metric-table">
-              <thead>
-                <tr>
-                  <th>Статья</th>
-                  <th>План, шт</th>
-                  <th>Факт, шт</th>
-                  <th>План</th>
-                  <th>Факт</th>
-                </tr>
-              </thead>
-              <tbody id="budgetProdExpBody"></tbody>
-            </table>
+          <table class="metric-table">
+            <thead>
+              <tr>
+                <th>Статья</th>
+                <th>План, шт</th>
+                <th>Факт, шт</th>
+                <th>План</th>
+                <th>Факт</th>
+              </tr>
+            </thead>
+            <tbody id="budgetProdExpBody"></tbody>
+          </table>
 
-          <h4 class="subsection-header mt-4">Среднее значение (тариф)</h4>
-<table class="metric-table">
-  <thead>
-    <tr>
-      <th>Показатель</th>
-      <th>План, тыс. р.</th>
-      <th>Факт, тыс. р.</th>
-    </tr>
-  </thead>
-  <tbody id="budgetProdRevAvgBody"></tbody>
-</table>
-
+          <h4 class="subsection-header mt-4">Среднее значение (ремонт)</h4>
+          <table class="metric-table">
+            <thead>
+              <tr>
+                <th>Статья</th>
+                <th>План, тыс. р.</th>
+                <th>Факт, тыс. р.</th>
+              </tr>
+            </thead>
+            <tbody id="budgetProdExpAvgBody"></tbody>
+          </table>
         </div>
 
         <!-- Правая колонка: Тариф -->
@@ -1158,13 +1161,13 @@ body {
             <tbody id="budgetProdRevBody"></tbody>
           </table>
 
-          <h4 class="subsection-header mt-2">Среднее значение (тариф)</h4>
+          <h4 class="subsection-header mt-4">Среднее значение (тариф)</h4>
           <table class="metric-table">
             <thead>
               <tr>
                 <th>Показатель</th>
-                <th>План</th>
-                <th>Факт</th>
+                <th>План, тыс. р.</th>
+                <th>Факт, тыс. р.</th>
               </tr>
             </thead>
             <tbody id="budgetProdRevAvgBody"></tbody>
@@ -2651,11 +2654,7 @@ function renderRepairsCard(items, dateStr) {
 function renderBudgetProductionCard() {
   const card = document.getElementById('budget-card');
   if (!card) return;
-
-  // Если данных ещё нет — ничего не делаем
-  if (!budgetProduction) {
-    return;
-  }
+  if (!budgetProduction) return;
 
   const period = budgetProduction.period || {};
   const monthsNames = [
@@ -2663,6 +2662,7 @@ function renderBudgetProductionCard() {
     'июля','августа','сентября','октября','ноября','декабря'
   ];
 
+  // Подзаголовок "Бюджет 2025 г., 10 мес. (по октябрю)"
   const subtitleEl = document.getElementById('budgetSubtitle');
   if (subtitleEl) {
     const m = period.month;
@@ -2682,58 +2682,62 @@ function renderBudgetProductionCard() {
     subtitleEl.textContent = text;
   }
 
+  // "10 месяцев" справа от заголовков
+  const monthsLabel = (period.monthsTotal || period.month)
+    ? `${period.monthsTotal || period.month} месяцев`
+    : '—';
+
   const monthsEl = document.getElementById('budgetProdMonths');
-  if (monthsEl) {
-    const monthsTotal = period.monthsTotal || period.month;
-    monthsEl.textContent = monthsTotal ? `${monthsTotal} месяцев` : '—';
-  }
+  if (monthsEl) monthsEl.textContent = monthsLabel;
 
   const commMonthsEl = document.getElementById('budgetCommMonths');
-  if (commMonthsEl) {
-    const monthsTotal = period.monthsTotal || period.month;
-    commMonthsEl.textContent = monthsTotal ? `${monthsTotal} месяцев` : '—';
-  }
+  if (commMonthsEl) commMonthsEl.textContent = monthsLabel;
 
+  // Коммерческая служба пока заглушка
   const commSummaryEl = document.getElementById('budgetCommSummary');
   if (commSummaryEl) {
-    // пока коммерческий бюджет не подключаем — оставим прочерк
     commSummaryEl.textContent = '— / —';
   }
 
+  // Итоги по расходам и тарифу (шапка карточки)
   const expSummaryEl = document.getElementById('budgetProdExpSummary');
-  if (expSummaryEl && budgetProduction && budgetProduction.expSummary) {
+  if (expSummaryEl && budgetProduction.expSummary) {
     const s = budgetProduction.expSummary;
     const factBad = s.plan != null && s.fact != null && s.fact > s.plan;
-
     expSummaryEl.innerHTML =
       `${formatMillions(s.plan)} / ` +
       `<span class="${factBad ? 'text-negative' : ''}">${formatMillions(s.fact)}</span> млн. р.`;
   }
 
   const revSummaryEl = document.getElementById('budgetProdRevSummary');
-  if (revSummaryEl && budgetProduction && budgetProduction.revSummary) {
+  if (revSummaryEl && budgetProduction.revSummary) {
     const s = budgetProduction.revSummary;
     const factBad = s.plan != null && s.fact != null && s.fact > s.plan;
-
     revSummaryEl.innerHTML =
       `${formatMillions(s.plan)} / ` +
       `<span class="${factBad ? 'text-negative' : ''}">${formatMillions(s.fact)}</span> млн. р.`;
   }
 
-  function formatCellValue(value) {
+  // --- ВСПОМОГАТЕЛЬНЫЕ ФОРМАТТЕРЫ ---
+  function formatCellMillions(value) {
     if (value === null || value === undefined || value === 0) return '—';
     return formatMillions(value) + ' млн. р.';
   }
 
-  // --- Левая таблица: Расходы (плюс блок "Переходящие" и итог) ---
+  function formatCellThousands(value) {
+    if (value === null || value === undefined || value === 0) return '—';
+    return formatThousands(value) + ' тыс. р.';
+  }
+
+  const formatQty = (value) => {
+    if (value === null || value === undefined || value === 0) return '—';
+    return formatNumber(Math.round(value));
+  };
+
+  // --- Левая таблица: Расходы (шт + деньги) ---
   const expBody = document.getElementById('budgetProdExpBody');
   if (expBody) {
     expBody.innerHTML = '';
-
-    const formatQty = (value) => {
-      if (value === null || value === undefined || value === 0) return '—';
-      return formatNumber(Math.round(value));
-    };
 
     const makeRow = (name, qtyPlan, qtyFact, plan, fact, extraClass) => {
       const tr = document.createElement('tr');
@@ -2761,12 +2765,17 @@ function renderBudgetProductionCard() {
 
         const tdPlan = document.createElement('td');
         tdPlan.className = 'amount';
-        tdPlan.textContent = formatCellValue(plan);
+        tdPlan.textContent = formatCellMillions(plan);
         tr.appendChild(tdPlan);
 
         const tdFact = document.createElement('td');
         tdFact.className = 'amount';
-        tdFact.textContent = formatCellValue(fact);
+        tdFact.textContent = formatCellMillions(fact);
+
+        if (plan != null && fact != null && fact > plan) {
+          tdFact.classList.add('text-negative');
+        }
+
         tr.appendChild(tdFact);
       }
 
@@ -2782,19 +2791,16 @@ function renderBudgetProductionCard() {
       makeRow(r.name, r.qtyPlan, r.qtyFact, r.plan, r.fact)
     );
 
-    // Переходящие + прочие (страхование и т.д.)
-    if (otherRows.length) {
-   
-      otherRows.forEach(r =>
-        makeRow(r.name, r.qtyPlan, r.qtyFact, r.plan, r.fact)
-      );
-    }
+    // Прочие (страхование, слежение, П/П, аренда и т.п.) — без строки "Переходящие"
+    otherRows.forEach(r =>
+      makeRow(r.name, r.qtyPlan, r.qtyFact, r.plan, r.fact)
+    );
 
-    // Итоговая строка "Всего" — количество оставим пустым
+    // Итоговая строка "Всего" — количество не показываем
     if (totalRows.length) {
       const t = totalRows[0];
       makeRow(
-        t.name || 'Итого расходы',
+        t.name || 'Всего',
         null,
         null,
         t.plan,
@@ -2804,12 +2810,19 @@ function renderBudgetProductionCard() {
     }
   }
 
-  // --- Простые таблицы (средние расходы, выручка, средняя выручка) ---
+  // --- Универсальная функция для «простых» таблиц (средние + тариф) ---
   function fillSimpleTable(tbodyId, rows) {
     const tbody = document.getElementById(tbodyId);
     if (!tbody) return;
 
     tbody.innerHTML = '';
+
+    // Для средних значений используем тыс. руб.
+    const useThousands =
+      tbodyId === 'budgetProdExpAvgBody' ||
+      tbodyId === 'budgetProdRevAvgBody';
+
+    const formatFn = useThousands ? formatCellThousands : formatCellMillions;
 
     (rows || []).forEach(r => {
       const tr = document.createElement('tr');
@@ -2820,37 +2833,43 @@ function renderBudgetProductionCard() {
 
       const tdPlan = document.createElement('td');
       tdPlan.className = 'amount';
-      tdPlan.textContent = formatCellValue(r.plan);
+      tdPlan.textContent = formatFn(r.plan);
       tr.appendChild(tdPlan);
 
       const tdFact = document.createElement('td');
       tdFact.className = 'amount';
-      tdFact.textContent = formatCellValue(r.fact);
+      tdFact.textContent = formatFn(r.fact);
+
+      if (r.plan != null && r.fact != null && r.fact > r.plan) {
+        tdFact.classList.add('text-negative');
+      }
+
       tr.appendChild(tdFact);
 
       tbody.appendChild(tr);
     });
   }
 
-  fillSimpleTable('budgetProdExpAvgBody', budgetProduction.expensesAvg);
-  fillSimpleTable('budgetProdRevBody',     budgetProduction.revenue);
-  // убираем строку "Кол. вагонов (среднее)"
+  // Средние расходы (ремонт)
+  fillSimpleTable('budgetProdExpAvgBody', budgetProduction.expensesAvg || []);
+
+  // Тариф по статьям
+  fillSimpleTable('budgetProdRevBody', budgetProduction.revenue || []);
+
+  // Среднее значение (тариф) — без строки "Кол. вагонов (среднее)"
   const revenueAvgFiltered = (budgetProduction.revenueAvg || []).filter(
     r => r.code !== 'WAGONS_AVG' && r.name !== 'Кол. вагонов (среднее)'
   );
   fillSimpleTable('budgetProdRevAvgBody', revenueAvgFiltered);
 
-  // Панели по умолчанию можно скрыть
+  // Скрываем панели при первом рендере
   const prodPanel = document.getElementById('budgetProdPanel');
-  if (prodPanel) {
-    prodPanel.classList.add('hidden');
-  }
+  if (prodPanel) prodPanel.classList.add('hidden');
 
   const commPanel = document.getElementById('budgetCommPanel');
-  if (commPanel) {
-    commPanel.classList.add('hidden');
-  }
+  if (commPanel) commPanel.classList.add('hidden');
 }
+
 function populateDashboard() {
     if (!dashboardData) return;
 
