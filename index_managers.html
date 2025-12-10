@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Дашборд | ООО "ТК ВЕЛЕС"</title>
+    <title>Дашборд менеджера: ремонты и бюджет</title>
     <style>
         :root {
   /* Primitive Color Tokens */
@@ -875,52 +875,7 @@ body {
 
         <!-- Metrics Grid -->
         <div class="metrics-grid">
-            <!-- Card 1: Loading -->
-            <div class="metric-card">
-                <div class="card-header">
-                     <div class="card-icon">📦</div>
-                     <div class="card-header-text">
-                         <h2 class="card-title">ПОГРУЗКА</h2>
-                         <div class="last-update last-update-inline">
-                             <span>⏱</span>
-                             <span id="lastUpdate">Погрузка с — по —</span>
-                         </div>
-                     </div>
-                 </div>
-                 <div class="card-body">
-
-                    <div class="main-metric" id="loadedWagonsMonth">—</div>
-                    <div class="metric-label">Погружено вагонов (месяц)</div>
-                    
-                    <div class="progress-section">
-                        <div class="progress-info">
-                            <span class="progress-label">Выполнение плана</span>
-                            <span class="progress-value" id="progressPercent">—</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
-                        </div>
-                    </div>
-                    
-                        <div class="secondary-metric month-plan">
-                            <span class="secondary-metric-label">По плану:</span>
-                            <span class="secondary-metric-value" id="planMonth">—</span>
-                        </div>
-                        
-                        <div class="secondary-metric month-plan">
-                            <span class="secondary-metric-label" id="toggleLoadingYesterday">Вчера погружено:</span>
-                            <span class="secondary-metric-value" id="loadedYesterday">—</span>
-                        </div>
-                        
-                        <div id="loadingYesterdayPanel" class="loading-yesterday-panel hidden">
-                            <ul id="loadingYesterdayList" class="loading-yesterday-list"></ul>
-                        </div>
-                        
-                        <div class="secondary-metric month-plan">
-                            <span class="secondary-metric-label">План на месяц:</span>
-                            <span class="secondary-metric-value" id="fullMonthPlan">—</span>
-                        </div>
-                      <!-- Card 3: Repairs -->
+                     <!-- Card 3: Repairs -->
                       <div class="metric-card repairs-card">
                         <div class="card-header">
                           <div class="card-icon">🛠️</div>
@@ -967,131 +922,6 @@ body {
 
                     </div>
             </div>
-<!-- Card: Receivables (Дебиторка) + Payables (Кредиторка) -->
-<div class="metric-card">
-<div class="card-header">
-  <div class="card-icon">💳</div>
-  <div class="card-header-text">
-    <h2 class="card-title">ЗАДОЛЖЕННОСТЬ</h2>
-    <!-- Остатки ДС сразу под заголовком -->
-   <div id="cashSummary" class="card-subtitle"></div>
-  </div>
-</div>
-
-<div class="card-body">
-
-    <!-- == БЛОК 1: ДЕБИТОРСКАЯ ЗАДОЛЖЕННОСТЬ == -->
-    <div class="subsection-header">
-      <span class="metric-label"><strong>Дебиторская задолженность</strong></span>
-      <span id="receivablesDate" class="metric-label"></span>
-    </div>
-
-    <!-- Общая задолженность -->
-    <div class="metric-row">
-      <span class="metric-label">Общая задолженность:</span>
-      <span id="totalDebt" class="metric-value">0 млн. р.</span>
-    </div>
-
-    <!-- Просроченная -->
-    <div class="metric-row">
-      <span class="metric-label">Просроченная:</span>
-      <span id="overdueDebt" class="metric-value text-accent">0 млн. р.</span>
-    </div>
-
-    <!-- Доля просроченной -->
-    <div class="metric-row">
-      <span class="metric-label">Доля просроченной</span>
-      <span id="overduePercent" class="metric-value text-accent">0%</span>
-    </div>
-
-    <div class="progress-bar">
-      <div id="overdueProgressFill" class="progress-fill warning"></div>
-    </div>
-
-    <!-- Кнопка: структура по клиентам -->
-    <div class="metric-row mt-2">
-      <button id="toggleClientsOverdue" class="link-button">
-        ▼ Развернуть структуру по клиентам
-      </button>
-    </div>
-
-    <!-- Панель: структура просроченной задолженности по клиентам -->
-    <div id="clientsOverduePanel" class="hidden">
-      <table class="metric-table">
-        <thead>
-          <tr>
-            <th>Клиент</th>
-            <th>Просроченная</th>
-            <th>%</th>
-          </tr>
-        </thead>
-        <tbody id="clientsOverdueBody"></tbody>
-      </table>
-    </div>
-
-    <!-- Поступления -->
-    <div class="metric-row mt-4">
-      <span class="metric-label">Поступления:</span>
-      <span id="paymentsTotal" class="metric-value">0 млн. р.</span>
-    </div>
-
-    <!-- Кнопка: поступления по клиентам -->
-    <div class="metric-row mt-1">
-      <button id="toggleClientsPayments" class="link-button">
-        ▼ Развернуть поступления по клиентам
-      </button>
-    </div>
-
-    <!-- Панель: поступления по клиентам -->
-    <div id="clientsPaymentsPanel" class="hidden">
-      <table class="metric-table">
-        <thead>
-          <tr>
-            <th>Клиент</th>
-            <th>Поступления</th>
-            <th>%</th>
-          </tr>
-        </thead>
-        <tbody id="clientsPaymentsBody"></tbody>
-      </table>
-    </div>
-
-    <!-- Разделитель между дебиторкой и кредиторкой -->
-    <div class="mt-4" style="border-top: 1px dashed rgba(148, 163, 184, 0.6); padding-top: var(--space-16);">
-
-      <!-- == БЛОК 2: КРЕДИТОРСКАЯ ЗАДОЛЖЕННОСТЬ == -->
-      <div class="subsection-header">
-        <span class="metric-label"><strong>Кредиторская задолженность</strong></span>
-        <span id="payablesDate" class="metric-label"></span>
-      </div>
-
-      <div class="metric-row">
-        <span class="metric-label">Общий долг:</span>
-        <span id="apTotalDebt" class="metric-value">0 млн. р.</span>
-      </div>
-
-       <!-- Кнопка: поставщики с долгом > 1 млн -->
-      <div class="metric-row mt-2">
-        <button id="toggleSuppliersPayables" class="link-button">
-          ▼ Развернуть структуру по поставщикам (&gt; 1 млн)
-        </button>
-      </div>
-
-      <div id="suppliersPayablesPanel" class="hidden">
-        <table class="metric-table">
-          <thead>
-            <tr>
-              <th>Поставщик</th>
-              <th>Долг</th>
-              <th>MAX отсрочка, дней</th>
-            </tr>
-          </thead>
-          <tbody id="suppliersPayablesBody"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</div>
 
 <!-- Card: Бюджет -->
 <div class="metric-card" id="budget-card">
