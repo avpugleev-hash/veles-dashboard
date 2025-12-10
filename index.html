@@ -2740,9 +2740,9 @@ function renderBudgetProductionCard() {
   }
 
   function formatCellThousands(value) {
-    if (value === null || value === undefined || value === 0) return '—';
-    return formatThousands(value) + ' тыс. р.';
-  }
+  if (value === null || value === undefined || value === 0) return '—';
+  return formatThousands(value) + ' руб.';
+}
 
   const formatQty = (value) => {
     if (value === null || value === undefined || value === 0) return '—';
