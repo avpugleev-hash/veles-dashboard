@@ -1444,6 +1444,169 @@ function buildBudgetProductionFromRows(rows) {
   };
 }
 
+function buildBudgetCommercialFromRows(kpiRows, natRows) {
+  if (!kpiRows || kpiRows.length < 2) {
+    console.warn('comm_kpi: нет данных');
+    return null;
+  }
+
+  const hdr = kpiRows[0];
+  const idxYear       = hdr.indexOf('year');
+  const idxMonth      = hdr.indexOf('month');
+  const idxMPlan      = hdr.indexOf('margin_plan');
+  const idxMFact      = hdr.indexOf('margin_fact');
+  const idxWDPlan     = hdr.indexOf('wagon_days_plan');
+  const idxWDFact     = hdr.indexOf('wagon_days_fact');
+
+  if (idxYear === -1 || idxMonth === -1 || idxMPlan === -1 || idxMFact === -1) {
+    console.warn('comm_kpi: нет нужных колонок (year, month, margin_plan, margin_fact)');
+    return null;
+  }
+
+  const kpiItems = [];
+  let maxFactKey = null;
+  let maxPlanKey = null;
+
+  for (let i = 1; i < kpiRows.length; i++) {
+    const row = kpiRows[i];
+    if (!row || !row.length) continue;
+
+    const year  = Number(row[idxYear])  || 0;
+    const month = Number(row[idxMonth]) || 0;
+    if (!year || !month) continue;
+
+    const key = year * 12 + month;
+
+    const marginPlan = idxMPlan  !== -1 ? toNumber(row[idxMPlan])  : 0;
+    const marginFact = idxMFact  !== -1 ? toNumber(row[idxMFact])  : 0;
+    const wdPlan     = idxWDPlan !== -1 ? toNumber(row[idxWDPlan]) : 0;
+    const wdFact     = idxWDFact !== -1 ? toNumber(row[idxWDFact]) : 0;
+
+    const item = {
+      year,
+      month,
+      key,
+      marginPlan,
+      marginFact,
+      wagonDaysPlan: wdPlan,
+      wagonDaysFact: wdFact
+    };
+    kpiItems.push(item);
+
+    if (marginFact) {
+      if (maxFactKey === null || key > maxFactKey) maxFactKey = key;
+    }
+    if (marginPlan) {
+      if (maxPlanKey === null || key > maxPlanKey) maxPlanKey = key;
+    }
+  }
+
+  if (!kpiItems.length) return null;
+
+  const usedKey = maxFactKey !== null ? maxFactKey : maxPlanKey;
+  if (usedKey === null) {
+    console.warn('comm_kpi: нет ненулевых значений план/факт');
+    return null;
+  }
+
+  const usedItems = kpiItems.filter(r => r.key <= usedKey);
+  const lastItem  = kpiItems.find(r => r.key === usedKey);
+
+  let marginPlanTotal = 0;
+  let marginFactTotal = 0;
+  let wdPlanTotal     = 0;
+  let wdFactTotal     = 0;
+
+  usedItems.forEach(r => {
+    marginPlanTotal += r.marginPlan      || 0;
+    marginFactTotal += r.marginFact      || 0;
+    wdPlanTotal     += r.wagonDaysPlan   || 0;
+    wdFactTotal     += r.wagonDaysFact   || 0;
+  });
+
+  const yieldPlan = wdPlanTotal ? marginPlanTotal / wdPlanTotal : null;
+  const yieldFact = wdFactTotal ? marginFactTotal / wdFactTotal : null;
+
+  const uniqueKeys = new Set();
+  usedItems.forEach(r => uniqueKeys.add(r.key));
+  const monthsTotal = uniqueKeys.size;
+
+  // ===== НАТУРА (Песок / Цемент / ПВ) =====
+  let natByProduct = [];
+  let natTotal = null;
+
+  if (natRows && natRows.length > 1) {
+    const hNat      = natRows[0];
+    const idxNYear  = hNat.indexOf('year');
+    const idxNMonth = hNat.indexOf('month');
+    const idxCode   = hNat.indexOf('product_code');
+    const idxName   = hNat.indexOf('product_name');
+    const idxWPlan  = hNat.indexOf('wagons_plan');
+    const idxWFact  = hNat.indexOf('wagons_fact');
+
+    if (idxNYear === -1 || idxNMonth === -1 || idxCode === -1) {
+      console.warn('comm_nat: нет нужных колонок (year, month, product_code)');
+    } else {
+      const prodMap = new Map();
+
+      for (let i = 1; i < natRows.length; i++) {
+        const row = natRows[i];
+        if (!row || !row.length) continue;
+
+        const y  = Number(row[idxNYear])  || 0;
+        const m  = Number(row[idxNMonth]) || 0;
+        if (!y || !m) continue;
+
+        const keyN = y * 12 + m;
+        if (keyN > usedKey) continue; // берём только месяцы до usedKey
+
+        const code = row[idxCode];
+        if (!code) continue;
+
+        const name = idxName !== -1 && row[idxName]
+          ? String(row[idxName]).trim()
+          : String(code).trim();
+
+        const wPlan = idxWPlan !== -1 ? toNumber(row[idxWPlan]) : 0;
+        const wFact = idxWFact !== -1 ? toNumber(row[idxWFact]) : 0;
+
+        const prodKey = String(code).trim();
+        let obj = prodMap.get(prodKey);
+        if (!obj) {
+          obj = { code: prodKey, name, wagonsPlan: 0, wagonsFact: 0 };
+          prodMap.set(prodKey, obj);
+        }
+        obj.wagonsPlan += wPlan;
+        obj.wagonsFact += wFact;
+      }
+
+      natByProduct = Array.from(prodMap.values());
+      natByProduct.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+
+      const totalPlan = natByProduct.reduce((s, r) => s + (r.wagonsPlan || 0), 0);
+      const totalFact = natByProduct.reduce((s, r) => s + (r.wagonsFact || 0), 0);
+      natTotal = { code: 'TOTAL', name: 'Итого', wagonsPlan: totalPlan, wagonsFact: totalFact };
+    }
+  }
+
+  return {
+    period: lastItem
+      ? { year: lastItem.year, month: lastItem.month, monthsTotal }
+      : { year: null, month: null, monthsTotal },
+    margin: {
+      plan:           marginPlanTotal,
+      fact:           marginFactTotal,
+      wagonDaysPlan:  wdPlanTotal,
+      wagonDaysFact:  wdFactTotal,
+      yieldPlan,
+      yieldFact
+    },
+    nat: {
+      byProduct: natByProduct,
+      total: natTotal
+    }
+  };
+}
 
     
 function buildPaymentsFromRows(rows) {
