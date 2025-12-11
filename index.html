@@ -2917,11 +2917,27 @@ function renderBudgetProductionCard() {
   const commMonthsEl = document.getElementById('budgetCommMonths');
   if (commMonthsEl) commMonthsEl.textContent = monthsLabel;
 
-  // Коммерческая служба пока заглушка
+   // Коммерческая служба: сводный маржинальный доход (план / факт)
   const commSummaryEl = document.getElementById('budgetCommSummary');
   if (commSummaryEl) {
-    commSummaryEl.textContent = '— / —';
+    if (budgetCommercial && budgetCommercial.margin) {
+      const m = budgetCommercial.margin;
+      const plan = m.plan != null ? m.plan : null;
+      const fact = m.fact != null ? m.fact : null;
+
+      const planText = plan != null ? formatMillions(plan) : '—';
+      const factText = fact != null ? formatMillions(fact) : '—';
+
+      const factBad = plan != null && fact != null && fact > plan;
+
+      commSummaryEl.innerHTML =
+        `${planText} / ` +
+        `<span class="${factBad ? 'text-negative' : ''}">${factText}</span> млн. р.`;
+    } else {
+      commSummaryEl.textContent = '— / —';
+    }
   }
+
 
   // Итоги по расходам и тарифу (шапка карточки)
   const expSummaryEl = document.getElementById('budgetProdExpSummary');
