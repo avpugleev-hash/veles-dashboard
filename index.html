@@ -2474,8 +2474,10 @@ if (SHEET_CASH_CSV_URL) {
     console.error('Ошибка загрузки cash_balances:', e);
   }
 }
+
 // 6) budget_production (бюджет производственной службы)
 budgetProduction = null;
+budgetCommercial = null; // 👈 обнуляем коммерческий бюджет перед загрузкой
 
 if (typeof SHEET_BUDGET_PROD_CSV_URL !== 'undefined' && SHEET_BUDGET_PROD_CSV_URL) {
   try {
@@ -2492,7 +2494,39 @@ if (typeof SHEET_BUDGET_PROD_CSV_URL !== 'undefined' && SHEET_BUDGET_PROD_CSV_UR
   }
 }
 
- // 4) repairs_snapshot (последним, когда уже есть snapshotDate)
+// 7) budget_commercial (коммерческая служба: KPI + натурка)
+if (typeof SHEET_COMM_KPI_CSV_URL !== 'undefined' && SHEET_COMM_KPI_CSV_URL) {
+  try {
+    const resKpi = await fetch(SHEET_COMM_KPI_CSV_URL);
+    if (resKpi.ok) {
+      const csvKpi = await resKpi.text();
+      const kpiRows = parseCSV(csvKpi);
+
+      let natRows = null;
+      if (typeof SHEET_COMM_NAT_CSV_URL !== 'undefined' && SHEET_COMM_NAT_CSV_URL) {
+        try {
+          const resNat = await fetch(SHEET_COMM_NAT_CSV_URL);
+          if (resNat.ok) {
+            const csvNat = await resNat.text();
+            natRows = parseCSV(csvNat);
+          } else {
+            console.warn('Не удалось загрузить comm_nat, статус:', resNat.status);
+          }
+        } catch (e) {
+          console.error('Ошибка загрузки comm_nat:', e);
+        }
+      }
+
+      budgetCommercial = buildBudgetCommercialFromRows(kpiRows, natRows);
+    } else {
+      console.warn('Не удалось загрузить comm_kpi, статус:', resKpi.status);
+    }
+  } catch (e) {
+    console.error('Ошибка загрузки comm_kpi / comm_nat:', e);
+  }
+}
+
+// 8) repairs_snapshot (последним, когда уже есть snapshotDate)
 try {
   const repairsCsv = await fetch(SHEET_REPAIRS_CSV_URL).then(r => r.text());
   const repRows = parseCSV(repairsCsv);
@@ -2505,6 +2539,7 @@ try {
   console.error('Ошибка загрузки repairs_snapshot:', e);
   renderRepairsCard([], snapshotDate);
 }
+
 
 }
 
