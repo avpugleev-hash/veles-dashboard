@@ -1237,6 +1237,14 @@ const SHEET_CASH_CSV_URL =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vRy08FvutySDNk8yvn0QKdT92-uWjRqaxqi2057Tl42Ai2zLS4L833E2g2GdgBnpFX-t5uwX6JUcmg4/pub?gid=676880520&single=true&output=csv';  
 const SHEET_BUDGET_PROD_CSV_URL =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=0&single=true&output=csv';
+// Коммерческая служба: kpi (маржа, вагоно-сутки, доходность)
+const SHEET_COMM_KPI_CSV_URL =
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=463811978&single=true&output=csv';
+// Коммерческая служба: натурка по продуктам (Песок/Цемент/ПВ)
+const SHEET_COMM_NAT_CSV_URL =
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=78706492&single=true&output=csv';
+
+
     
 let dashboardData = null;
 let trendChart = null;
@@ -1247,6 +1255,7 @@ let payablesBySupplier = []; // [{ supplier, total, avg_overdue }]
 let yesterdayLoadingStations = []; // [{ station, count }]
 let yesterdayLoadingDate = null;
 let budgetProduction = null; // бюджет производственной службы
+let budgetCommercial = null;  // бюджет коммерческой службы
 
 // ==========================
 // 2. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
