@@ -3101,6 +3101,44 @@ function formatCellThousands(value) {
     r => r.code !== 'WAGONS_AVG' && r.name !== 'Кол. вагонов (среднее)'
   );
   fillSimpleTable('budgetProdRevAvgBody', revenueAvgFiltered);
+  // --- Коммерческая служба: сводная маржа план / факт ---
+  const commMonthsEl  = document.getElementById('budgetCommMonths');
+  const commSummaryEl = document.getElementById('budgetCommSummary');
+
+  if (budgetCommercial && commMonthsEl && commSummaryEl) {
+    const cPeriod = budgetCommercial.period || {};
+    const m = cPeriod.month;
+    const y = cPeriod.year;
+    const monthsTotalComm = cPeriod.monthsTotal || m;
+
+    // Подпись "Бюджет 2025 г., 10 мес. (по октябрю)" — по коммерческой службе
+    let headerText = '';
+    if (m && y) {
+      const monthName = monthsNames[m - 1] || '';
+      if (monthsTotalComm && monthsTotalComm !== m) {
+        headerText = `Бюджет ${y} г., ${monthsTotalComm} мес. (по ${monthName})`;
+      } else {
+        headerText = `Бюджет ${y} г. (по ${monthName})`;
+      }
+    }
+    commMonthsEl.textContent = headerText;
+
+    // Маржа: план / факт, в млн руб (как в блоке Производственной службы)
+    const margin   = budgetCommercial.margin || {};
+    const planVal  = margin.plan ?? null;
+    const factVal  = margin.fact ?? null;
+
+    if (planVal === null && factVal === null) {
+      commSummaryEl.textContent = '— / —';
+    } else {
+      const planText = planVal !== null ? formatMillions(planVal) : '—';
+      const factText = factVal !== null ? formatMillions(factVal) : '—';
+      commSummaryEl.textContent = `${planText} / ${factText}`;
+    }
+  } else if (commSummaryEl) {
+    // если данных по коммерческой службе ещё нет
+    commSummaryEl.textContent = '— / —';
+  }
 
   // Скрываем панели при первом рендере
   const prodPanel = document.getElementById('budgetProdPanel');
