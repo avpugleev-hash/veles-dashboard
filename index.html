@@ -1215,12 +1215,38 @@ body {
   <table class="simple-table">
     <thead>
       <tr>
-        <th class="text-left">Продукт</th>
+        <th class="text-left">Группа</th>
         <th class="text-right">План, ваг.</th>
         <th class="text-right">Факт, ваг.</th>
       </tr>
     </thead>
     <tbody id="budgetCommNatBody">
+
+        /* Таблица коммерческой службы — растянуть и раздвинуть колонки */
+#budgetCommPanel .simple-table {
+  width: 100%;
+}
+
+#budgetCommPanel .simple-table th,
+#budgetCommPanel .simple-table td {
+  padding: 4px 18px;        /* чуть больше отступы по горизонтали */
+}
+
+#budgetCommPanel .simple-table th:nth-child(1),
+#budgetCommPanel .simple-table td:nth-child(1) {
+  width: 40%;
+}
+
+#budgetCommPanel .simple-table th:nth-child(2),
+#budgetCommPanel .simple-table td:nth-child(2) {
+  width: 30%;
+}
+
+#budgetCommPanel .simple-table th:nth-child(3),
+#budgetCommPanel .simple-table td:nth-child(3) {
+  width: 30%;
+}
+
       <!-- сюда JS будет вставлять строки по продуктам -->
     </tbody>
     <tfoot>
@@ -3161,31 +3187,35 @@ if (budgetCommercial && commMonthsEl && commSummaryEl) {
     commSummaryEl.innerHTML = `${planText} / ${factHtml} млн. р.`;
   }
 
-  // --- Доходность вагона (план / факт), руб./ваг.-сут. ---
+   // --- Доходность вагона (план / факт), руб./ваг.-сут. ---
   if (commYieldEl) {
     const yPlan = margin.yieldPlan;
     const yFact = margin.yieldFact;
 
-    if (yPlan == null && yFact == null) {
+    const planInt = yPlan != null ? Math.round(yPlan) : null;
+    const factInt = yFact != null ? Math.round(yFact) : null;
+
+    if (planInt == null && factInt == null) {
       commYieldEl.textContent = '— / —';
     } else {
-      const planText = yPlan != null
-        ? formatNumber(Math.round(yPlan))
+      const planText = planInt != null
+        ? formatNumber(planInt)
         : '—';
-      const factNumber = yFact != null ? Math.round(yFact) : null;
 
       let factHtml = '—';
-      if (factNumber != null) {
-        const factText = formatNumber(factNumber);
-        const diff = (yFact ?? 0) - (yPlan ?? 0);
-        const isWorse = yPlan != null && yFact != null && yFact < yPlan;
+      if (factInt != null) {
+        const factText = formatNumber(factInt);
 
-        if (yPlan != null && yFact != null && diff !== 0) {
-          const diffAbs = Math.abs(diff);
-          const diffText = (diff > 0 ? '+' : '−') + formatNumber(diffAbs);
+        if (planInt != null && factInt !== planInt) {
+          const diffInt = factInt - planInt;             // >0 — лучше, <0 — хуже
+          const diffAbs = Math.abs(diffInt);
+          const diffText = (diffInt > 0 ? '+' : '−') + formatNumber(diffAbs);
+          const isWorse = diffInt < 0;                   // хуже плана → красный
+
           const factSpan = isWorse
             ? `<span class="text-negative">${factText}</span>`
             : factText;
+
           const diffSpan = `<span class="${isWorse ? 'text-negative' : ''}">(${diffText})</span>`;
           factHtml = `${factSpan} ${diffSpan}`;
         } else {
