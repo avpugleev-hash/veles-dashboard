@@ -1211,11 +1211,28 @@ body {
       </button>
     </div>
     
-    <div id="budgetCommPanel" class="hidden">
-      <p class="metric-label">
-        Структура бюджета коммерческой службы будет настроена отдельно.
-      </p>
-    </div>
+<div id="budgetCommPanel" class="hidden">
+  <table class="simple-table">
+    <thead>
+      <tr>
+        <th class="text-left">Продукт</th>
+        <th class="text-right">План, ваг.</th>
+        <th class="text-right">Факт, ваг.</th>
+      </tr>
+    </thead>
+    <tbody id="budgetCommNatBody">
+      <!-- сюда JS будет вставлять строки по продуктам -->
+    </tbody>
+    <tfoot>
+      <tr class="total-row">
+        <td class="text-left"><strong>Итого</strong></td>
+        <td class="text-right" id="budgetCommNatPlanTotal">—</td>
+        <td class="text-right" id="budgetCommNatFactTotal">—</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+
   </div>
 </div>
 
