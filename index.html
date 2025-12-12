@@ -3158,6 +3158,60 @@ function formatCellThousands(value) {
     if (commSummaryEl) commSummaryEl.textContent = '— / —';
     if (commYieldEl)   commYieldEl.textContent   = '— / —';
   }
+  // --- Коммерческая служба: натурка по продуктам (Песок / Цемент / ПВ) ---
+  const natBodyEl      = document.getElementById('budgetCommNatBody');
+  const natPlanTotalEl = document.getElementById('budgetCommNatPlanTotal');
+  const natFactTotalEl = document.getElementById('budgetCommNatFactTotal');
+
+  if (natBodyEl && natPlanTotalEl && natFactTotalEl) {
+    natBodyEl.innerHTML = '';
+
+    if (budgetCommercial && budgetCommercial.nat && Array.isArray(budgetCommercial.nat.byProduct) && budgetCommercial.nat.byProduct.length) {
+      const rows = budgetCommercial.nat.byProduct;
+
+      rows.forEach(row => {
+        const tr = document.createElement('tr');
+
+        const tdName = document.createElement('td');
+        tdName.className = 'text-left';
+        tdName.textContent = row.name || row.code || '';
+        tr.appendChild(tdName);
+
+        const tdPlan = document.createElement('td');
+        tdPlan.className = 'text-right';
+        tdPlan.textContent = row.wagonsPlan != null ? formatNumber(row.wagonsPlan) : '—';
+        tr.appendChild(tdPlan);
+
+        const tdFact = document.createElement('td');
+        tdFact.className = 'text-right';
+        tdFact.textContent = row.wagonsFact != null ? formatNumber(row.wagonsFact) : '—';
+        tr.appendChild(tdFact);
+
+        natBodyEl.appendChild(tr);
+      });
+
+      const total = budgetCommercial.nat.total || null;
+      if (total) {
+        natPlanTotalEl.textContent = total.wagonsPlan != null ? formatNumber(total.wagonsPlan) : '—';
+        natFactTotalEl.textContent = total.wagonsFact != null ? formatNumber(total.wagonsFact) : '—';
+      } else {
+        natPlanTotalEl.textContent = '—';
+        natFactTotalEl.textContent = '—';
+      }
+    } else {
+      // Нет данных по натурке
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 3;
+      td.className = 'text-center text-muted';
+      td.textContent = 'Нет данных по натурным показателям';
+      tr.appendChild(td);
+      natBodyEl.appendChild(tr);
+
+      natPlanTotalEl.textContent = '—';
+      natFactTotalEl.textContent = '—';
+    }
+  }
 
   // Скрываем панели при первом рендере
   const prodPanel = document.getElementById('budgetProdPanel');
