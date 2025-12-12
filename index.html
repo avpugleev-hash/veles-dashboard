@@ -2871,14 +2871,6 @@ function renderRepairsCard(items, dateStr) {
     }
 
   }
-
-  const btn = document.getElementById('toggleRepairsTable');
-  if (btn) {
-    btn.onclick = () => {
-      const panel = document.getElementById('repairsTablePanel');
-      if (panel) panel.classList.toggle('hidden');
-    };
-  }
 }
 function renderBudgetProductionCard() {
   const card = document.getElementById('budget-card');
