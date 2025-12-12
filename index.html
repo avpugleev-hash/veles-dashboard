@@ -1194,18 +1194,23 @@ body {
       </span>
       <span id="budgetCommMonths" class="metric-label"></span>
     </div>
-
+    
     <div class="metric-row">
       <span class="metric-label">Маржа (план / факт):</span>
       <span class="metric-value" id="budgetCommSummary">— / —</span>
     </div>
-
+    
+    <div class="metric-row">
+      <span class="metric-label">Доходность вагона (план / факт):</span>
+      <span class="metric-value" id="budgetCommYield">— / —</span>
+    </div>
+    
     <div class="metric-row mt-2">
       <button id="toggleBudgetComm" class="link-button">
         ▼ Развернуть структуру коммерческой службы
       </button>
     </div>
-
+    
     <div id="budgetCommPanel" class="hidden">
       <p class="metric-label">
         Структура бюджета коммерческой службы будет настроена отдельно.
@@ -3101,9 +3106,10 @@ function formatCellThousands(value) {
     r => r.code !== 'WAGONS_AVG' && r.name !== 'Кол. вагонов (среднее)'
   );
   fillSimpleTable('budgetProdRevAvgBody', revenueAvgFiltered);
-  // --- Коммерческая служба: сводная маржа план / факт ---
+   // --- Коммерческая служба: маржа и доходность вагона ---
   const commMonthsEl  = document.getElementById('budgetCommMonths');
   const commSummaryEl = document.getElementById('budgetCommSummary');
+  const commYieldEl   = document.getElementById('budgetCommYield');
 
   if (budgetCommercial && commMonthsEl && commSummaryEl) {
     const cPeriod = budgetCommercial.period || {};
@@ -3123,21 +3129,50 @@ function formatCellThousands(value) {
     }
     commMonthsEl.textContent = headerText;
 
-    // Маржа: план / факт, в млн руб (как в блоке Производственной службы)
-    const margin   = budgetCommercial.margin || {};
-    const planVal  = margin.plan ?? null;
-    const factVal  = margin.fact ?? null;
+    // Маржа: план / факт, в млн руб
+    const margin = budgetCommercial.margin || {};
+    const planVal = margin.plan ?? null;
+    const factVal = margin.fact ?? null;
 
     if (planVal === null && factVal === null) {
       commSummaryEl.textContent = '— / —';
     } else {
       const planText = planVal !== null ? formatMillions(planVal) : '—';
       const factText = factVal !== null ? formatMillions(factVal) : '—';
-      commSummaryEl.textContent = `${planText} / ${factText}`;
+
+      const factBad = planVal != null && factVal != null && factVal > planVal;
+
+      commSummaryEl.innerHTML =
+        `${planText} / ` +
+        `<span class="${factBad ? 'text-negative' : ''}">${factText}</span> млн. р.`;
     }
-  } else if (commSummaryEl) {
-    // если данных по коммерческой службе ещё нет
-    commSummaryEl.textContent = '— / —';
+
+    // Доходность вагона: план / факт, руб./ваг.-сут.
+    if (commYieldEl) {
+      const yPlan = margin.yieldPlan;
+      const yFact = margin.yieldFact;
+
+      if (yPlan == null && yFact == null) {
+        commYieldEl.textContent = '— / —';
+      } else {
+        const planText = yPlan != null
+          ? formatNumber(Math.round(yPlan))
+          : '—';
+        const factText = yFact != null
+          ? formatNumber(Math.round(yFact))
+          : '—';
+
+        // Для доходности "плохо", когда факт МЕНЬШЕ плана
+        const factBadYield = yPlan != null && yFact != null && yFact < yPlan;
+
+        commYieldEl.innerHTML =
+          `${planText} / ` +
+          `<span class="${factBadYield ? 'text-negative' : ''}">${factText}</span> руб./ваг.-сут.`;
+      }
+    }
+  } else {
+    if (commSummaryEl) commSummaryEl.textContent = '— / —';
+    if (commYieldEl)   commYieldEl.textContent   = '— / —';
   }
 
   // Скрываем панели при первом рендере
