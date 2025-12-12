@@ -3073,9 +3073,16 @@ function formatCellThousands(value) {
     );
 
     // Прочие (страхование, слежение, П/П, аренда и т.п.) — без строки "Переходящие"
-    otherRows.forEach(r =>
-      makeRow(r.name, r.qtyPlan, r.qtyFact, r.plan, r.fact)
-    );
+   otherRows.forEach(r => {
+  const code = (r.code || '').toUpperCase();
+  const name = (r.name || '').toLowerCase();
+
+  // прячем строку "Переходящие", если вдруг прилетит из таблицы
+  if (code === 'CARRY' || name.includes('переходящ')) return;
+
+  makeRow(r.name, r.qtyPlan, r.qtyFact, r.plan, r.fact);
+});
+
 
     // Итоговая строка "Всего" — количество не показываем
     if (totalRows.length) {
