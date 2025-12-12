@@ -1602,8 +1602,22 @@ function buildBudgetCommercialFromRows(kpiRows, natRows) {
         obj.wagonsFact += wFact;
       }
 
-      natByProduct = Array.from(prodMap.values());
-      natByProduct.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+        natByProduct = Array.from(prodMap.values());
+        
+        // Желаемый порядок: Песок → Цемент → ПВ
+        const productOrder = {
+          SAND: 1,      // Песок
+          CEMENT: 2,    // Цемент
+          PV: 3         // ПВ (или что у тебя в product_code)
+        };
+        
+        natByProduct.sort((a, b) => {
+          const oa = productOrder[a.code] ?? 999;
+          const ob = productOrder[b.code] ?? 999;
+          if (oa !== ob) return oa - ob;
+          return (a.name || '').localeCompare(b.name || '', 'ru');
+        });
+
 
       const totalPlan = natByProduct.reduce((s, r) => s + (r.wagonsPlan || 0), 0);
       const totalFact = natByProduct.reduce((s, r) => s + (r.wagonsFact || 0), 0);
@@ -3090,128 +3104,205 @@ function formatCellThousands(value) {
     r => r.code !== 'WAGONS_AVG' && r.name !== 'Кол. вагонов (среднее)'
   );
   fillSimpleTable('budgetProdRevAvgBody', revenueAvgFiltered);
-   // --- Коммерческая служба: маржа и доходность вагона ---
-  const commMonthsEl  = document.getElementById('budgetCommMonths');
-  const commSummaryEl = document.getElementById('budgetCommSummary');
-  const commYieldEl   = document.getElementById('budgetCommYield');
+// --- Коммерческая служба: маржа и доходность вагона ---
+const commMonthsEl  = document.getElementById('budgetCommMonths');
+const commSummaryEl = document.getElementById('budgetCommSummary');
+const commYieldEl   = document.getElementById('budgetCommYield');
 
-  if (budgetCommercial && commMonthsEl && commSummaryEl) {
-    const cPeriod = budgetCommercial.period || {};
-    const m = cPeriod.month;
-    const y = cPeriod.year;
-    const monthsTotalComm = cPeriod.monthsTotal || m;
+if (budgetCommercial && commMonthsEl && commSummaryEl) {
+  const cPeriod = budgetCommercial.period || {};
+  const m = cPeriod.month;
+  const y = cPeriod.year;
+  const monthsTotalComm = cPeriod.monthsTotal || m;
 
-    // Подпись "Бюджет 2025 г., 10 мес. (по октябрю)" — по коммерческой службе
-    let headerText = '';
-    if (m && y) {
-      const monthName = monthsNames[m - 1] || '';
-      if (monthsTotalComm && monthsTotalComm !== m) {
-        headerText = `Бюджет ${y} г., ${monthsTotalComm} мес. (по ${monthName})`;
-      } else {
-        headerText = `Бюджет ${y} г. (по ${monthName})`;
-      }
-    }
-    commMonthsEl.textContent = headerText;
-
-    // Маржа: план / факт, в млн руб
-    const margin = budgetCommercial.margin || {};
-    const planVal = margin.plan ?? null;
-    const factVal = margin.fact ?? null;
-
-    if (planVal === null && factVal === null) {
-      commSummaryEl.textContent = '— / —';
+  // Подпись "Бюджет 2025 г., 11 мес. (по ноябрю)" — именно по коммерческой службе
+  let headerText = '';
+  if (m && y) {
+    const monthName = monthsNames[m - 1] || '';
+    if (monthsTotalComm && monthsTotalComm !== m) {
+      headerText = `Бюджет ${y} г., ${monthsTotalComm} мес. (по ${monthName})`;
     } else {
-      const planText = planVal !== null ? formatMillions(planVal) : '—';
-      const factText = factVal !== null ? formatMillions(factVal) : '—';
-
-      const factBad = planVal != null && factVal != null && factVal > planVal;
-
-      commSummaryEl.innerHTML =
-        `${planText} / ` +
-        `<span class="${factBad ? 'text-negative' : ''}">${factText}</span> млн. р.`;
+      headerText = `Бюджет ${y} г. (по ${monthName})`;
     }
-
-    // Доходность вагона: план / факт, руб./ваг.-сут.
-    if (commYieldEl) {
-      const yPlan = margin.yieldPlan;
-      const yFact = margin.yieldFact;
-
-      if (yPlan == null && yFact == null) {
-        commYieldEl.textContent = '— / —';
-      } else {
-        const planText = yPlan != null
-          ? formatNumber(Math.round(yPlan))
-          : '—';
-        const factText = yFact != null
-          ? formatNumber(Math.round(yFact))
-          : '—';
-
-        // Для доходности "плохо", когда факт МЕНЬШЕ плана
-        const factBadYield = yPlan != null && yFact != null && yFact < yPlan;
-
-        commYieldEl.innerHTML =
-          `${planText} / ` +
-          `<span class="${factBadYield ? 'text-negative' : ''}">${factText}</span> руб./ваг.-сут.`;
-      }
-    }
-  } else {
-    if (commSummaryEl) commSummaryEl.textContent = '— / —';
-    if (commYieldEl)   commYieldEl.textContent   = '— / —';
   }
-  // --- Коммерческая служба: натурка по продуктам (Песок / Цемент / ПВ) ---
-  const natBodyEl      = document.getElementById('budgetCommNatBody');
-  const natPlanTotalEl = document.getElementById('budgetCommNatPlanTotal');
-  const natFactTotalEl = document.getElementById('budgetCommNatFactTotal');
+  commMonthsEl.textContent = headerText;
 
-  if (natBodyEl && natPlanTotalEl && natFactTotalEl) {
-    natBodyEl.innerHTML = '';
+  // --- Маржа: план / факт, в млн руб ---
+  const margin = budgetCommercial.margin || {};
+  const planVal = margin.plan ?? null;
+  const factVal = margin.fact ?? null;
 
-    if (budgetCommercial && budgetCommercial.nat && Array.isArray(budgetCommercial.nat.byProduct) && budgetCommercial.nat.byProduct.length) {
-      const rows = budgetCommercial.nat.byProduct;
+  if (planVal === null && factVal === null) {
+    commSummaryEl.textContent = '— / —';
+  } else {
+    const planText = planVal !== null ? formatMillions(planVal) : '—';
 
-      rows.forEach(row => {
-        const tr = document.createElement('tr');
+    let factHtml = '—';
+    if (factVal !== null) {
+      const factText = formatMillions(factVal);
 
-        const tdName = document.createElement('td');
-        tdName.className = 'text-left';
-        tdName.textContent = row.name || row.code || '';
-        tr.appendChild(tdName);
+      if (planVal != null && factVal !== planVal) {
+        const diff = factVal - planVal;          // >0 — лучше плана, <0 — хуже
+        const diffAbs = Math.abs(diff);
+        const diffText = (diff > 0 ? '+' : '−') + formatMillions(diffAbs);
 
-        const tdPlan = document.createElement('td');
-        tdPlan.className = 'text-right';
-        tdPlan.textContent = row.wagonsPlan != null ? formatNumber(row.wagonsPlan) : '—';
-        tr.appendChild(tdPlan);
+        const isWorse = diff < 0;                // хуже плана → красный
+        const factSpan = isWorse
+          ? `<span class="text-negative">${factText}</span>`
+          : factText;
 
-        const tdFact = document.createElement('td');
-        tdFact.className = 'text-right';
-        tdFact.textContent = row.wagonsFact != null ? formatNumber(row.wagonsFact) : '—';
-        tr.appendChild(tdFact);
-
-        natBodyEl.appendChild(tr);
-      });
-
-      const total = budgetCommercial.nat.total || null;
-      if (total) {
-        natPlanTotalEl.textContent = total.wagonsPlan != null ? formatNumber(total.wagonsPlan) : '—';
-        natFactTotalEl.textContent = total.wagonsFact != null ? formatNumber(total.wagonsFact) : '—';
+        const diffSpan = `<span class="${isWorse ? 'text-negative' : ''}">(${diffText})</span>`;
+        factHtml = `${factSpan} ${diffSpan}`;
       } else {
-        natPlanTotalEl.textContent = '—';
+        factHtml = factText;
+      }
+    }
+
+    commSummaryEl.innerHTML = `${planText} / ${factHtml} млн. р.`;
+  }
+
+  // --- Доходность вагона (план / факт), руб./ваг.-сут. ---
+  if (commYieldEl) {
+    const yPlan = margin.yieldPlan;
+    const yFact = margin.yieldFact;
+
+    if (yPlan == null && yFact == null) {
+      commYieldEl.textContent = '— / —';
+    } else {
+      const planText = yPlan != null
+        ? formatNumber(Math.round(yPlan))
+        : '—';
+      const factNumber = yFact != null ? Math.round(yFact) : null;
+
+      let factHtml = '—';
+      if (factNumber != null) {
+        const factText = formatNumber(factNumber);
+        const diff = (yFact ?? 0) - (yPlan ?? 0);
+        const isWorse = yPlan != null && yFact != null && yFact < yPlan;
+
+        if (yPlan != null && yFact != null && diff !== 0) {
+          const diffAbs = Math.abs(diff);
+          const diffText = (diff > 0 ? '+' : '−') + formatNumber(diffAbs);
+          const factSpan = isWorse
+            ? `<span class="text-negative">${factText}</span>`
+            : factText;
+          const diffSpan = `<span class="${isWorse ? 'text-negative' : ''}">(${diffText})</span>`;
+          factHtml = `${factSpan} ${diffSpan}`;
+        } else {
+          factHtml = factText;
+        }
+      }
+
+      commYieldEl.innerHTML =
+        `${planText} / ${factHtml} руб./ваг.-сут.`;
+    }
+  }
+} else {
+  if (commSummaryEl) commSummaryEl.textContent = '— / —';
+  if (commYieldEl)   commYieldEl.textContent   = '— / —';
+}
+
+  /// --- Коммерческая служба: натурка по продуктам (Песок / Цемент / ПВ) ---
+const natBodyEl      = document.getElementById('budgetCommNatBody');
+const natPlanTotalEl = document.getElementById('budgetCommNatPlanTotal');
+const natFactTotalEl = document.getElementById('budgetCommNatFactTotal');
+
+if (natBodyEl && natPlanTotalEl && natFactTotalEl) {
+  natBodyEl.innerHTML = '';
+
+  if (budgetCommercial && budgetCommercial.nat &&
+      Array.isArray(budgetCommercial.nat.byProduct) &&
+      budgetCommercial.nat.byProduct.length) {
+
+    const rows = budgetCommercial.nat.byProduct;
+
+    rows.forEach(row => {
+      const tr = document.createElement('tr');
+
+      const tdName = document.createElement('td');
+      tdName.className = 'text-left';
+      tdName.textContent = row.name || row.code || '';
+      tr.appendChild(tdName);
+
+      const planVal = row.wagonsPlan != null ? row.wagonsPlan : null;
+      const factVal = row.wagonsFact != null ? row.wagonsFact : null;
+
+      const tdPlan = document.createElement('td');
+      tdPlan.className = 'text-right';
+      tdPlan.textContent = planVal != null ? formatNumber(planVal) : '—';
+      tr.appendChild(tdPlan);
+
+      const tdFact = document.createElement('td');
+      tdFact.className = 'text-right';
+
+      if (factVal == null) {
+        tdFact.textContent = '—';
+      } else {
+        const factText = formatNumber(factVal);
+        if (planVal == null || factVal === planVal) {
+          tdFact.textContent = factText;
+        } else {
+          const diff = factVal - planVal;        // >0 — больше плана, <0 — меньше
+          const diffAbs = Math.abs(diff);
+          const diffText = (diff > 0 ? '+' : '−') + formatNumber(diffAbs);
+          const isWorse = diff < 0;             // меньше плана → плохо
+
+          const factSpan = isWorse
+            ? `<span class="text-negative">${factText}</span>`
+            : factText;
+
+          const diffSpan = `<span class="${isWorse ? 'text-negative' : ''}">(${diffText})</span>`;
+          tdFact.innerHTML = `${factSpan} ${diffSpan}`;
+        }
+      }
+
+      tr.appendChild(tdFact);
+      natBodyEl.appendChild(tr);
+    });
+
+    const total = budgetCommercial.nat.total || null;
+    if (total) {
+      const tPlan = total.wagonsPlan ?? null;
+      const tFact = total.wagonsFact ?? null;
+
+      natPlanTotalEl.textContent = tPlan != null ? formatNumber(tPlan) : '—';
+
+      if (tFact == null) {
         natFactTotalEl.textContent = '—';
+      } else {
+        const factText = formatNumber(tFact);
+        if (tPlan == null || tFact === tPlan) {
+          natFactTotalEl.textContent = factText;
+        } else {
+          const diff = tFact - tPlan;
+          const diffAbs = Math.abs(diff);
+          const diffText = (diff > 0 ? '+' : '−') + formatNumber(diffAbs);
+          const isWorse = diff < 0;
+
+          const factSpan = isWorse
+            ? `<span class="text-negative">${factText}</span>`
+            : factText;
+          const diffSpan = `<span class="${isWorse ? 'text-negative' : ''}">(${diffText})</span>`;
+          natFactTotalEl.innerHTML = `${factSpan} ${diffSpan}`;
+        }
       }
     } else {
-      // Нет данных по натурке
-      const tr = document.createElement('tr');
-      const td = document.createElement('td');
-      td.colSpan = 3;
-      td.className = 'text-center text-muted';
-      td.textContent = 'Нет данных по натурным показателям';
-      tr.appendChild(td);
-      natBodyEl.appendChild(tr);
-
       natPlanTotalEl.textContent = '—';
       natFactTotalEl.textContent = '—';
     }
+  } else {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 3;
+    td.className = 'text-center text-muted';
+    td.textContent = 'Нет данных по натурным показателям';
+    tr.appendChild(td);
+    natBodyEl.appendChild(tr);
+
+    natPlanTotalEl.textContent = '—';
+    natFactTotalEl.textContent = '—';
   }
+}
 
   // Скрываем панели при первом рендере
   const prodPanel = document.getElementById('budgetProdPanel');
