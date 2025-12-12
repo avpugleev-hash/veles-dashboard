@@ -548,23 +548,25 @@ body {
 
 .simple-table th,
 .simple-table td {
-  padding: 4px 18px;              /* чуть шире по горизонтали */
+  padding: 4px 18px;
 }
 
-/* Первый столбец — название продукта слева и шире */
+/* 1-й столбец – продукт */
 .simple-table th:first-child,
 .simple-table td:first-child {
   text-align: left;
-  width: 40%;
+  width: 34%;
 }
 
-/* Второй и третий — цифры справа */
+/* 2-й, 3-й, 4-й – цифры */
 .simple-table th:nth-child(2),
 .simple-table td:nth-child(2),
 .simple-table th:nth-child(3),
-.simple-table td:nth-child(3) {
+.simple-table td:nth-child(3),
+.simple-table th:nth-child(4),
+.simple-table td:nth-child(4) {
   text-align: right;
-  width: 30%;
+  width: 22%;
 }
 
 /* Итого внизу */
@@ -1252,13 +1254,13 @@ body {
   <table class="simple-table">
     <thead>
       <tr>
-        <th class="text-left">Группа</th>
+        <th class="text-left">Продукт</th>
         <th class="text-right">План, ваг.</th>
         <th class="text-right">Факт, ваг.</th>
+        <th class="text-right">Доходность, руб./ваг.-сут.</th>
       </tr>
     </thead>
     <tbody id="budgetCommNatBody">
-
       <!-- сюда JS будет вставлять строки по продуктам -->
     </tbody>
     <tfoot>
@@ -1266,10 +1268,12 @@ body {
         <td class="text-left"><strong>Итого</strong></td>
         <td class="text-right" id="budgetCommNatPlanTotal">—</td>
         <td class="text-right" id="budgetCommNatFactTotal">—</td>
+        <td class="text-right" id="budgetCommNatYieldTotal">—</td>
       </tr>
     </tfoot>
   </table>
 </div>
+
 
   </div>
 </div>
