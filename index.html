@@ -539,6 +539,43 @@ body {
     border-top: 1px solid rgba(148, 163, 184, 0.6);
     font-weight: var(--font-weight-bold);
 }
+/* Таблица коммерческой службы (Песок / Цемент / ПВ) */
+.simple-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.simple-table th,
+.simple-table td {
+  padding: 4px 18px;              /* чуть шире по горизонтали */
+}
+
+/* Первый столбец — название продукта слева и шире */
+.simple-table th:first-child,
+.simple-table td:first-child {
+  text-align: left;
+  width: 40%;
+}
+
+/* Второй и третий — цифры справа */
+.simple-table th:nth-child(2),
+.simple-table td:nth-child(2),
+.simple-table th:nth-child(3),
+.simple-table td:nth-child(3) {
+  text-align: right;
+  width: 30%;
+}
+
+/* Итого внизу */
+.simple-table tfoot tr.total-row td {
+  border-top: 1px solid rgba(148, 163, 184, 0.6);
+  font-weight: var(--font-weight-bold);
+}
+
+/* Вспомогательные классы для выравнивания */
+.text-left  { text-align: left; }
+.text-right { text-align: right; }
 
 /* Кнопки-ссылки под карточкой */
 .link-button {
@@ -1221,31 +1258,6 @@ body {
       </tr>
     </thead>
     <tbody id="budgetCommNatBody">
-
-        /* Таблица коммерческой службы — растянуть и раздвинуть колонки */
-#budgetCommPanel .simple-table {
-  width: 100%;
-}
-
-#budgetCommPanel .simple-table th,
-#budgetCommPanel .simple-table td {
-  padding: 4px 18px;        /* чуть больше отступы по горизонтали */
-}
-
-#budgetCommPanel .simple-table th:nth-child(1),
-#budgetCommPanel .simple-table td:nth-child(1) {
-  width: 40%;
-}
-
-#budgetCommPanel .simple-table th:nth-child(2),
-#budgetCommPanel .simple-table td:nth-child(2) {
-  width: 30%;
-}
-
-#budgetCommPanel .simple-table th:nth-child(3),
-#budgetCommPanel .simple-table td:nth-child(3) {
-  width: 30%;
-}
 
       <!-- сюда JS будет вставлять строки по продуктам -->
     </tbody>
