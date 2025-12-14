@@ -1307,7 +1307,7 @@ const SHEET_COMM_KPI_CSV_URL =
 // Коммерческая служба: натурка по продуктам (Песок/Цемент/ПВ)
 const SHEET_COMM_NAT_CSV_URL =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=78706492&single=true&output=csv';
-
+const SHEET_COMM_CLIENTS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=1437651939&single=true&output=csv';
 
     
 let dashboardData = null;
@@ -1508,7 +1508,7 @@ function buildBudgetProductionFromRows(rows) {
   };
 }
 
-function buildBudgetCommercialFromRows(kpiRows, natRows) {
+function buildBudgetCommercialFromRows(kpiRows, natRows, clientsRows) {
   if (!kpiRows || kpiRows.length < 2) {
     console.warn('comm_kpi: нет данных');
     return null;
@@ -1664,6 +1664,80 @@ function buildBudgetCommercialFromRows(kpiRows, natRows) {
       const totalPlan = natByProduct.reduce((s, r) => s + (r.wagonsPlan || 0), 0);
       const totalFact = natByProduct.reduce((s, r) => s + (r.wagonsFact || 0), 0);
       natTotal = { code: 'TOTAL', name: 'Итого', wagonsPlan: totalPlan, wagonsFact: totalFact };
+    
+              // ===== ДОХОДНОСТЬ ПО ПРОДУКТАМ (ФАКТ) ИЗ comm_clients =====
+      if (clientsRows && clientsRows.length > 1) {
+        const hCl      = clientsRows[0];
+        const idxCY    = hCl.indexOf('year');
+        const idxCM    = hCl.indexOf('month');
+        const idxCCode = hCl.indexOf('product_code');
+        const idxCMarg = hCl.indexOf('margin');
+        const idxCWD   = hCl.indexOf('wagon_days');
+    
+        if (
+          idxCY !== -1 &&
+          idxCM !== -1 &&
+          idxCCode !== -1 &&
+          idxCMarg !== -1 &&
+          idxCWD !== -1
+        ) {
+          const byProd = new Map();
+          let totalMargin = 0;
+          let totalWD     = 0;
+    
+          for (let i = 1; i < clientsRows.length; i++) {
+            const row = clientsRows[i];
+            if (!row || !row.length) continue;
+    
+            const y = Number(row[idxCY]) || 0;
+            const m = Number(row[idxCM]) || 0;
+            if (!y || !m) continue;
+    
+            const k = y * 12 + m;
+            if (k > usedKey) continue; // берём только месяцы, которые уже вошли в бюджет
+    
+            const code = row[idxCCode];
+            if (!code) continue;
+    
+            const margin = toNumber(row[idxCMarg]);
+            const wd     = toNumber(row[idxCWD]);
+            if (!margin && !wd) continue;
+    
+            const key = String(code).trim();
+            let obj = byProd.get(key);
+            if (!obj) {
+              obj = { code: key, margin: 0, wagonDays: 0 };
+              byProd.set(key, obj);
+            }
+            obj.margin    += margin;
+            obj.wagonDays += wd;
+    
+            totalMargin += margin;
+            totalWD     += wd;
+          }
+    
+          const yieldMap = new Map();
+          for (const obj of byProd.values()) {
+            const yld = obj.wagonDays ? obj.margin / obj.wagonDays : null;
+            yieldMap.set(obj.code, yld);
+          }
+    
+          // кладём доходность в объекты nat.byProduct, чтобы дальше её отрисовать
+          natByProduct.forEach(p => {
+            const yld = yieldMap.get(String(p.code).trim());
+            if (yld != null) {
+              p.yieldFact = yld;
+            }
+          });
+    
+          if (natTotal) {
+            natTotal.yieldFact = totalWD ? totalMargin / totalWD : null;
+          }
+        } else {
+          console.warn('comm_clients: нет колонок year/month/product_code/margin/wagon_days');
+        }
+      }
+
     }
   }
 
@@ -2572,7 +2646,7 @@ if (typeof SHEET_BUDGET_PROD_CSV_URL !== 'undefined' && SHEET_BUDGET_PROD_CSV_UR
   }
 }
 
-// 7) budget_commercial (коммерческая служба: KPI + натурка)
+// 7) budget_commercial (коммерческая служба: KPI + натурка + доходность по продуктам)
 if (typeof SHEET_COMM_KPI_CSV_URL !== 'undefined' && SHEET_COMM_KPI_CSV_URL) {
   try {
     const resKpi = await fetch(SHEET_COMM_KPI_CSV_URL);
@@ -2595,14 +2669,30 @@ if (typeof SHEET_COMM_KPI_CSV_URL !== 'undefined' && SHEET_COMM_KPI_CSV_URL) {
         }
       }
 
-      budgetCommercial = buildBudgetCommercialFromRows(kpiRows, natRows);
+      let clientsRows = null;
+      if (typeof SHEET_COMM_CLIENTS_CSV_URL !== 'undefined' && SHEET_COMM_CLIENTS_CSV_URL) {
+        try {
+          const resCl = await fetch(SHEET_COMM_CLIENTS_CSV_URL);
+          if (resCl.ok) {
+            const csvCl = await resCl.text();
+            clientsRows = parseCSV(csvCl);
+          } else {
+            console.warn('Не удалось загрузить comm_clients, статус:', resCl.status);
+          }
+        } catch (e) {
+          console.error('Ошибка загрузки comm_clients:', e);
+        }
+      }
+
+      budgetCommercial = buildBudgetCommercialFromRows(kpiRows, natRows, clientsRows);
     } else {
       console.warn('Не удалось загрузить comm_kpi, статус:', resKpi.status);
     }
   } catch (e) {
-    console.error('Ошибка загрузки comm_kpi / comm_nat:', e);
+    console.error('Ошибка загрузки comm_kpi / comm_nat / comm_clients:', e);
   }
 }
+
 
 // 8) repairs_snapshot (последним, когда уже есть snapshotDate)
 try {
@@ -3259,8 +3349,9 @@ if (budgetCommercial && commMonthsEl && commSummaryEl) {
 const natBodyEl      = document.getElementById('budgetCommNatBody');
 const natPlanTotalEl = document.getElementById('budgetCommNatPlanTotal');
 const natFactTotalEl = document.getElementById('budgetCommNatFactTotal');
+const natYieldTotalEl = document.getElementById('budgetCommNatYieldTotal');
 
-if (natBodyEl && natPlanTotalEl && natFactTotalEl) {
+if (natBodyEl && natPlanTotalEl && natFactTotalEl && natYieldTotalEl) {
   natBodyEl.innerHTML = '';
 
   if (budgetCommercial && budgetCommercial.nat &&
@@ -3295,10 +3386,10 @@ if (natBodyEl && natPlanTotalEl && natFactTotalEl) {
         if (planVal == null || factVal === planVal) {
           tdFact.textContent = factText;
         } else {
-          const diff = factVal - planVal;        // >0 — больше плана, <0 — меньше
+          const diff = factVal - planVal;
           const diffAbs = Math.abs(diff);
           const diffText = (diff > 0 ? '+' : '−') + formatNumber(diffAbs);
-          const isWorse = diff < 0;             // меньше плана → плохо
+          const isWorse = diff < 0;
 
           const factSpan = isWorse
             ? `<span class="text-negative">${factText}</span>`
@@ -3308,8 +3399,18 @@ if (natBodyEl && natPlanTotalEl && natFactTotalEl) {
           tdFact.innerHTML = `${factSpan} ${diffSpan}`;
         }
       }
-
       tr.appendChild(tdFact);
+
+      // Доходность по факту для продукта (если посчитали из comm_clients)
+      const tdYield = document.createElement('td');
+      tdYield.className = 'text-right';
+      if (row.yieldFact != null && !isNaN(row.yieldFact)) {
+        tdYield.textContent = formatNumber(Math.round(row.yieldFact));
+      } else {
+        tdYield.textContent = '—';
+      }
+      tr.appendChild(tdYield);
+
       natBodyEl.appendChild(tr);
     });
 
@@ -3339,23 +3440,32 @@ if (natBodyEl && natPlanTotalEl && natFactTotalEl) {
           natFactTotalEl.innerHTML = `${factSpan} ${diffSpan}`;
         }
       }
+
+      if (total.yieldFact != null && !isNaN(total.yieldFact)) {
+        natYieldTotalEl.textContent = formatNumber(Math.round(total.yieldFact));
+      } else {
+        natYieldTotalEl.textContent = '—';
+      }
     } else {
-      natPlanTotalEl.textContent = '—';
-      natFactTotalEl.textContent = '—';
+      natPlanTotalEl.textContent  = '—';
+      natFactTotalEl.textContent  = '—';
+      natYieldTotalEl.textContent = '—';
     }
   } else {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
-    td.colSpan = 3;
+    td.colSpan = 4;
     td.className = 'text-center text-muted';
     td.textContent = 'Нет данных по натурным показателям';
     tr.appendChild(td);
     natBodyEl.appendChild(tr);
 
-    natPlanTotalEl.textContent = '—';
-    natFactTotalEl.textContent = '—';
+    natPlanTotalEl.textContent  = '—';
+    natFactTotalEl.textContent  = '—';
+    natYieldTotalEl.textContent = '—';
   }
 }
+
 
   // Скрываем панели при первом рендере
   const prodPanel = document.getElementById('budgetProdPanel');
