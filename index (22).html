@@ -1421,6 +1421,51 @@ const SHEET_COMM_NAT_CSV_URL =
 const SHEET_COMM_CLIENTS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=1437651939&single=true&output=csv';
 const LOGIN_API_URL = 'https://alekseipugleev.app.n8n.cloud/webhook-test/dashboard-login';
 let isAuthenticated = false;
+// --- Настройки "запоминания" логина ---
+const AUTH_STORAGE_KEY = 'veles_dashboard_auth_v1'; // ключ в localStorage
+const AUTH_TTL_MS = 8 * 60 * 60 * 1000; // срок жизни сессии: 8 часов
+
+function saveAuthSession(login) {
+  try {
+    const payload = {
+      login,
+      ts: Date.now()
+    };
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(payload));
+  } catch (e) {
+    console.warn('Не удалось сохранить сессию в localStorage', e);
+  }
+}
+
+function loadAuthSession() {
+  try {
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!raw) return null;
+
+    const data = JSON.parse(raw);
+    if (!data || typeof data.ts !== 'number') return null;
+
+    // проверяем срок действия
+    const age = Date.now() - data.ts;
+    if (age > AUTH_TTL_MS) {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+      return null;
+    }
+
+    return data;
+  } catch (e) {
+    console.warn('Не удалось прочитать сессию из localStorage', e);
+    return null;
+  }
+}
+
+function clearAuthSession() {
+  try {
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+  } catch (e) {
+    console.warn('Не удалось удалить сессию из localStorage', e);
+  }
+}
 
     
 let dashboardData = null;
@@ -3818,6 +3863,10 @@ function populateDashboard() {
 // ==========================
 
 async function refreshData() {
+        if (!isAuthenticated) {
+        console.warn('Попытка обновить данные без авторизации');
+        return;
+    }
     const btn = document.querySelector('.refresh-btn');
     if (btn) btn.disabled = true;
 
@@ -3952,8 +4001,9 @@ async function handleLoginSubmit(event) {
       return;
     }
 
-    // успех
+        // успех
     isAuthenticated = true;
+    saveAuthSession(login); // <-- запомнили, кто залогинился и время
     document.getElementById('loginOverlay').style.display = 'none';
 
     // теперь можно подгружать данные дашборда
@@ -3971,13 +4021,30 @@ document.addEventListener('DOMContentLoaded', () => {
   updateDateTime();
   setInterval(updateDateTime, 60 * 1000);
 
-  // === ЛОГИН ===
+  const overlay = document.getElementById('loginOverlay');
+
+  // 1) Проверяем, есть ли актуальная сессия в localStorage
+  const saved = loadAuthSession();
+  if (saved) {
+    // Сессия жива — считаем пользователя авторизованным
+    isAuthenticated = true;
+    if (overlay) overlay.style.display = 'none';
+
+    // Сразу грузим данные дашборда
+    refreshData();
+  } else {
+    // Сессии нет или она устарела — показываем окно логина
+    isAuthenticated = false;
+    if (overlay) overlay.style.display = 'flex';
+  }
+
+  // 2) Логин-форма
   const loginForm = document.getElementById('loginForm');
   if (loginForm) {
     loginForm.addEventListener('submit', handleLoginSubmit);
   }
 
-  // Кнопка "Структура просрочки по клиентам"
+  // 3) Остальные кнопки раскрытия
   const overdueBtn = document.getElementById('toggleClientsOverdue');
   const overduePanel = document.getElementById('clientsOverduePanel');
   if (overdueBtn && overduePanel) {
@@ -3986,7 +4053,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Кнопка "Структура кредиторки по поставщикам"
   const suppliersBtn = document.getElementById('toggleSuppliersPayables');
   const suppliersPanel = document.getElementById('suppliersPayablesPanel');
   if (suppliersBtn && suppliersPanel) {
@@ -3995,7 +4061,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Кнопка "Структура по ремонтам"
   const repairsBtn = document.getElementById('toggleRepairsTable');
   const repairsPanel = document.getElementById('repairsTablePanel');
   if (repairsBtn && repairsPanel) {
@@ -4004,7 +4069,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Вчерашняя погрузка: показать/скрыть список по станциям
   const yestBtn = document.getElementById('toggleLoadingYesterday');
   const yestPanel = document.getElementById('loadingYesterdayPanel');
   if (yestBtn && yestPanel) {
@@ -4013,7 +4077,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Бюджет: раскрытие панелей "Производственная / Коммерческая служба"
   const budgetProdBtn = document.getElementById('toggleBudgetProd');
   const budgetProdPanel = document.getElementById('budgetProdPanel');
   if (budgetProdBtn && budgetProdPanel) {
@@ -4030,7 +4093,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Кнопка "Поступления по клиентам"
   const paymentsBtn = document.getElementById('toggleClientsPayments');
   const paymentsPanel = document.getElementById('clientsPaymentsPanel');
   if (paymentsBtn && paymentsPanel) {
@@ -4038,9 +4100,8 @@ document.addEventListener('DOMContentLoaded', () => {
       paymentsPanel.classList.toggle('hidden');
     });
   }
-
-
 });
+
 
 </script>
 </body>
