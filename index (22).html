@@ -994,7 +994,7 @@ body {
                         <span>🕒</span>
                         <span id="dataUpdatedAt">Данные обновлены: —</span>
                     </div>
-                    <button class="refresh-btn" onclick="refreshData()">🔄 Обновить данные</button>
+                    <button id="refreshBtn" class="refresh-btn" onclick="refreshData()">🔄 Обновить данные</button>
                 </div>
 
             </div>
@@ -1421,6 +1421,17 @@ const SHEET_COMM_NAT_CSV_URL =
 const SHEET_COMM_CLIENTS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=1437651939&single=true&output=csv';
 const LOGIN_API_URL = 'https://alekseipugleev.app.n8n.cloud/webhook/dashboard-login';
 let isAuthenticated = false;
+
+let __autoRefreshTimer = null;
+function startAutoRefresh() {
+  if (__autoRefreshTimer) return;
+  __autoRefreshTimer = setInterval(() => {
+    if (isAuthenticated && document.visibilityState === 'visible') {
+      refreshData();
+    }
+  }, 5 * 60 * 1000); // каждые 5 минут
+}
+
 // --- Настройки "запоминания" логина ---
 const AUTH_STORAGE_KEY = 'veles_dashboard_auth_v1'; // ключ в localStorage
 const AUTH_TTL_MS = 8 * 60 * 60 * 1000; // срок жизни сессии: 8 часов
@@ -2700,7 +2711,7 @@ const planMonth   = rowsThisMonth.reduce((sum, r) => sum + (r.planned_wagons || 
 async function loadDataFromSheet() {
   let snapshotDate = null; // будет использоваться и для ремонтов
   // 1) основной raw_data
-  const res = await fetch(SHEET_CSV_URL);
+  const res = await fetch(SHEET_CSV_URL, { cache: 'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const csvText = await res.text();
     const rows = parseCSV(csvText);
@@ -2720,10 +2731,24 @@ async function loadDataFromSheet() {
 
     const rowObjs = rowsToObjects(rows);
     dashboardData = buildDashboardDataFromRaw(rowObjs, monthPlanFromHeader);
+
+    // --- Параллельная загрузка дополнительных CSV (ускорение) ---
+    const __fetchOpts = { cache: 'no-store' };
+    const __pPay     = SHEET_PAYMENTS_CSV_URL         ? fetch(SHEET_PAYMENTS_CSV_URL, __fetchOpts) : null;
+    const __pClients = SHEET_CLIENTS_CSV_URL          ? fetch(SHEET_CLIENTS_CSV_URL, __fetchOpts) : null;
+    const __pApSupp  = SHEET_AP_SUPPLIERS_CSV_URL     ? fetch(SHEET_AP_SUPPLIERS_CSV_URL, __fetchOpts) : null;
+    const __pLoadLog = SHEET_LOADING_JOURNAL_CSV_URL  ? fetch(SHEET_LOADING_JOURNAL_CSV_URL, __fetchOpts) : null;
+    const __pCash    = SHEET_CASH_CSV_URL             ? fetch(SHEET_CASH_CSV_URL, __fetchOpts) : null;
+    const __pBudget  = SHEET_BUDGET_PROD_CSV_URL      ? fetch(SHEET_BUDGET_PROD_CSV_URL, __fetchOpts) : null;
+    const __pCommKpi = SHEET_COMM_KPI_CSV_URL         ? fetch(SHEET_COMM_KPI_CSV_URL, __fetchOpts) : null;
+    const __pCommNat = SHEET_COMM_NAT_CSV_URL         ? fetch(SHEET_COMM_NAT_CSV_URL, __fetchOpts) : null;
+    const __pCommCl  = SHEET_COMM_CLIENTS_CSV_URL     ? fetch(SHEET_COMM_CLIENTS_CSV_URL, __fetchOpts) : null;
+    const __pRepairs = SHEET_REPAIRS_CSV_URL          ? fetch(SHEET_REPAIRS_CSV_URL, __fetchOpts) : null;
+
         // 3) ar_payments_daily
     if (SHEET_PAYMENTS_CSV_URL) {
         try {
-            const resPay = await fetch(SHEET_PAYMENTS_CSV_URL);
+            const resPay = await __pPay;
             if (resPay.ok) {
                 const csvTextPay = await resPay.text();
                 const rowsPay = parseCSV(csvTextPay);
@@ -2743,7 +2768,7 @@ async function loadDataFromSheet() {
 
     if (SHEET_CLIENTS_CSV_URL) {
         try {
-            const resClients = await fetch(SHEET_CLIENTS_CSV_URL);
+            const resClients = await __pClients;
             if (resClients.ok) {
                 const csvTextClients = await resClients.text();
                 const rowsClients = parseCSV(csvTextClients);
@@ -2776,7 +2801,7 @@ async function loadDataFromSheet() {
         // 3) Кредиторка: ap_suppliers
     if (SHEET_AP_SUPPLIERS_CSV_URL) {
       try {
-        const resAp = await fetch(SHEET_AP_SUPPLIERS_CSV_URL);
+        const resAp = await __pApSupp;
         if (resAp.ok) {
           const csvAp = await resAp.text();
           const rowsAp = parseCSV(csvAp);
@@ -2809,7 +2834,7 @@ async function loadDataFromSheet() {
 
     if (SHEET_LOADING_JOURNAL_CSV_URL) {
         try {
-            const resLog = await fetch(SHEET_LOADING_JOURNAL_CSV_URL);
+            const resLog = await __pLoadLog;
             if (resLog.ok) {
                 const csvLog = await resLog.text();
                 const rowsLog = parseCSV(csvLog);
@@ -2826,7 +2851,7 @@ async function loadDataFromSheet() {
 // 5) Остатки денежных средств
 if (SHEET_CASH_CSV_URL) {
   try {
-    const resCash = await fetch(SHEET_CASH_CSV_URL);
+    const resCash = await __pCash;
     if (resCash.ok) {
       const csvCash = await resCash.text();
       const rowsCash = parseCSV(csvCash);
@@ -2849,7 +2874,7 @@ budgetCommercial = null; // 👈 обнуляем коммерческий бю�
 
 if (typeof SHEET_BUDGET_PROD_CSV_URL !== 'undefined' && SHEET_BUDGET_PROD_CSV_URL) {
   try {
-    const resBudget = await fetch(SHEET_BUDGET_PROD_CSV_URL);
+    const resBudget = await __pBudget;
     if (resBudget.ok) {
       const csvBudget = await resBudget.text();
       const rowsBudget = parseCSV(csvBudget);
@@ -2865,7 +2890,7 @@ if (typeof SHEET_BUDGET_PROD_CSV_URL !== 'undefined' && SHEET_BUDGET_PROD_CSV_UR
 // 7) budget_commercial (коммерческая служба: KPI + натурка + доходность по продуктам)
 if (typeof SHEET_COMM_KPI_CSV_URL !== 'undefined' && SHEET_COMM_KPI_CSV_URL) {
   try {
-    const resKpi = await fetch(SHEET_COMM_KPI_CSV_URL);
+    const resKpi = await __pCommKpi;
     if (resKpi.ok) {
       const csvKpi = await resKpi.text();
       const kpiRows = parseCSV(csvKpi);
@@ -2873,7 +2898,7 @@ if (typeof SHEET_COMM_KPI_CSV_URL !== 'undefined' && SHEET_COMM_KPI_CSV_URL) {
       let natRows = null;
       if (typeof SHEET_COMM_NAT_CSV_URL !== 'undefined' && SHEET_COMM_NAT_CSV_URL) {
         try {
-          const resNat = await fetch(SHEET_COMM_NAT_CSV_URL);
+          const resNat = await __pCommNat;
           if (resNat.ok) {
             const csvNat = await resNat.text();
             natRows = parseCSV(csvNat);
@@ -2888,7 +2913,7 @@ if (typeof SHEET_COMM_KPI_CSV_URL !== 'undefined' && SHEET_COMM_KPI_CSV_URL) {
       let clientsRows = null;
       if (typeof SHEET_COMM_CLIENTS_CSV_URL !== 'undefined' && SHEET_COMM_CLIENTS_CSV_URL) {
         try {
-          const resCl = await fetch(SHEET_COMM_CLIENTS_CSV_URL);
+          const resCl = await __pCommCl;
           if (resCl.ok) {
             const csvCl = await resCl.text();
             clientsRows = parseCSV(csvCl);
@@ -2912,7 +2937,7 @@ if (typeof SHEET_COMM_KPI_CSV_URL !== 'undefined' && SHEET_COMM_KPI_CSV_URL) {
 
 // 8) repairs_snapshot (последним, когда уже есть snapshotDate)
 try {
-  const repairsCsv = await fetch(SHEET_REPAIRS_CSV_URL).then(r => r.text());
+  const repairsCsv = await __pRepairs.then(r => r.text());
   const repRows = parseCSV(repairsCsv);
 
   const repairsData = buildRepairsFromSnapshot(repRows);
@@ -3867,7 +3892,7 @@ async function refreshData() {
         console.warn('Попытка обновить данные без авторизации');
         return;
     }
-    const btn = document.querySelector('.refresh-btn');
+    const btn = document.getElementById('refreshBtn');
     if (btn) btn.disabled = true;
 
     try {
@@ -4008,6 +4033,7 @@ async function handleLoginSubmit(event) {
 
     // теперь можно подгружать данные дашборда
     await refreshData();
+    startAutoRefresh();
   } catch (e) {
     console.error(e);
     errorEl.textContent = 'Ошибка подключения к серверу авторизации';
@@ -4032,6 +4058,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Сразу грузим данные дашборда
     refreshData();
+    startAutoRefresh();
   } else {
     // Сессии нет или она устарела — показываем окно логина
     isAuthenticated = false;
