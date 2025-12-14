@@ -175,11 +175,102 @@ body {
     line-height: 1.6;
     min-height: 100vh;
 }
+<body>
+    <!-- Оверлей логина -->
+    <div class="login-overlay" id="loginOverlay">
+        <div class="login-box">
+            <h2>Вход в дашборд</h2>
+            <p class="login-subtitle">Введите логин и пароль для доступа.</p>
+
+            <form id="loginForm">
+                <label class="login-label" for="loginLogin">Логин</label>
+                <input class="login-input" type="text" id="loginLogin" autocomplete="username">
+
+                <label class="login-label" for="loginPassword">Пароль</label>
+                <input class="login-input" type="password" id="loginPassword" autocomplete="current-password">
+
+                <div class="login-error" id="loginError" style="display:none;"></div>
+
+                <button type="submit" class="refresh-btn login-btn">Войти</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="dashboard-container">
+        ...
 
 .dashboard-container {
     max-width: 1400px;
     margin: 0 auto;
     padding: var(--space-24);
+}
+/* === ЛОГИН === */
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.login-box {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+  box-shadow: var(--shadow-lg);
+  max-width: 380px;
+  width: 100%;
+}
+
+.login-box h2 {
+  margin-bottom: 8px;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--navy-primary);
+}
+
+.login-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.login-label {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  margin-top: 8px;
+  margin-bottom: 2px;
+}
+
+.login-input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-base);
+  border: 1px solid var(--border-color);
+  font-size: var(--font-size-sm);
+  margin-bottom: 4px;
+}
+
+.login-input:focus {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-color: var(--color-primary);
+}
+
+.login-error {
+  margin-top: 6px;
+  margin-bottom: 6px;
+  font-size: var(--font-size-xs);
+  color: var(--color-red-500);
+}
+
+.login-btn {
+  margin-top: 8px;
+  width: 100%;
+  justify-content: center;
 }
 
 /* Header */
@@ -1331,6 +1422,8 @@ const SHEET_COMM_KPI_CSV_URL =
 const SHEET_COMM_NAT_CSV_URL =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=78706492&single=true&output=csv';
 const SHEET_COMM_CLIENTS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=1437651939&single=true&output=csv';
+const LOGIN_API_URL = 'https://alekseipugleev.app.n8n.cloud/webhook-test/dashboard-login';
+let isAuthenticated = false;
 
     
 let dashboardData = null;
@@ -3823,6 +3916,57 @@ function renderPaymentsByClient(paymentsData) {
     tbody.appendChild(tr);
   });
 }
+async function tryLogin(login, password) {
+  const resp = await fetch(LOGIN_API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ login, password })
+  });
+
+  if (!resp.ok) {
+    return false;
+  }
+
+  const data = await resp.json().catch(() => null);
+  return data && data.ok === true;
+}
+
+async function handleLoginSubmit(event) {
+  event.preventDefault();
+
+  const login = document.getElementById('loginLogin').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errorEl = document.getElementById('loginError');
+
+  errorEl.style.display = 'none';
+
+  if (!login || !password) {
+    errorEl.textContent = 'Введите логин и пароль';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    const ok = await tryLogin(login, password);
+
+    if (!ok) {
+      errorEl.textContent = 'Неверный логин или пароль';
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    // успех
+    isAuthenticated = true;
+    document.getElementById('loginOverlay').style.display = 'none';
+
+    // теперь можно подгружать данные дашборда
+    await refreshData();
+  } catch (e) {
+    console.error(e);
+    errorEl.textContent = 'Ошибка подключения к серверу авторизации';
+    errorEl.style.display = 'block';
+  }
+}
 
 // === Обработчики кнопок раскрытия ===
 document.addEventListener('DOMContentLoaded', () => {
@@ -3892,8 +4036,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Сразу грузим данные
-  refreshData();
+
 });
 
 </script>
