@@ -1243,7 +1243,30 @@ body {
       <span class="metric-label">Доходность вагона (план / факт):</span>
       <span class="metric-value" id="budgetCommYield">— / —</span>
     </div>
-    
+    <div class="metric-row mt-1">
+  <button id="toggleCommYieldMonth" class="link-button">
+    ▼ Развернуть доходность за ноябрь
+  </button>
+</div>
+
+<div id="commYieldMonthPanel" class="hidden">
+  <table class="simple-table mt-1">
+    <thead>
+      <tr>
+        <th class="text-left">Группа</th>
+        <th class="text-right">Доходность, руб./ваг.-сут. (ноябрь)</th>
+      </tr>
+    </thead>
+    <tbody id="commYieldMonthBody"></tbody>
+    <tfoot>
+      <tr class="total-row">
+        <td class="text-left"><strong>Итого</strong></td>
+        <td class="text-right" id="commYieldMonthTotal">—</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+
     <div class="metric-row mt-2">
       <button id="toggleBudgetComm" class="link-button">
         ▼ Развернуть структуру коммерческой службы
@@ -1736,6 +1759,61 @@ function buildBudgetCommercialFromRows(kpiRows, natRows, clientsRows) {
           if (natTotal) {
             natTotal.yieldFact = totalWD ? totalMargin / totalWD : null;
           }
+                      // ===== Доходность за последний месяц (usedKey) =====
+          const lastMonthByProd = new Map();
+          let lastMonthMarginTotal = 0;
+          let lastMonthWDTotal     = 0;
+
+          for (let i = 1; i < clientsRows.length; i++) {
+            const row = clientsRows[i];
+            if (!row || !row.length) continue;
+
+            const y = Number(row[idxCY]) || 0;
+            const m = Number(row[idxCM]) || 0;
+            if (!y || !m) continue;
+
+            const k = y * 12 + m;
+            if (k !== usedKey) continue; // берём только последний месяц
+
+            const code = (row[idxCCode] || '').toString().trim().toUpperCase();
+            if (!code) continue;
+
+            const margin = toNumber(row[idxCMarg]);
+            const wd     = toNumber(row[idxCWD]);
+            if (!margin && !wd) continue;
+
+            let obj = lastMonthByProd.get(code);
+            if (!obj) {
+              obj = { code, margin: 0, wagonDays: 0 };
+              lastMonthByProd.set(code, obj);
+            }
+            obj.margin    += margin;
+            obj.wagonDays += wd;
+
+            lastMonthMarginTotal += margin;
+            lastMonthWDTotal     += wd;
+          }
+
+          const lastMonthYieldMap = new Map();
+          for (const obj of lastMonthByProd.values()) {
+            const yld = obj.wagonDays ? obj.margin / obj.wagonDays : null;
+            lastMonthYieldMap.set(obj.code, yld);
+          }
+
+          // Сохраняем доходность за последний месяц внутрь объектов натуры
+          natByProduct.forEach(p => {
+            const code = String(p.code).trim().toUpperCase();
+            const yldMonth = lastMonthYieldMap.get(code);
+            if (yldMonth != null) {
+              p.yieldLastMonth = yldMonth;
+            }
+          });
+
+          if (natTotal) {
+            natTotal.yieldLastMonth =
+              lastMonthWDTotal ? lastMonthMarginTotal / lastMonthWDTotal : null;
+          }
+
         } else {
           console.warn('comm_clients: нет колонок year/month/product_code/margin/wagon_days');
         }
@@ -1756,7 +1834,7 @@ function buildBudgetCommercialFromRows(kpiRows, natRows, clientsRows) {
       yieldPlan,
       yieldFact
     },
-    nat: {
+       nat: {
       byProduct: natByProduct,
       total: natTotal
     }
@@ -3469,6 +3547,68 @@ if (natBodyEl && natPlanTotalEl && natFactTotalEl && natYieldTotalEl) {
   }
 }
 
+  // === Доходность за последний месяц (ноябрь) ===
+  const yieldMonthPanel = document.getElementById('commYieldMonthPanel');
+  const yieldMonthBody  = document.getElementById('commYieldMonthBody');
+  const yieldMonthTotalEl = document.getElementById('commYieldMonthTotal');
+  const toggleYieldMonth = document.getElementById('toggleCommYieldMonth');
+
+  if (yieldMonthPanel && yieldMonthBody && yieldMonthTotalEl && toggleYieldMonth) {
+    yieldMonthBody.innerHTML = '';
+
+    const nat = budgetCommercial.nat || {};
+    const rows = nat.byProduct || [];
+    const total = nat.total || null;
+
+    if (!rows.length && !total) {
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 2;
+      td.className = 'text-center text-muted';
+      td.textContent = 'Нет данных по доходности за месяц';
+      tr.appendChild(td);
+      yieldMonthBody.appendChild(tr);
+      yieldMonthTotalEl.textContent = '—';
+      toggleYieldMonth.disabled = true;
+    } else {
+      toggleYieldMonth.disabled = false;
+
+      rows.forEach(row => {
+        const tr = document.createElement('tr');
+
+        const tdName = document.createElement('td');
+        tdName.className = 'text-left';
+        tdName.textContent = row.name || row.code || '';
+        tr.appendChild(tdName);
+
+        const tdYield = document.createElement('td');
+        tdYield.className = 'text-right';
+        if (row.yieldLastMonth != null && !isNaN(row.yieldLastMonth)) {
+          tdYield.textContent = formatNumber(Math.round(row.yieldLastMonth));
+        } else {
+          tdYield.textContent = '—';
+        }
+        tr.appendChild(tdYield);
+
+        yieldMonthBody.appendChild(tr);
+      });
+
+      if (total && total.yieldLastMonth != null && !isNaN(total.yieldLastMonth)) {
+        yieldMonthTotalEl.textContent =
+          formatNumber(Math.round(total.yieldLastMonth));
+      } else {
+        yieldMonthTotalEl.textContent = '—';
+      }
+
+      // переключатель панели
+      toggleYieldMonth.onclick = () => {
+        yieldMonthPanel.classList.toggle('hidden');
+        toggleYieldMonth.textContent = yieldMonthPanel.classList.contains('hidden')
+          ? '▼ Развернуть доходность за ноябрь'
+          : '▲ Свернуть доходность за ноябрь';
+      };
+    }
+  }
 
   // Скрываем панели при первом рендере
   const prodPanel = document.getElementById('budgetProdPanel');
