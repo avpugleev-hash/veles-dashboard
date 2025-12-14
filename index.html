@@ -1672,10 +1672,8 @@ function buildBudgetCommercialFromRows(kpiRows, natRows, clientsRows) {
         const idxCM    = hCl.indexOf('month');
         const idxCCode = hCl.indexOf('product_code');
         const idxCMarg = hCl.indexOf('margin');
-        
-        // Для доходности по продуктам используем колонку "wagon_days".
-  
-        let idxCWD = hCl.indexOf('wagon_days');
+        const idxCWD   = hCl.indexOf('wagon_days');
+
     
         if (
           idxCY !== -1 &&
