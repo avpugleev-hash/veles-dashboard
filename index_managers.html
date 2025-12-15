@@ -337,6 +337,25 @@ body {
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(212, 165, 116, 0.3);
 }
+        
+.logout-btn {
+    background: transparent;
+    color: #f9fafb;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    padding: var(--space-8) var(--space-16);
+    border-radius: var(--radius-base);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    cursor: pointer;
+    margin-top: var(--space-8);
+    margin-left: var(--space-8);
+    transition: all var(--duration-normal) var(--ease-standard);
+}
+
+.logout-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+    
 .repairs-totals-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -995,6 +1014,7 @@ body {
                         <span id="dataUpdatedAt">Данные обновлены: —</span>
                     </div>
                     <button class="refresh-btn" onclick="refreshData()">🔄 Обновить данные</button>
+                    <button class="logout-btn" id="logoutBtn" type="button">⎋ Выйти</button>
                 </div>
 
             </div>
@@ -1465,6 +1485,27 @@ function clearAuthSession() {
     console.warn('Не удалось удалить сессию из localStorage', e);
   }
 }
+function logout() {
+  // Сбрасываем флаг авторизации и чистим localStorage
+  isAuthenticated = false;
+  clearAuthSession();
+
+  // Очищаем поля логина/пароля и ошибки
+  const loginInput = document.getElementById('loginLogin');
+  const pwdInput = document.getElementById('loginPassword');
+  const errorEl = document.getElementById('loginError');
+
+  if (loginInput) loginInput.value = '';
+  if (pwdInput) pwdInput.value = '';
+  if (errorEl) {
+    errorEl.textContent = '';
+    errorEl.style.display = 'none';
+  }
+
+  // Показываем окно логина
+  const overlay = document.getElementById('loginOverlay');
+  if (overlay) overlay.style.display = 'flex';
+}
 
     
 let dashboardData = null;
@@ -1481,7 +1522,43 @@ let budgetCommercial = null;  // бюджет коммерческой служ�
 // ==========================
 // 2. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 // ==========================
+function buildCashFromRows(rows) {
+  if (!rows || rows.length < 2) return null;
 
+  const header = rows[0];
+  const idxDate  = header.indexOf('as_of_date');
+  const idxTotal = header.indexOf('cash_total');
+
+  if (idxDate === -1 || idxTotal === -1) {
+    console.warn('cash_balances: нет колонок as_of_date / cash_total');
+    return null;
+  }
+
+  let maxDate = null;
+  let lastRow = null;
+
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || !row.length) continue;
+
+    const d = parseDate(row[idxDate]);
+    if (!d) continue;
+
+    if (!maxDate || d > maxDate) {
+      maxDate = d;
+      lastRow = row;
+    }
+  }
+
+  if (!lastRow || !maxDate) return null;
+
+  const total = toNumber(lastRow[idxTotal]);
+
+  return {
+    date: maxDate,
+    total: total
+  };
+}
 function buildBudgetProductionFromRows(rows) {
   // Ожидаем CSV с колонками:
   // year, month, months_total, section, line_code, line_name, plan, fact, order
@@ -2775,6 +2852,20 @@ async function loadDataFromSheet() {
     }
   }
 
+  // 6) Остатки денежных средств
+  if (csvMap.cash) {
+    try {
+      const rowsCash = parseCSV(csvMap.cash);
+      const cash = buildCashFromRows(rowsCash);
+      if (cash) {
+        if (!dashboardData) dashboardData = {};
+        dashboardData.cash = cash;
+      }
+    } catch (e) {
+      console.error('Ошибка обработки cash_balances:', e);
+    }
+  }
+
   // 7) budget_production (бюджет производственной службы)
   budgetProduction = null;
   budgetCommercial = null; // 👈 обнуляем коммерческий бюджет перед загрузкой
@@ -3680,7 +3771,6 @@ function populateDashboard() {
         dateEl.textContent = '';
       }
     }
-
     // --- Кредиторская задолженность ---
     const payDateEl = document.getElementById('payablesDate');
     if (payDateEl) {
@@ -3919,6 +4009,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const loginForm = document.getElementById('loginForm');
   if (loginForm) {
     loginForm.addEventListener('submit', handleLoginSubmit);
+  }
+  // 2.1) Кнопка "Выйти"
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', logout);
   }
 
   // 3) Остальные кнопки раскрытия
