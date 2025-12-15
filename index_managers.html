@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Дашборд менеджера: ремонты и бюджет</title>
+    <title>Дашборд | ООО "ТК ВЕЛЕС"</title>
     <style>
         :root {
   /* Primitive Color Tokens */
@@ -181,6 +181,74 @@ body {
     margin: 0 auto;
     padding: var(--space-24);
 }
+/* === ЛОГИН === */
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.login-box {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+  box-shadow: var(--shadow-lg);
+  max-width: 380px;
+  width: 100%;
+}
+
+.login-box h2 {
+  margin-bottom: 8px;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--navy-primary);
+}
+
+.login-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.login-label {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  margin-top: 8px;
+  margin-bottom: 2px;
+}
+
+.login-input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-base);
+  border: 1px solid var(--border-color);
+  font-size: var(--font-size-sm);
+  margin-bottom: 4px;
+}
+
+.login-input:focus {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-color: var(--color-primary);
+}
+
+.login-error {
+  margin-top: 6px;
+  margin-bottom: 6px;
+  font-size: var(--font-size-xs);
+  color: var(--color-red-500);
+}
+
+.login-btn {
+  margin-top: 8px;
+  width: 100%;
+  justify-content: center;
+}
 
 /* Header */
 .dashboard-header {
@@ -294,13 +362,14 @@ body {
   color: var(--text-primary);
 }
 
-/* Metrics Grid — для менеджерского дашборда: Ремонты 30%, Бюджет 70% */
+
+/* Metrics Grid */
 .metrics-grid {
     display: grid;
-    grid-template-columns: 3fr 7fr;      /* ≈ 30% / 70% */
+    /* Две карточки равной ширины на всю доступную область */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-24);
     margin-bottom: var(--space-32);
-    align-items: stretch;               /* выравниваем карточки по высоте строки */
 }
 
 /* На планшетах и телефонах — по одной карточке в ряд */
@@ -309,7 +378,16 @@ body {
         grid-template-columns: 1fr;
     }
 }
-        
+
+
+/* Бюджет: на широких экранах — отдельная строка на всю ширину */
+@media (min-width: 1200px) {
+    #budget-card {
+        grid-column: 1 / -1;
+    }
+}
+
+
 .metric-card {
     background: var(--bg-card);
     border-radius: var(--radius-lg);
@@ -317,10 +395,6 @@ body {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     border: 1px solid var(--border-color);
     transition: all var(--duration-normal) var(--ease-standard);
-}
-/* Внутри сетки метрики растягиваем по высоте строки */
-.metrics-grid .metric-card {
-    height: 100%;
 }
 
 .metric-card:hover {
@@ -533,6 +607,45 @@ body {
     border-top: 1px solid rgba(148, 163, 184, 0.6);
     font-weight: var(--font-weight-bold);
 }
+/* Таблица коммерческой службы (Песок / Цемент / ПВ) */
+.simple-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.simple-table th,
+.simple-table td {
+  padding: 4px 18px;
+}
+
+/* 1-й столбец – продукт */
+.simple-table th:first-child,
+.simple-table td:first-child {
+  text-align: left;
+  width: 34%;
+}
+
+/* 2-й, 3-й, 4-й – цифры */
+.simple-table th:nth-child(2),
+.simple-table td:nth-child(2),
+.simple-table th:nth-child(3),
+.simple-table td:nth-child(3),
+.simple-table th:nth-child(4),
+.simple-table td:nth-child(4) {
+  text-align: right;
+  width: 22%;
+}
+
+/* Итого внизу */
+.simple-table tfoot tr.total-row td {
+  border-top: 1px solid rgba(148, 163, 184, 0.6);
+  font-weight: var(--font-weight-bold);
+}
+
+/* Вспомогательные классы для выравнивания */
+.text-left  { text-align: left; }
+.text-right { text-align: right; }
 
 /* Кнопки-ссылки под карточкой */
 .link-button {
@@ -549,10 +662,6 @@ body {
 
 .link-button:hover {
     color: var(--navy-primary);
-}
-/* Скрытие панелей (ремонты, бюджет и т.п.) */
-.hidden {
-    display: none;
 }
 
 /* Вспомогательные отступы */
@@ -758,7 +867,7 @@ body {
     text-align: right;
 }
 .repairs-card {
-   margin-top: 0;
+  margin-top: 10mm; /* нужный тебе вертикальный зазор после "План на месяц" */
 }
 
 .repair-count {
@@ -848,9 +957,29 @@ body {
         font-size: 32px;
     }
 }
-    </style>
+</style>
 </head>
 <body>
+
+  <!-- Оверлей логина -->
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-box">
+      <h2>Вход в дашборд</h2>
+      <p class="login-subtitle">Введите логин и пароль для доступа.</p>
+
+      <form id="loginForm">
+        <label class="login-label" for="loginLogin">Логин</label>
+        <input class="login-input" type="text" id="loginLogin" autocomplete="username">
+
+        <label class="login-label" for="loginPassword">Пароль</label>
+        <input class="login-input" type="password" id="loginPassword" autocomplete="current-password">
+
+        <div class="login-error" id="loginError" style="display:none;"></div>
+
+        <button type="submit" class="refresh-btn login-btn">Войти</button>
+      </form>
+    </div>
+  </div>
     <div class="dashboard-container">
         <!-- Header -->
         <header class="dashboard-header">
@@ -873,172 +1002,390 @@ body {
 
         <!-- Metrics Grid -->
         <div class="metrics-grid">
-          <!-- Card: Ремонты -->
-          <div class="metric-card repairs-card">
-            <div class="card-header">
-              <div class="card-icon">🛠️</div>
-              <div class="card-header-text">
-                <div class="card-title-row">
-                  <h2 class="card-title">РЕМОНТЫ</h2>
-                  <span id="repairsHeaderSummary" class="metric-value card-title-suffix"></span>
-                </div>
-                <div id="repairsDate" class="metric-label"></div>
-              </div>
+            <!-- Card 1: Loading -->
+            <div class="metric-card">
+                <div class="card-header">
+                     <div class="card-icon">📦</div>
+                     <div class="card-header-text">
+                         <h2 class="card-title">ПОГРУЗКА</h2>
+                         <div class="last-update last-update-inline">
+                             <span>⏱</span>
+                             <span id="lastUpdate">Погрузка с — по —</span>
+                         </div>
+                     </div>
+                 </div>
+                 <div class="card-body">
+
+                    <div class="main-metric" id="loadedWagonsMonth">—</div>
+                    <div class="metric-label">Погружено вагонов (месяц)</div>
+                    
+                    <div class="progress-section">
+                        <div class="progress-info">
+                            <span class="progress-label">Выполнение плана</span>
+                            <span class="progress-value" id="progressPercent">—</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                        <div class="secondary-metric month-plan">
+                            <span class="secondary-metric-label">По плану:</span>
+                            <span class="secondary-metric-value" id="planMonth">—</span>
+                        </div>
+                        
+                        <div class="secondary-metric month-plan">
+                            <span class="secondary-metric-label" id="toggleLoadingYesterday">Вчера погружено:</span>
+                            <span class="secondary-metric-value" id="loadedYesterday">—</span>
+                        </div>
+                        
+                        <div id="loadingYesterdayPanel" class="loading-yesterday-panel hidden">
+                            <ul id="loadingYesterdayList" class="loading-yesterday-list"></ul>
+                        </div>
+                        
+                        <div class="secondary-metric month-plan">
+                            <span class="secondary-metric-label">План на месяц:</span>
+                            <span class="secondary-metric-value" id="fullMonthPlan">—</span>
+                        </div>
+                      <!-- Card 3: Repairs -->
+                      <div class="metric-card repairs-card">
+                        <div class="card-header">
+                          <div class="card-icon">🛠️</div>
+                          <div class="card-header-text">
+                            <div class="card-title-row">
+                              <h2 class="card-title">РЕМОНТЫ</h2>
+                              <span id="repairsHeaderSummary" class="metric-value card-title-suffix"></span>
+                            </div>
+                            <div id="repairsDate" class="metric-label"></div>
+                          </div>
+                        </div>
+
+                        <div class="card-body">
+                          <div id="repairsTotalsList" class="repairs-totals-grid"></div>
+            
+                          <div class="metric-row mt-2">
+                            <button id="toggleRepairsTable" class="link-button">
+                              ▼ Развернуть структуру по ремонтам
+                            </button>
+                          </div>
+            
+                          <div id="repairsTablePanel" class="hidden">
+                            <table class="metric-table">
+                              <thead>
+                                <tr>
+                                  <th>Вид ремонта</th>
+                                  <th>В ремонте</th>
+                                  <th>В пути</th>
+                                  <th>В ожидании оформления</th>
+                                  <th>В ожидании отправки</th>
+                                  <th>Итого</th>
+                                </tr>
+                              </thead>
+                              <tbody id="repairsTableBody"></tbody>
+                            </table>
+                          </div>
+            
+                          <div class="metric-row mt-2">
+                            <span class="metric-label">Всего вагонов в парке:</span>
+                            <span class="metric-value" id="fleetTotal">—</span>
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
             </div>
+<!-- Card: Receivables (Дебиторка) + Payables (Кредиторка) -->
+<div class="metric-card">
+<div class="card-header">
+  <div class="card-icon">💳</div>
+  <div class="card-header-text">
+    <h2 class="card-title">ЗАДОЛЖЕННОСТЬ</h2>
+  </div>
+</div>
 
-            <div class="card-body">
-              <div id="repairsTotalsList" class="repairs-totals-grid"></div>
+<div class="card-body">
 
-              <div class="metric-row mt-2">
-                <button id="toggleRepairsTable" class="link-button">
-                  ▼ Развернуть структуру по ремонтам
-                </button>
-              </div>
-
-              <div id="repairsTablePanel" class="hidden">
-                <table class="metric-table">
-                  <thead>
-                    <tr>
-                      <th>Вид ремонта</th>
-                      <th>В ремонте</th>
-                      <th>В пути</th>
-                      <th>В ожидании оформления</th>
-                      <th>В ожидании отправки</th>
-                      <th>Итого</th>
-                    </tr>
-                  </thead>
-                  <tbody id="repairsTableBody"></tbody>
-                </table>
-              </div>
-
-              <div class="metric-row mt-2">
-                <span class="metric-label">Всего вагонов в парке:</span>
-                <span class="metric-value" id="fleetTotal">—</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Card: Бюджет -->
-          <div class="metric-card" id="budget-card">
-            <div class="card-header">
-              <div class="card-icon">💰</div>
-              <div class="card-header-text">
-                <h2 class="card-title">БЮДЖЕТ</h2>
-                <div id="budgetSubtitle" class="metric-label"></div>
-              </div>
-            </div>
-
-            <div class="subsection-header">
-              <span class="metric-label budget-service-title">
-                <strong>Производственная служба</strong>
-              </span>
-              <span id="budgetProdMonths" class="metric-label"></span>
-            </div>
-
-            <div class="metric-row">
-              <span class="metric-label">Расходы ремонт (план / факт):</span>
-              <span class="metric-value" id="budgetProdExpSummary">— / —</span>
-            </div>
-
-            <div class="metric-row">
-              <span class="metric-label">Расходы тариф (план / факт):</span>
-              <span class="metric-value" id="budgetProdRevSummary">— / —</span>
-            </div>
-
-            <div class="metric-row mt-2">
-              <button id="toggleBudgetProd" class="link-button">
-                ▼ Развернуть структуру производственной службы
-              </button>
-            </div>
-
-            <div id="budgetProdPanel" class="hidden">
-              <div class="budget-grid">
-                <!-- Левая колонка: расходы -->
-                <div>
-                  <h4 class="subsection-header">Расходы</h4>
-                  <table class="metric-table">
-                    <thead>
-                      <tr>
-                        <th>Статья</th>
-                        <th class="amount">План, шт</th>
-                        <th class="amount">Факт, шт</th>
-                        <th class="amount">План</th>
-                        <th class="amount">Факт</th>
-                      </tr>
-                    </thead>
-                    <tbody id="budgetProdExpBody"></tbody>
-                  </table>
-
-                  <h4 class="subsection-header mt-4">Среднее значение (ремонт)</h4>
-                  <table class="metric-table">
-                    <thead>
-                      <tr>
-                        <th>Статья</th>
-                        <th class="amount">План, р.</th>
-                        <th class="amount">Факт, р.</th>
-                      </tr>
-                    </thead>
-                    <tbody id="budgetProdExpAvgBody"></tbody>
-                  </table>
-                </div>
-
-                <!-- Правая колонка: Тариф -->
-                <div>
-                  <h4 class="subsection-header">Тариф</h4>
-                  <table class="metric-table">
-                    <thead>
-                      <tr>
-                        <th>Статья</th>
-                        <th class="amount">План</th>
-                        <th class="amount">Факт</th>
-                      </tr>
-                    </thead>
-                    <tbody id="budgetProdRevBody"></tbody>
-                  </table>
-
-                  <h4 class="subsection-header mt-4">Среднее значение (тариф)</h4>
-                  <table class="metric-table">
-                    <thead>
-                      <tr>
-                        <th>Показатель</th>
-                        <th class="amount">План, р.</th>
-                        <th class="amount">Факт, р.</th>
-                      </tr>
-                    </thead>
-                    <tbody id="budgetProdRevAvgBody"></tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-
-            <!-- Коммерческая служба -->
-            <div class="subsection-header mt-4">
-              <span class="metric-label budget-service-title">
-                <strong>Коммерческая служба</strong>
-              </span>
-              <span id="budgetCommMonths" class="metric-label"></span>
-            </div>
-
-            <div class="metric-row">
-              <span class="metric-label">Сводно (план / факт):</span>
-              <span class="metric-value" id="budgetCommSummary">— / —</span>
-            </div>
-
-            <div class="metric-row mt-2">
-              <button id="toggleBudgetComm" class="link-button">
-                ▼ Развернуть структуру коммерческой службы
-              </button>
-            </div>
-
-            <div id="budgetCommPanel" class="hidden">
-              <p class="metric-label">
-                Структура бюджета коммерческой службы будет настроена отдельно.
-              </p>
-            </div>
-          </div>
-        </div> <!-- конец .metrics-grid и .dashboard-container -->
+    <!-- == БЛОК 1: ДЕБИТОРСКАЯ ЗАДОЛЖЕННОСТЬ == -->
+    <div class="subsection-header">
+      <span class="metric-label"><strong>Дебиторская задолженность</strong></span>
+      <span id="receivablesDate" class="metric-label"></span>
     </div>
 
+    <!-- Общая задолженность -->
+    <div class="metric-row">
+      <span class="metric-label">Общая задолженность:</span>
+      <span id="totalDebt" class="metric-value">0 млн. р.</span>
+    </div>
+
+    <!-- Просроченная -->
+    <div class="metric-row">
+      <span class="metric-label">Просроченная:</span>
+      <span id="overdueDebt" class="metric-value text-accent">0 млн. р.</span>
+    </div>
+
+    <!-- Доля просроченной -->
+    <div class="metric-row">
+      <span class="metric-label">Доля просроченной</span>
+      <span id="overduePercent" class="metric-value text-accent">0%</span>
+    </div>
+
+    <div class="progress-bar">
+      <div id="overdueProgressFill" class="progress-fill warning"></div>
+    </div>
+
+    <!-- Кнопка: структура по клиентам -->
+    <div class="metric-row mt-2">
+      <button id="toggleClientsOverdue" class="link-button">
+        ▼ Развернуть структуру по клиентам
+      </button>
+    </div>
+
+    <!-- Панель: структура просроченной задолженности по клиентам -->
+    <div id="clientsOverduePanel" class="hidden">
+      <table class="metric-table">
+        <thead>
+          <tr>
+            <th>Клиент</th>
+            <th>Просроченная</th>
+            <th>%</th>
+          </tr>
+        </thead>
+        <tbody id="clientsOverdueBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Поступления -->
+    <div class="metric-row mt-4">
+      <span class="metric-label">Поступления:</span>
+      <span id="paymentsTotal" class="metric-value">0 млн. р.</span>
+    </div>
+
+    <!-- Кнопка: поступления по клиентам -->
+    <div class="metric-row mt-1">
+      <button id="toggleClientsPayments" class="link-button">
+        ▼ Развернуть поступления по клиентам
+      </button>
+    </div>
+
+    <!-- Панель: поступления по клиентам -->
+    <div id="clientsPaymentsPanel" class="hidden">
+      <table class="metric-table">
+        <thead>
+          <tr>
+            <th>Клиент</th>
+            <th>Поступления</th>
+            <th>%</th>
+          </tr>
+        </thead>
+        <tbody id="clientsPaymentsBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Разделитель между дебиторкой и кредиторкой -->
+    <div class="mt-4" style="border-top: 1px dashed rgba(148, 163, 184, 0.6); padding-top: var(--space-16);">
+
+      <!-- == БЛОК 2: КРЕДИТОРСКАЯ ЗАДОЛЖЕННОСТЬ == -->
+      <div class="subsection-header">
+        <span class="metric-label"><strong>Кредиторская задолженность</strong></span>
+        <span id="payablesDate" class="metric-label"></span>
+      </div>
+
+      <div class="metric-row">
+        <span class="metric-label">Общий долг:</span>
+        <span id="apTotalDebt" class="metric-value">0 млн. р.</span>
+      </div>
+
+       <!-- Кнопка: поставщики с долгом > 1 млн -->
+      <div class="metric-row mt-2">
+        <button id="toggleSuppliersPayables" class="link-button">
+          ▼ Развернуть структуру по поставщикам (&gt; 1 млн)
+        </button>
+      </div>
+
+      <div id="suppliersPayablesPanel" class="hidden">
+        <table class="metric-table">
+          <thead>
+            <tr>
+              <th>Поставщик</th>
+              <th>Долг</th>
+              <th>MAX отсрочка, дней</th>
+            </tr>
+          </thead>
+          <tbody id="suppliersPayablesBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Card: Бюджет -->
+<div class="metric-card" id="budget-card">
+  <div class="card-header">
+    <div class="card-icon">💰</div>
+    <div class="card-header-text">
+      <h2 class="card-title">БЮДЖЕТ</h2>
+      <div id="budgetSubtitle" class="metric-label"></div>
+    </div>
+  </div>
+
+    <div class="subsection-header">
+      <span class="metric-label budget-service-title">
+        <strong>Производственная служба</strong>
+      </span>
+      <span id="budgetProdMonths" class="metric-label"></span>
+    </div>
+
+    <div class="metric-row">
+      <span class="metric-label">Расходы ремонт (план / факт):</span>
+      <span class="metric-value" id="budgetProdExpSummary">— / —</span>
+    </div>
+
+    <div class="metric-row">
+      <span class="metric-label">Расходы тариф (план / факт):</span>
+      <span class="metric-value" id="budgetProdRevSummary">— / —</span>
+    </div>
+
+    <div class="metric-row mt-2">
+      <button id="toggleBudgetProd" class="link-button">
+        ▼ Развернуть структуру производственной службы
+      </button>
+    </div>
+
+        <div id="budgetProdPanel" class="hidden">
+      <div class="budget-grid">
+        <!-- Левая колонка: расходы -->
+        <div>
+          <h4 class="subsection-header">Расходы</h4>
+          <table class="metric-table">
+             <thead>
+                <tr>
+                  <th>Статья</th>
+                  <th class="amount">План, шт</th>
+                  <th class="amount">Факт, шт</th>
+                  <th class="amount">План</th>
+                  <th class="amount">Факт</th>
+                </tr>
+              </thead>
+
+            <tbody id="budgetProdExpBody"></tbody>
+          </table>
+
+          <h4 class="subsection-header mt-4">Среднее значение (ремонт)</h4>
+          <table class="metric-table">
+            <thead>
+              <tr>
+                <th>Статья</th>
+                <th class="amount">План, р.</th>
+                <th class="amount">Факт, р.</th>
+              </tr>
+            </thead>
+            <tbody id="budgetProdExpAvgBody"></tbody>
+          </table>
+        </div>
+
+        <!-- Правая колонка: Тариф -->
+        <div>
+          <h4 class="subsection-header">Тариф</h4>
+          <table class="metric-table">
+            <thead>
+              <tr>
+                <th>Статья</th>
+                <th class="amount">План</th>
+                <th class="amount">Факт</th>
+              </tr>
+            </thead>
+            <tbody id="budgetProdRevBody"></tbody>
+          </table>
+
+          <h4 class="subsection-header mt-4">Среднее значение (тариф)</h4>
+          <table class="metric-table">
+            <thead>
+              <tr>
+                <th>Показатель</th>
+                <th class="amount">План, р.</th>
+                <th class="amount">Факт, р.</th>
+              </tr>
+            </thead>
+            <tbody id="budgetProdRevAvgBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Коммерческая служба -->
+    <div class="subsection-header mt-4">
+      <span class="metric-label budget-service-title">
+        <strong>Коммерческая служба</strong>
+      </span>
+      <span id="budgetCommMonths" class="metric-label"></span>
+    </div>
+    
+    <div class="metric-row">
+      <span class="metric-label">Маржа (план / факт):</span>
+      <span class="metric-value" id="budgetCommSummary">— / —</span>
+    </div>
+    
+    <div class="metric-row">
+      <span class="metric-label">Доходность вагона (план / факт):</span>
+      <span class="metric-value" id="budgetCommYield">— / —</span>
+    </div>
+    <div class="metric-row mt-1">
+  <button id="toggleCommYieldMonth" class="link-button">
+    ▼ Развернуть доходность за ноябрь
+  </button>
+</div>
+
+<div id="commYieldMonthPanel" class="hidden">
+  <table class="simple-table mt-1">
+    <thead>
+      <tr>
+        <th class="text-left">Группа</th>
+        <th class="text-right">Доходность, руб./ваг.-сут. (ноябрь)</th>
+      </tr>
+    </thead>
+    <tbody id="commYieldMonthBody"></tbody>
+    <tfoot>
+      <tr class="total-row">
+        <td class="text-left"><strong>Итого</strong></td>
+        <td class="text-right" id="commYieldMonthTotal">—</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+
+    <div class="metric-row mt-2">
+      <button id="toggleBudgetComm" class="link-button">
+        ▼ Развернуть доходность за год
+      </button>
+    </div>
+    
+<div id="budgetCommPanel" class="hidden">
+  <table class="simple-table">
+    <thead>
+      <tr>
+        <th class="text-left">Группа</th>
+        <th class="text-right">План, ваг.</th>
+        <th class="text-right">Факт, ваг.</th>
+        <th class="text-right">Доходность, руб./ваг.-сут.</th>
+      </tr>
+    </thead>
+    <tbody id="budgetCommNatBody">
+      <!-- сюда JS будет вставлять строки по продуктам -->
+    </tbody>
+    <tfoot>
+      <tr class="total-row">
+        <td class="text-left"><strong>Итого</strong></td>
+        <td class="text-right" id="budgetCommNatPlanTotal">—</td>
+        <td class="text-right" id="budgetCommNatFactTotal">—</td>
+        <td class="text-right" id="budgetCommNatYieldTotal">—</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+
+
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
@@ -1063,6 +1410,62 @@ const SHEET_CASH_CSV_URL =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vRy08FvutySDNk8yvn0QKdT92-uWjRqaxqi2057Tl42Ai2zLS4L833E2g2GdgBnpFX-t5uwX6JUcmg4/pub?gid=676880520&single=true&output=csv';  
 const SHEET_BUDGET_PROD_CSV_URL =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=0&single=true&output=csv';
+// Коммерческая служба: kpi (маржа, вагоно-сутки, доходность)
+const SHEET_COMM_KPI_CSV_URL =
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=463811978&single=true&output=csv';
+// Коммерческая служба: натурка по продуктам (Песок/Цемент/ПВ)
+const SHEET_COMM_NAT_CSV_URL =
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=78706492&single=true&output=csv';
+const SHEET_COMM_CLIENTS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=1437651939&single=true&output=csv';
+const DASHBOARD_API_URL = 'https://alekseipugleev.app.n8n.cloud/webhook/dashboard-data';
+const LOGIN_API_URL = 'https://alekseipugleev.app.n8n.cloud/webhook/dashboard-login';
+let isAuthenticated = false;
+// --- Настройки "запоминания" логина ---
+const AUTH_STORAGE_KEY = 'veles_dashboard_auth_v1'; // ключ в localStorage
+const AUTH_TTL_MS = 8 * 60 * 60 * 1000; // срок жизни сессии: 8 часов
+
+function saveAuthSession(login) {
+  try {
+    const payload = {
+      login,
+      ts: Date.now()
+    };
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(payload));
+  } catch (e) {
+    console.warn('Не удалось сохранить сессию в localStorage', e);
+  }
+}
+
+function loadAuthSession() {
+  try {
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!raw) return null;
+
+    const data = JSON.parse(raw);
+    if (!data || typeof data.ts !== 'number') return null;
+
+    // проверяем срок действия
+    const age = Date.now() - data.ts;
+    if (age > AUTH_TTL_MS) {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+      return null;
+    }
+
+    return data;
+  } catch (e) {
+    console.warn('Не удалось прочитать сессию из localStorage', e);
+    return null;
+  }
+}
+
+function clearAuthSession() {
+  try {
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+  } catch (e) {
+    console.warn('Не удалось удалить сессию из localStorage', e);
+  }
+}
+
     
 let dashboardData = null;
 let trendChart = null;
@@ -1073,47 +1476,12 @@ let payablesBySupplier = []; // [{ supplier, total, avg_overdue }]
 let yesterdayLoadingStations = []; // [{ station, count }]
 let yesterdayLoadingDate = null;
 let budgetProduction = null; // бюджет производственной службы
+let budgetCommercial = null;  // бюджет коммерческой службы
 
 // ==========================
 // 2. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 // ==========================
-function buildCashFromRows(rows) {
-  if (!rows || rows.length < 2) return null;
 
-  const header = rows[0];
-  const idxDate  = header.indexOf('as_of_date');
-  const idxTotal = header.indexOf('cash_total');
-
-  if (idxDate === -1 || idxTotal === -1) {
-    console.warn('cash_balances: нет колонок as_of_date / cash_total');
-    return null;
-  }
-
-  let maxDate = null;
-  let lastRow = null;
-
-  for (let i = 1; i < rows.length; i++) {
-    const row = rows[i];
-    if (!row || !row.length) continue;
-
-    const d = parseDate(row[idxDate]);
-    if (!d) continue;
-
-    if (!maxDate || d > maxDate) {
-      maxDate = d;
-      lastRow = row;
-    }
-  }
-
-  if (!lastRow || !maxDate) return null;
-
-  const total = toNumber(lastRow[idxTotal]);
-
-  return {
-    date: maxDate,
-    total: total
-  };
-}
 function buildBudgetProductionFromRows(rows) {
   // Ожидаем CSV с колонками:
   // year, month, months_total, section, line_code, line_name, plan, fact, order
@@ -1261,6 +1629,315 @@ function buildBudgetProductionFromRows(rows) {
   };
 }
 
+function buildBudgetCommercialFromRows(kpiRows, natRows, clientsRows) {
+  if (!kpiRows || kpiRows.length < 2) {
+    console.warn('comm_kpi: нет данных');
+    return null;
+  }
+
+  const hdr = kpiRows[0];
+  const idxYear       = hdr.indexOf('year');
+  const idxMonth      = hdr.indexOf('month');
+  const idxMPlan      = hdr.indexOf('margin_plan');
+  const idxMFact      = hdr.indexOf('margin_fact');
+  const idxWDPlan     = hdr.indexOf('wagon_days_plan');
+  const idxWDFact     = hdr.indexOf('wagon_days_fact');
+
+  if (idxYear === -1 || idxMonth === -1 || idxMPlan === -1 || idxMFact === -1) {
+    console.warn('comm_kpi: нет нужных колонок (year, month, margin_plan, margin_fact)');
+    return null;
+  }
+
+  const kpiItems = [];
+  let maxFactKey = null;
+  let maxPlanKey = null;
+
+  for (let i = 1; i < kpiRows.length; i++) {
+    const row = kpiRows[i];
+    if (!row || !row.length) continue;
+
+    const year  = Number(row[idxYear])  || 0;
+    const month = Number(row[idxMonth]) || 0;
+    if (!year || !month) continue;
+
+    const key = year * 12 + month;
+
+    const marginPlan = idxMPlan  !== -1 ? toNumber(row[idxMPlan])  : 0;
+    const marginFact = idxMFact  !== -1 ? toNumber(row[idxMFact])  : 0;
+    const wdPlan     = idxWDPlan !== -1 ? toNumber(row[idxWDPlan]) : 0;
+    const wdFact     = idxWDFact !== -1 ? toNumber(row[idxWDFact]) : 0;
+
+    const item = {
+      year,
+      month,
+      key,
+      marginPlan,
+      marginFact,
+      wagonDaysPlan: wdPlan,
+      wagonDaysFact: wdFact
+    };
+    kpiItems.push(item);
+
+    if (marginFact) {
+      if (maxFactKey === null || key > maxFactKey) maxFactKey = key;
+    }
+    if (marginPlan) {
+      if (maxPlanKey === null || key > maxPlanKey) maxPlanKey = key;
+    }
+  }
+
+  if (!kpiItems.length) return null;
+
+  const usedKey = maxFactKey !== null ? maxFactKey : maxPlanKey;
+  if (usedKey === null) {
+    console.warn('comm_kpi: нет ненулевых значений план/факт');
+    return null;
+  }
+
+  const usedItems = kpiItems.filter(r => r.key <= usedKey);
+  const lastItem  = kpiItems.find(r => r.key === usedKey);
+
+  let marginPlanTotal = 0;
+  let marginFactTotal = 0;
+  let wdPlanTotal     = 0;
+  let wdFactTotal     = 0;
+
+  usedItems.forEach(r => {
+    marginPlanTotal += r.marginPlan      || 0;
+    marginFactTotal += r.marginFact      || 0;
+    wdPlanTotal     += r.wagonDaysPlan   || 0;
+    wdFactTotal     += r.wagonDaysFact   || 0;
+  });
+
+  const yieldPlan = wdPlanTotal ? marginPlanTotal / wdPlanTotal : null;
+  const yieldFact = wdFactTotal ? marginFactTotal / wdFactTotal : null;
+
+  const uniqueKeys = new Set();
+  usedItems.forEach(r => uniqueKeys.add(r.key));
+  const monthsTotal = uniqueKeys.size;
+
+  // ===== НАТУРА (Песок / Цемент / ПВ) =====
+  let natByProduct = [];
+  let natTotal = null;
+
+  if (natRows && natRows.length > 1) {
+    const hNat      = natRows[0];
+    const idxNYear  = hNat.indexOf('year');
+    const idxNMonth = hNat.indexOf('month');
+    const idxCode   = hNat.indexOf('product_code');
+    const idxName   = hNat.indexOf('product_name');
+    const idxWPlan  = hNat.indexOf('wagons_plan');
+    const idxWFact  = hNat.indexOf('wagons_fact');
+
+    if (idxNYear === -1 || idxNMonth === -1 || idxCode === -1) {
+      console.warn('comm_nat: нет нужных колонок (year, month, product_code)');
+    } else {
+      const prodMap = new Map();
+
+      for (let i = 1; i < natRows.length; i++) {
+        const row = natRows[i];
+        if (!row || !row.length) continue;
+
+        const y  = Number(row[idxNYear])  || 0;
+        const m  = Number(row[idxNMonth]) || 0;
+        if (!y || !m) continue;
+
+        const keyN = y * 12 + m;
+        if (keyN > usedKey) continue; // берём только месяцы до usedKey
+
+        const code = row[idxCode];
+        if (!code) continue;
+
+        const name = idxName !== -1 && row[idxName]
+          ? String(row[idxName]).trim()
+          : String(code).trim();
+
+        const wPlan = idxWPlan !== -1 ? toNumber(row[idxWPlan]) : 0;
+        const wFact = idxWFact !== -1 ? toNumber(row[idxWFact]) : 0;
+
+        const prodKey = String(code).trim().toUpperCase();
+        let obj = prodMap.get(prodKey);
+        if (!obj) {
+          obj = { code: prodKey, name, wagonsPlan: 0, wagonsFact: 0 };
+          prodMap.set(prodKey, obj);
+        }
+        obj.wagonsPlan += wPlan;
+        obj.wagonsFact += wFact;
+      }
+
+        natByProduct = Array.from(prodMap.values());
+        
+        // Желаемый порядок: Песок → Цемент → ПВ
+        const productOrder = {
+          SAND: 1,      // Песок
+          CEMENT: 2,    // Цемент
+          PV: 3         // ПВ (или что у тебя в product_code)
+        };
+        
+        natByProduct.sort((a, b) => {
+          const oa = productOrder[a.code] ?? 999;
+          const ob = productOrder[b.code] ?? 999;
+          if (oa !== ob) return oa - ob;
+          return (a.name || '').localeCompare(b.name || '', 'ru');
+        });
+
+
+      const totalPlan = natByProduct.reduce((s, r) => s + (r.wagonsPlan || 0), 0);
+      const totalFact = natByProduct.reduce((s, r) => s + (r.wagonsFact || 0), 0);
+      natTotal = { code: 'TOTAL', name: 'Итого', wagonsPlan: totalPlan, wagonsFact: totalFact };
+    
+              // ===== ДОХОДНОСТЬ ПО ПРОДУКТАМ (ФАКТ) ИЗ comm_clients =====
+      if (clientsRows && clientsRows.length > 1) {
+        const hCl      = clientsRows[0];
+        const idxCY    = hCl.indexOf('year');
+        const idxCM    = hCl.indexOf('month');
+        const idxCCode = hCl.indexOf('product_code');
+        const idxCMarg = hCl.indexOf('margin');
+        // Доходность считаем только по vaгоно-суткам из столбца "wagon_days"
+        const idxCWD   = hCl.indexOf('wagon_days');
+
+
+    
+        if (
+          idxCY !== -1 &&
+          idxCM !== -1 &&
+          idxCCode !== -1 &&
+          idxCMarg !== -1 &&
+          idxCWD !== -1
+        ) {
+          const byProd = new Map();
+          let totalMargin = 0;
+          let totalWD     = 0;
+    
+          for (let i = 1; i < clientsRows.length; i++) {
+            const row = clientsRows[i];
+            if (!row || !row.length) continue;
+    
+            const y = Number(row[idxCY]) || 0;
+            const m = Number(row[idxCM]) || 0;
+            if (!y || !m) continue;
+    
+            const k = y * 12 + m;
+            if (k > usedKey) continue; // берём только месяцы, которые уже вошли в бюджет
+    
+            const code = (row[idxCCode] || '').toString().trim().toUpperCase();
+            if (!code) continue;
+    
+            const margin = toNumber(row[idxCMarg]);
+            const wd     = toNumber(row[idxCWD]);
+            if (!margin && !wd) continue;
+    
+            const key = code; // уже нормализованный
+            let obj = byProd.get(key);
+            if (!obj) {
+              obj = { code: key, margin: 0, wagonDays: 0 };
+              byProd.set(key, obj);
+            }
+            obj.margin    += margin;
+            obj.wagonDays += wd;
+    
+            totalMargin += margin;
+            totalWD     += wd;
+          }
+    
+          const yieldMap = new Map();
+          for (const obj of byProd.values()) {
+            const yld = obj.wagonDays ? obj.margin / obj.wagonDays : null;
+            yieldMap.set(obj.code, yld);
+          }
+    
+          // кладём доходность в объекты nat.byProduct, чтобы дальше её отрисовать
+          natByProduct.forEach(p => {
+            const yld = yieldMap.get(String(p.code).trim().toUpperCase());
+            if (yld != null) {
+              p.yieldFact = yld;
+            }
+          });
+    
+          if (natTotal) {
+            natTotal.yieldFact = totalWD ? totalMargin / totalWD : null;
+          }
+                      // ===== Доходность за последний месяц (usedKey) =====
+          const lastMonthByProd = new Map();
+          let lastMonthMarginTotal = 0;
+          let lastMonthWDTotal     = 0;
+
+          for (let i = 1; i < clientsRows.length; i++) {
+            const row = clientsRows[i];
+            if (!row || !row.length) continue;
+
+            const y = Number(row[idxCY]) || 0;
+            const m = Number(row[idxCM]) || 0;
+            if (!y || !m) continue;
+
+            const k = y * 12 + m;
+            if (k !== usedKey) continue; // берём только последний месяц
+
+            const code = (row[idxCCode] || '').toString().trim().toUpperCase();
+            if (!code) continue;
+
+            const margin = toNumber(row[idxCMarg]);
+            const wd     = toNumber(row[idxCWD]);
+            if (!margin && !wd) continue;
+
+            let obj = lastMonthByProd.get(code);
+            if (!obj) {
+              obj = { code, margin: 0, wagonDays: 0 };
+              lastMonthByProd.set(code, obj);
+            }
+            obj.margin    += margin;
+            obj.wagonDays += wd;
+
+            lastMonthMarginTotal += margin;
+            lastMonthWDTotal     += wd;
+          }
+
+          const lastMonthYieldMap = new Map();
+          for (const obj of lastMonthByProd.values()) {
+            const yld = obj.wagonDays ? obj.margin / obj.wagonDays : null;
+            lastMonthYieldMap.set(obj.code, yld);
+          }
+
+          // Сохраняем доходность за последний месяц внутрь объектов натуры
+          natByProduct.forEach(p => {
+            const code = String(p.code).trim().toUpperCase();
+            const yldMonth = lastMonthYieldMap.get(code);
+            if (yldMonth != null) {
+              p.yieldLastMonth = yldMonth;
+            }
+          });
+
+          if (natTotal) {
+            natTotal.yieldLastMonth =
+              lastMonthWDTotal ? lastMonthMarginTotal / lastMonthWDTotal : null;
+          }
+
+        } else {
+          console.warn('comm_clients: нет колонок year/month/product_code/margin/wagon_days');
+        }
+      }
+
+    }
+  }
+
+  return {
+    period: lastItem
+      ? { year: lastItem.year, month: lastItem.month, monthsTotal }
+      : { year: null, month: null, monthsTotal },
+    margin: {
+      plan:           marginPlanTotal,
+      fact:           marginFactTotal,
+      wagonDaysPlan:  wdPlanTotal,
+      wagonDaysFact:  wdFactTotal,
+      yieldPlan,
+      yieldFact
+    },
+       nat: {
+      byProduct: natByProduct,
+      total: natTotal
+    }
+  };
+}
 
     
 function buildPaymentsFromRows(rows) {
@@ -1985,181 +2662,158 @@ const planMonth   = rowsThisMonth.reduce((sum, r) => sum + (r.planned_wagons || 
 
 async function loadDataFromSheet() {
   let snapshotDate = null; // будет использоваться и для ремонтов
+
+  // 0) Забираем всё одним запросом (n8n агрегатор)
+  const url = DASHBOARD_API_URL + (DASHBOARD_API_URL.includes('?') ? '&' : '?') + '_ts=' + Date.now();
+  const apiRes = await fetch(url, { cache: 'no-store' });
+  if (!apiRes.ok) throw new Error('HTTP ' + apiRes.status);
+
+  const api = await apiRes.json().catch(() => null);
+  if (!api || api.ok !== true || !api.csv) {
+    throw new Error('Bad API response from dashboard-data');
+  }
+
+  const csvMap = api.csv || {};
+
   // 1) основной raw_data
-  const res = await fetch(SHEET_CSV_URL);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const csvText = await res.text();
-    const rows = parseCSV(csvText);
-   
-    // Ищем план на месяц в первой строке (как было)
-    let monthPlanFromHeader = 0;
-    if (rows.length) {
-        const headerRow = rows[0];
-        for (let i = headerRow.length - 1; i >= 0; i--) {
-            const cell = headerRow[i];
-            if (cell !== '') {
-                monthPlanFromHeader = toNumber(cell);
-                break;
-            }
-        }
-    }
+  const csvText = csvMap.raw || '';
+  const rows = csvText ? parseCSV(csvText) : [];
 
-    const rowObjs = rowsToObjects(rows);
-    dashboardData = buildDashboardDataFromRaw(rowObjs, monthPlanFromHeader);
-        // 3) ar_payments_daily
-    if (SHEET_PAYMENTS_CSV_URL) {
-        try {
-            const resPay = await fetch(SHEET_PAYMENTS_CSV_URL);
-            if (resPay.ok) {
-                const csvTextPay = await resPay.text();
-                const rowsPay = parseCSV(csvTextPay);
-
-                const payments = buildPaymentsFromRows(rowsPay);
-                paymentsLastDate = payments.lastDate;
-                paymentsByClient = payments.items;
-            } else {
-                console.warn('Не удалось загрузить ar_payments_daily, статус:', resPay.status);
-            }
-        } catch (e) {
-            console.error('Ошибка загрузки ar_payments_daily:', e);
-        }
-    }
-    // 2) структура просрочки по клиентам + суммы из ar_agg_client_contract
-    receivablesByClient = [];
-
-    if (SHEET_CLIENTS_CSV_URL) {
-        try {
-            const resClients = await fetch(SHEET_CLIENTS_CSV_URL);
-            if (resClients.ok) {
-                const csvTextClients = await resClients.text();
-                const rowsClients = parseCSV(csvTextClients);
-                // дата среза (аналог G1 на листе ar_agg_client_contract)
-                  snapshotDate = getSnapshotDateFromAggRows(rowsClients);
-                if (snapshotDate && dashboardData) {
-                    dashboardData.receivables_date = snapshotDate;
-                }
-
-                // а) считаем общую и просроченную задолженность по agg-листу
-                const aggTotals = computeTotalsFromAggRows(rowsClients);
-                    if (dashboardData && dashboardData.receivables) {
-                        dashboardData.receivables.total_debt   = aggTotals.total;
-                        dashboardData.receivables.overdue_debt = aggTotals.overdue;
-                        dashboardData.receivables.overdue_percent =
-                            aggTotals.total
-                                ? Math.round(aggTotals.overdue / aggTotals.total * 100)
-                                : 0;
-                    }
-
-                // б) строим структуру по клиентам (ТОП > 1 млн)
-                receivablesByClient = buildReceivablesByClientFromRows(rowsClients);
-            } else {
-                console.warn('Не удалось загрузить ar_agg_client_contract, статус:', resClients.status);
-            }
-        } catch (e) {
-            console.error('Ошибка загрузки сводки по клиентам:', e);
-        }
-    }
-        // 3) Кредиторка: ap_suppliers
-    if (SHEET_AP_SUPPLIERS_CSV_URL) {
-      try {
-        const resAp = await fetch(SHEET_AP_SUPPLIERS_CSV_URL);
-        if (resAp.ok) {
-          const csvAp = await resAp.text();
-          const rowsAp = parseCSV(csvAp);
-          const ap = buildPayablesFromRows(rowsAp);
-
-          if (!dashboardData.payables) {
-            dashboardData.payables = {};
-          }
-
-          dashboardData.payables.total_debt = ap.total;
-          dashboardData.payables.overdue_debt = ap.overdue;
-          dashboardData.payables.overdue_percent =
-            ap.total ? Math.round((ap.overdue / ap.total) * 100) : 0;
-          dashboardData.payables_date = ap.date;
-
-          payablesBySupplier = ap.suppliers;
-        } else {
-          console.warn(
-            'Не удалось загрузить ap_suppliers, статус:',
-            resAp.status
-          );
-        }
-      } catch (e) {
-        console.error('Ошибка загрузки ap_suppliers:', e);
+  // Ищем план на месяц в первой строке (как было)
+  let monthPlanFromHeader = 0;
+  if (rows.length) {
+    const headerRow = rows[0];
+    for (let i = headerRow.length - 1; i >= 0; i--) {
+      const cell = headerRow[i];
+      if (cell !== '') {
+        monthPlanFromHeader = toNumber(cell);
+        break;
       }
     }
-    // 4) Журнал погрузки: разбивка "вчера погружено" по станциям
-    yesterdayLoadingStations = [];
-    yesterdayLoadingDate = null;
+  }
 
-    if (SHEET_LOADING_JOURNAL_CSV_URL) {
-        try {
-            const resLog = await fetch(SHEET_LOADING_JOURNAL_CSV_URL);
-            if (resLog.ok) {
-                const csvLog = await resLog.text();
-                const rowsLog = parseCSV(csvLog);
-                const result = buildYesterdayLoadingFromRows(rowsLog);
-                yesterdayLoadingDate = result.date;
-                yesterdayLoadingStations = result.items;
-            } else {
-                console.warn('Не удалось загрузить журнал погрузки, статус:', resLog.status);
-            }
-        } catch (e) {
-            console.error('Ошибка загрузки журнала погрузки:', e);
-        }
+  const rowObjs = rowsToObjects(rows);
+  dashboardData = buildDashboardDataFromRaw(rowObjs, monthPlanFromHeader);
+
+  // 2) ar_payments_daily
+  if (csvMap.payments) {
+    try {
+      const rowsPay = parseCSV(csvMap.payments);
+      const payments = buildPaymentsFromRows(rowsPay);
+      paymentsLastDate = payments.lastDate;
+      paymentsByClient = payments.items;
+    } catch (e) {
+      console.error('Ошибка обработки ar_payments_daily:', e);
     }
-// 5) Остатки денежных средств
-if (SHEET_CASH_CSV_URL) {
-  try {
-    const resCash = await fetch(SHEET_CASH_CSV_URL);
-    if (resCash.ok) {
-      const csvCash = await resCash.text();
-      const rowsCash = parseCSV(csvCash);
-      const cash = buildCashFromRows(rowsCash);
-      if (cash) {
-        if (!dashboardData) dashboardData = {};
-        dashboardData.cash = cash;
+  } else {
+    paymentsLastDate = null;
+    paymentsByClient = [];
+  }
+
+  // 3) структура просрочки по клиентам + суммы из ar_agg_client_contract
+  receivablesByClient = [];
+  if (csvMap.clients) {
+    try {
+      const rowsClients = parseCSV(csvMap.clients);
+
+      // дата среза (аналог G1 на листе ar_agg_client_contract)
+      snapshotDate = getSnapshotDateFromAggRows(rowsClients);
+      if (snapshotDate && dashboardData) {
+        dashboardData.receivables_date = snapshotDate;
       }
-    } else {
-      console.warn('Не удалось загрузить cash_balances, статус:', resCash.status);
-    }
-  } catch (e) {
-    console.error('Ошибка загрузки cash_balances:', e);
-  }
-}
-// 6) budget_production (бюджет производственной службы)
-budgetProduction = null;
 
-if (typeof SHEET_BUDGET_PROD_CSV_URL !== 'undefined' && SHEET_BUDGET_PROD_CSV_URL) {
+      // а) считаем общую и просроченную задолженность по agg-листу
+      const aggTotals = computeTotalsFromAggRows(rowsClients);
+      if (dashboardData && dashboardData.receivables) {
+        dashboardData.receivables.total_debt = aggTotals.total;
+        dashboardData.receivables.overdue_debt = aggTotals.overdue;
+        dashboardData.receivables.overdue_percent =
+          aggTotals.total ? Math.round(aggTotals.overdue / aggTotals.total * 100) : 0;
+      }
+
+      // б) строим структуру по клиентам (ТОП > 1 млн)
+      receivablesByClient = buildReceivablesByClientFromRows(rowsClients);
+    } catch (e) {
+      console.error('Ошибка обработки ar_agg_client_contract:', e);
+    }
+  }
+
+  // 4) Кредиторка: ap_suppliers
+  if (csvMap.ap_suppliers) {
+    try {
+      const rowsAp = parseCSV(csvMap.ap_suppliers);
+      const ap = buildPayablesFromRows(rowsAp);
+
+      if (!dashboardData.payables) dashboardData.payables = {};
+
+      dashboardData.payables.total_debt = ap.total;
+      dashboardData.payables.overdue_debt = ap.overdue;
+      dashboardData.payables.overdue_percent =
+        ap.total ? Math.round((ap.overdue / ap.total) * 100) : 0;
+      dashboardData.payables_date = ap.date;
+
+      payablesBySupplier = ap.suppliers;
+    } catch (e) {
+      console.error('Ошибка обработки ap_suppliers:', e);
+    }
+  } else {
+    payablesBySupplier = [];
+  }
+
+  // 5) Журнал погрузки: разбивка "вчера погружено" по станциям
+  yesterdayLoadingStations = [];
+  yesterdayLoadingDate = null;
+
+  if (csvMap.loading_journal) {
+    try {
+      const rowsLog = parseCSV(csvMap.loading_journal);
+      const result = buildYesterdayLoadingFromRows(rowsLog);
+      yesterdayLoadingDate = result.date;
+      yesterdayLoadingStations = result.items;
+    } catch (e) {
+      console.error('Ошибка обработки журнала погрузки:', e);
+    }
+  }
+
+  // 7) budget_production (бюджет производственной службы)
+  budgetProduction = null;
+  budgetCommercial = null; // 👈 обнуляем коммерческий бюджет перед загрузкой
+
+  if (csvMap.budget_prod) {
+    try {
+      const prodRows = parseCSV(csvMap.budget_prod);
+      budgetProduction = buildBudgetProductionFromRows(prodRows);
+    } catch (e) {
+      console.error('Ошибка обработки budget_production:', e);
+    }
+  }
+
+  // 8) comm_kpi / comm_nat / comm_clients (коммерческая служба)
+  if (csvMap.comm_kpi && csvMap.comm_nat && csvMap.comm_clients) {
+    try {
+      const kpiRows = parseCSV(csvMap.comm_kpi);
+      const natRows = parseCSV(csvMap.comm_nat);
+      const clientsRows = parseCSV(csvMap.comm_clients);
+      budgetCommercial = buildBudgetCommercialFromRows(kpiRows, natRows, clientsRows);
+    } catch (e) {
+      console.error('Ошибка обработки comm_*:', e);
+    }
+  }
+
+  // 9) repairs_snapshot (последним, когда уже есть snapshotDate)
   try {
-    const resBudget = await fetch(SHEET_BUDGET_PROD_CSV_URL);
-    if (resBudget.ok) {
-      const csvBudget = await resBudget.text();
-      const rowsBudget = parseCSV(csvBudget);
-      budgetProduction = buildBudgetProductionFromRows(rowsBudget);
+    if (csvMap.repairs) {
+      const repRows = parseCSV(csvMap.repairs);
+      const repairsData = buildRepairsFromSnapshot(repRows);
+      const repairsDate = repairsData.date || snapshotDate || null;
+      renderRepairsCard(repairsData.items, repairsDate);
     } else {
-      console.warn('Не удалось загрузить budget_production, статус:', resBudget.status);
+      renderRepairsCard([], snapshotDate);
     }
   } catch (e) {
-    console.error('Ошибка загрузки budget_production:', e);
+    console.error('Ошибка обработки repairs_snapshot:', e);
+    renderRepairsCard([], snapshotDate);
   }
-}
-
- // 4) repairs_snapshot (последним, когда уже есть snapshotDate)
-try {
-  const repairsCsv = await fetch(SHEET_REPAIRS_CSV_URL).then(r => r.text());
-  const repRows = parseCSV(repairsCsv);
-
-  const repairsData = buildRepairsFromSnapshot(repRows);
-  const repairsDate = repairsData.date || snapshotDate || null;
-
-  renderRepairsCard(repairsData.items, repairsDate);
-} catch (e) {
-  console.error('Ошибка загрузки repairs_snapshot:', e);
-  renderRepairsCard([], snapshotDate);
-}
-
 }
 
 // ==========================
@@ -2485,14 +3139,6 @@ function renderRepairsCard(items, dateStr) {
     }
 
   }
-
-  const btn = document.getElementById('toggleRepairsTable');
-  if (btn) {
-    btn.onclick = () => {
-      const panel = document.getElementById('repairsTablePanel');
-      if (panel) panel.classList.toggle('hidden');
-    };
-  }
 }
 function renderBudgetProductionCard() {
   const card = document.getElementById('budget-card');
@@ -2533,16 +3179,7 @@ function renderBudgetProductionCard() {
   const monthsEl = document.getElementById('budgetProdMonths');
   if (monthsEl) monthsEl.textContent = monthsLabel;
 
-  const commMonthsEl = document.getElementById('budgetCommMonths');
-  if (commMonthsEl) commMonthsEl.textContent = monthsLabel;
-
-  // Коммерческая служба пока заглушка
-  const commSummaryEl = document.getElementById('budgetCommSummary');
-  if (commSummaryEl) {
-    commSummaryEl.textContent = '— / —';
-  }
-
-  // Итоги по расходам и тарифу (шапка карточки)
+    // Итоги по расходам и тарифу (шапка карточки)
   const expSummaryEl = document.getElementById('budgetProdExpSummary');
   if (expSummaryEl && budgetProduction.expSummary) {
     const s = budgetProduction.expSummary;
@@ -2635,9 +3272,16 @@ function formatCellThousands(value) {
     );
 
     // Прочие (страхование, слежение, П/П, аренда и т.п.) — без строки "Переходящие"
-    otherRows.forEach(r =>
-      makeRow(r.name, r.qtyPlan, r.qtyFact, r.plan, r.fact)
-    );
+   otherRows.forEach(r => {
+  const code = (r.code || '').toUpperCase();
+  const name = (r.name || '').toLowerCase();
+
+  // прячем строку "Переходящие", если вдруг прилетит из таблицы
+  if (code === 'CARRY' || name.includes('переходящ')) return;
+
+  makeRow(r.name, r.qtyPlan, r.qtyFact, r.plan, r.fact);
+});
+
 
     // Итоговая строка "Всего" — количество не показываем
     if (totalRows.length) {
@@ -2704,6 +3348,291 @@ function formatCellThousands(value) {
     r => r.code !== 'WAGONS_AVG' && r.name !== 'Кол. вагонов (среднее)'
   );
   fillSimpleTable('budgetProdRevAvgBody', revenueAvgFiltered);
+// --- Коммерческая служба: маржа и доходность вагона ---
+const commMonthsEl  = document.getElementById('budgetCommMonths');
+const commSummaryEl = document.getElementById('budgetCommSummary');
+const commYieldEl   = document.getElementById('budgetCommYield');
+
+if (budgetCommercial && commMonthsEl && commSummaryEl) {
+  const cPeriod = budgetCommercial.period || {};
+  const m = cPeriod.month;
+  const y = cPeriod.year;
+  const monthsTotalComm = cPeriod.monthsTotal || m;
+
+  // Подпись "Бюджет 2025 г., 11 мес. (по ноябрю)" — именно по коммерческой службе
+  let headerText = '';
+  if (m && y) {
+    const monthName = monthsNames[m - 1] || '';
+    if (monthsTotalComm && monthsTotalComm !== m) {
+      headerText = `Бюджет ${y} г., ${monthsTotalComm} мес. (по ${monthName})`;
+    } else {
+      headerText = `Бюджет ${y} г. (по ${monthName})`;
+    }
+  }
+  commMonthsEl.textContent = headerText;
+
+  // --- Маржа: план / факт, в млн руб ---
+  const margin = budgetCommercial.margin || {};
+  const planVal = margin.plan ?? null;
+  const factVal = margin.fact ?? null;
+
+  if (planVal === null && factVal === null) {
+    commSummaryEl.textContent = '— / —';
+  } else {
+    const planText = planVal !== null ? formatMillions(planVal) : '—';
+
+    let factHtml = '—';
+    if (factVal !== null) {
+      const factText = formatMillions(factVal);
+
+      if (planVal != null && factVal !== planVal) {
+        const diff = factVal - planVal;          // >0 — лучше плана, <0 — хуже
+        const diffAbs = Math.abs(diff);
+        const diffText = (diff > 0 ? '+' : '−') + formatMillions(diffAbs);
+
+        const isWorse = diff < 0;                // хуже плана → красный
+        const factSpan = isWorse
+          ? `<span class="text-negative">${factText}</span>`
+          : factText;
+
+        const diffSpan = `<span class="${isWorse ? 'text-negative' : ''}">(${diffText})</span>`;
+        factHtml = `${factSpan} ${diffSpan}`;
+      } else {
+        factHtml = factText;
+      }
+    }
+
+    commSummaryEl.innerHTML = `${planText} / ${factHtml} млн. р.`;
+  }
+
+   // --- Доходность вагона (план / факт), руб./ваг.-сут. ---
+  if (commYieldEl) {
+    const yPlan = margin.yieldPlan;
+    const yFact = margin.yieldFact;
+
+    const planInt = yPlan != null ? Math.round(yPlan) : null;
+    const factInt = yFact != null ? Math.round(yFact) : null;
+
+    if (planInt == null && factInt == null) {
+      commYieldEl.textContent = '— / —';
+    } else {
+      const planText = planInt != null
+        ? formatNumber(planInt)
+        : '—';
+
+      let factHtml = '—';
+      if (factInt != null) {
+        const factText = formatNumber(factInt);
+
+        if (planInt != null && factInt !== planInt) {
+          const diffInt = factInt - planInt;             // >0 — лучше, <0 — хуже
+          const diffAbs = Math.abs(diffInt);
+          const diffText = (diffInt > 0 ? '+' : '−') + formatNumber(diffAbs);
+          const isWorse = diffInt < 0;                   // хуже плана → красный
+
+          const factSpan = isWorse
+            ? `<span class="text-negative">${factText}</span>`
+            : factText;
+
+          const diffSpan = `<span class="${isWorse ? 'text-negative' : ''}">(${diffText})</span>`;
+          factHtml = `${factSpan} ${diffSpan}`;
+        } else {
+          factHtml = factText;
+        }
+      }
+
+      commYieldEl.innerHTML =
+        `${planText} / ${factHtml} руб./ваг.-сут.`;
+    }
+  }
+} else {
+  if (commSummaryEl) commSummaryEl.textContent = '— / —';
+  if (commYieldEl)   commYieldEl.textContent   = '— / —';
+}
+
+  /// --- Коммерческая служба: натурка по продуктам (Песок / Цемент / ПВ) ---
+const natBodyEl      = document.getElementById('budgetCommNatBody');
+const natPlanTotalEl = document.getElementById('budgetCommNatPlanTotal');
+const natFactTotalEl = document.getElementById('budgetCommNatFactTotal');
+const natYieldTotalEl = document.getElementById('budgetCommNatYieldTotal');
+
+if (natBodyEl && natPlanTotalEl && natFactTotalEl && natYieldTotalEl) {
+  natBodyEl.innerHTML = '';
+
+  if (budgetCommercial && budgetCommercial.nat &&
+      Array.isArray(budgetCommercial.nat.byProduct) &&
+      budgetCommercial.nat.byProduct.length) {
+
+    const rows = budgetCommercial.nat.byProduct;
+
+    rows.forEach(row => {
+      const tr = document.createElement('tr');
+
+      const tdName = document.createElement('td');
+      tdName.className = 'text-left';
+      tdName.textContent = row.name || row.code || '';
+      tr.appendChild(tdName);
+
+      const planVal = row.wagonsPlan != null ? row.wagonsPlan : null;
+      const factVal = row.wagonsFact != null ? row.wagonsFact : null;
+
+      const tdPlan = document.createElement('td');
+      tdPlan.className = 'text-right';
+      tdPlan.textContent = planVal != null ? formatNumber(planVal) : '—';
+      tr.appendChild(tdPlan);
+
+      const tdFact = document.createElement('td');
+      tdFact.className = 'text-right';
+
+      if (factVal == null) {
+        tdFact.textContent = '—';
+      } else {
+        const factText = formatNumber(factVal);
+        if (planVal == null || factVal === planVal) {
+          tdFact.textContent = factText;
+        } else {
+          const diff = factVal - planVal;
+          const diffAbs = Math.abs(diff);
+          const diffText = (diff > 0 ? '+' : '−') + formatNumber(diffAbs);
+          const isWorse = diff < 0;
+
+          const factSpan = isWorse
+            ? `<span class="text-negative">${factText}</span>`
+            : factText;
+
+          const diffSpan = `<span class="${isWorse ? 'text-negative' : ''}">(${diffText})</span>`;
+          tdFact.innerHTML = `${factSpan} ${diffSpan}`;
+        }
+      }
+      tr.appendChild(tdFact);
+
+      // Доходность по факту для продукта (если посчитали из comm_clients)
+      const tdYield = document.createElement('td');
+      tdYield.className = 'text-right';
+      if (row.yieldFact != null && !isNaN(row.yieldFact)) {
+        tdYield.textContent = formatNumber(Math.round(row.yieldFact));
+      } else {
+        tdYield.textContent = '—';
+      }
+      tr.appendChild(tdYield);
+
+      natBodyEl.appendChild(tr);
+    });
+
+    const total = budgetCommercial.nat.total || null;
+    if (total) {
+      const tPlan = total.wagonsPlan ?? null;
+      const tFact = total.wagonsFact ?? null;
+
+      natPlanTotalEl.textContent = tPlan != null ? formatNumber(tPlan) : '—';
+
+      if (tFact == null) {
+        natFactTotalEl.textContent = '—';
+      } else {
+        const factText = formatNumber(tFact);
+        if (tPlan == null || tFact === tPlan) {
+          natFactTotalEl.textContent = factText;
+        } else {
+          const diff = tFact - tPlan;
+          const diffAbs = Math.abs(diff);
+          const diffText = (diff > 0 ? '+' : '−') + formatNumber(diffAbs);
+          const isWorse = diff < 0;
+
+          const factSpan = isWorse
+            ? `<span class="text-negative">${factText}</span>`
+            : factText;
+          const diffSpan = `<span class="${isWorse ? 'text-negative' : ''}">(${diffText})</span>`;
+          natFactTotalEl.innerHTML = `${factSpan} ${diffSpan}`;
+        }
+      }
+
+      if (total.yieldFact != null && !isNaN(total.yieldFact)) {
+        natYieldTotalEl.textContent = formatNumber(Math.round(total.yieldFact));
+      } else {
+        natYieldTotalEl.textContent = '—';
+      }
+    } else {
+      natPlanTotalEl.textContent  = '—';
+      natFactTotalEl.textContent  = '—';
+      natYieldTotalEl.textContent = '—';
+    }
+  } else {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 4;
+    td.className = 'text-center text-muted';
+    td.textContent = 'Нет данных по натурным показателям';
+    tr.appendChild(td);
+    natBodyEl.appendChild(tr);
+
+    natPlanTotalEl.textContent  = '—';
+    natFactTotalEl.textContent  = '—';
+    natYieldTotalEl.textContent = '—';
+  }
+}
+
+  // === Доходность за последний месяц (ноябрь) ===
+  const yieldMonthPanel = document.getElementById('commYieldMonthPanel');
+  const yieldMonthBody  = document.getElementById('commYieldMonthBody');
+  const yieldMonthTotalEl = document.getElementById('commYieldMonthTotal');
+  const toggleYieldMonth = document.getElementById('toggleCommYieldMonth');
+
+  if (yieldMonthPanel && yieldMonthBody && yieldMonthTotalEl && toggleYieldMonth) {
+    yieldMonthBody.innerHTML = '';
+
+    const nat = budgetCommercial.nat || {};
+    const rows = nat.byProduct || [];
+    const total = nat.total || null;
+
+    if (!rows.length && !total) {
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 2;
+      td.className = 'text-center text-muted';
+      td.textContent = 'Нет данных по доходности за месяц';
+      tr.appendChild(td);
+      yieldMonthBody.appendChild(tr);
+      yieldMonthTotalEl.textContent = '—';
+      toggleYieldMonth.disabled = true;
+    } else {
+      toggleYieldMonth.disabled = false;
+
+      rows.forEach(row => {
+        const tr = document.createElement('tr');
+
+        const tdName = document.createElement('td');
+        tdName.className = 'text-left';
+        tdName.textContent = row.name || row.code || '';
+        tr.appendChild(tdName);
+
+        const tdYield = document.createElement('td');
+        tdYield.className = 'text-right';
+        if (row.yieldLastMonth != null && !isNaN(row.yieldLastMonth)) {
+          tdYield.textContent = formatNumber(Math.round(row.yieldLastMonth));
+        } else {
+          tdYield.textContent = '—';
+        }
+        tr.appendChild(tdYield);
+
+        yieldMonthBody.appendChild(tr);
+      });
+
+      if (total && total.yieldLastMonth != null && !isNaN(total.yieldLastMonth)) {
+        yieldMonthTotalEl.textContent =
+          formatNumber(Math.round(total.yieldLastMonth));
+      } else {
+        yieldMonthTotalEl.textContent = '—';
+      }
+
+      // переключатель панели
+      toggleYieldMonth.onclick = () => {
+        yieldMonthPanel.classList.toggle('hidden');
+        toggleYieldMonth.textContent = yieldMonthPanel.classList.contains('hidden')
+          ? '▼ Развернуть доходность за ноябрь'
+          : '▲ Свернуть доходность за ноябрь';
+      };
+    }
+  }
 
   // Скрываем панели при первом рендере
   const prodPanel = document.getElementById('budgetProdPanel');
@@ -2714,68 +3643,107 @@ function formatCellThousands(value) {
 }
 
 function populateDashboard() {
-  if (!dashboardData) return;
+    if (!dashboardData) return;
 
-  // --- Ремонты: всего вагонов в парке ---
-  const fleetEl = document.getElementById('fleetTotal');
-  if (fleetEl && dashboardData.repairs) {
-    fleetEl.textContent = formatNumber(dashboardData.repairs.fleet_total || 0);
-  }
+    // --- Погрузка ---
+    document.getElementById('loadedWagonsMonth').textContent =
+        formatNumber(dashboardData.loading.loaded_wagons_month);
+    document.getElementById('progressPercent').textContent =
+        `${dashboardData.loading.progress_percent}%`;
+    document.getElementById('progressFill').style.width =
+        `${dashboardData.loading.progress_percent}%`;
+    document.getElementById('planMonth').textContent =
+        formatNumber(dashboardData.loading.plan_month);
+    document.getElementById('fullMonthPlan').textContent =
+        formatNumber(dashboardData.loading.month_total_plan || 0);
+    document.getElementById('loadedYesterday').textContent =
+        formatNumber(dashboardData.loading.loaded_wagons_yesterday);
+    renderYesterdayLoadingList();
 
-  // --- Бюджет производственной службы ---
-  renderBudgetProductionCard();
-}
+    // --- Задолженность ---
+    document.getElementById('totalDebt').textContent =
+        formatCurrency(dashboardData.receivables.total_debt);
+    document.getElementById('overdueDebt').textContent =
+        formatCurrency(dashboardData.receivables.overdue_debt);
+    document.getElementById('overduePercent').textContent =
+        `${dashboardData.receivables.overdue_percent}%`;
+    document.getElementById('overdueProgressFill').style.width =
+        `${dashboardData.receivables.overdue_percent}%`;
 
-// ==========================
-// 7. ОБНОВЛЕНИЕ ПО КНОПКЕ
-// ==========================
-async function refreshData() {
-    const btn = document.querySelector('.refresh-btn');
-    if (btn) btn.disabled = true;
+    // Подпись под заголовком "Дебиторская задолженность"
+    const dateEl = document.getElementById('receivablesDate');
+    if (dateEl) {
+      if (dashboardData.receivables_date) {
+        dateEl.textContent =
+          'Данные на ' + formatDateRuShort(dashboardData.receivables_date);
+      } else {
+        dateEl.textContent = '';
+      }
+    }
 
-    try {
-        await loadDataFromSheet();
-        populateDashboard();
+    // --- Кредиторская задолженность ---
+    const payDateEl = document.getElementById('payablesDate');
+    if (payDateEl) {
+      payDateEl.textContent = dashboardData.payables_date
+        ? 'Данные на ' + formatDateRuShort(dashboardData.payables_date)
+        : '';
+    }
 
-        // ставим время последнего успешного обновления
-        const updatedEl = document.getElementById('dataUpdatedAt');
-        if (updatedEl) {
-            const now = new Date();
-            updatedEl.textContent = 'Данные обновлены: ' + formatUpdatedAt(now);
-        }
+    // Блок Кредиторка: цифры сверху (оставляем только общий долг)
+    const apTotalEl = document.getElementById('apTotalDebt');
+    if (apTotalEl && dashboardData.payables) {
+        const totalAp = dashboardData.payables.total_debt || 0;
+        apTotalEl.textContent = formatCurrency(totalAp);
+    }
 
-        if (btn) {
-            btn.textContent = '✓ Обновлено!';
-            setTimeout(() => {
-                btn.textContent = '🔄 Обновить данные';
-                btn.disabled = false;
-            }, 1500);
-        }
-    } catch (e) {
-        console.error('Ошибка обновления данных:', e);
-        const updatedEl = document.getElementById('dataUpdatedAt');
-        if (updatedEl) {
-            updatedEl.textContent = 'Ошибка обновления данных';
-        }
-        const lastUpdEl = document.getElementById('lastUpdate');
-        if (lastUpdEl) {
-            lastUpdEl.textContent = 'Ошибка загрузки';
-        }
-        if (btn) {
-            btn.textContent = 'Ошибка 😕';
-            setTimeout(() => {
-                btn.textContent = '🔄 Обновить данные';
-                btn.disabled = false;
-            }, 2000);
+    // Структура кредиторки по поставщикам
+    renderPayablesSuppliers();
+
+    // Ещё раз аккуратно выставляем дату для дебиторки (если нужно)
+    if (dateEl) {
+        if (dashboardData.receivables_date) {
+            dateEl.textContent = 'Данные на ' + formatDateRuShort(dashboardData.receivables_date);
+        } else {
+            dateEl.textContent = '';
         }
     }
+
+    // Структура просрочки по клиентам
+    renderReceivablesByClient();
+
+    // --- Поступления (общая сумма + таблица по клиентам) ---
+    if (paymentsByClient && paymentsByClient.length) {
+        const totalPayments = paymentsByClient.reduce(
+            (sum, p) => sum + (p.amount || 0), 0
+        );
+        updatePaymentsTotal(totalPayments);
+        renderPaymentsByClient(paymentsByClient);
+    } else {
+        updatePaymentsTotal(0);
+        renderPaymentsByClient([]);
+    }
+
+    // --- Бюджет производственной службы ---
+    renderBudgetProductionCard();
+
+    // --- Ремонты ---
+    document.getElementById('fleetTotal').textContent =
+        formatNumber(dashboardData.repairs.fleet_total);
+
+    document.getElementById('lastUpdate').textContent =
+        dashboardData.period_label || '—';
 }
+
 
 // ==========================
 // 7. ОБНОВЛЕНИЕ ПО КНОПКЕ
 // ==========================
 
 async function refreshData() {
+        if (!isAuthenticated) {
+        console.warn('Попытка обновить данные без авторизации');
+        return;
+    }
     const btn = document.querySelector('.refresh-btn');
     if (btn) btn.disabled = true;
 
@@ -2871,6 +3839,58 @@ function renderPaymentsByClient(paymentsData) {
     tbody.appendChild(tr);
   });
 }
+async function tryLogin(login, password) {
+  const resp = await fetch(LOGIN_API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ login, password })
+  });
+
+  if (!resp.ok) {
+    return false;
+  }
+
+  const data = await resp.json().catch(() => null);
+  return data && data.ok === true;
+}
+
+async function handleLoginSubmit(event) {
+  event.preventDefault();
+
+  const login = document.getElementById('loginLogin').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errorEl = document.getElementById('loginError');
+
+  errorEl.style.display = 'none';
+
+  if (!login || !password) {
+    errorEl.textContent = 'Введите логин и пароль';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    const ok = await tryLogin(login, password);
+
+    if (!ok) {
+      errorEl.textContent = 'Неверный логин или пароль';
+      errorEl.style.display = 'block';
+      return;
+    }
+
+        // успех
+    isAuthenticated = true;
+    saveAuthSession(login); // <-- запомнили, кто залогинился и время
+    document.getElementById('loginOverlay').style.display = 'none';
+
+    // теперь можно подгружать данные дашборда
+    await refreshData();
+  } catch (e) {
+    console.error(e);
+    errorEl.textContent = 'Ошибка подключения к серверу авторизации';
+    errorEl.style.display = 'block';
+  }
+}
 
 // === Обработчики кнопок раскрытия ===
 document.addEventListener('DOMContentLoaded', () => {
@@ -2878,7 +3898,30 @@ document.addEventListener('DOMContentLoaded', () => {
   updateDateTime();
   setInterval(updateDateTime, 60 * 1000);
 
-  // Кнопка "Структура просрочки по клиентам"
+  const overlay = document.getElementById('loginOverlay');
+
+  // 1) Проверяем, есть ли актуальная сессия в localStorage
+  const saved = loadAuthSession();
+  if (saved) {
+    // Сессия жива — считаем пользователя авторизованным
+    isAuthenticated = true;
+    if (overlay) overlay.style.display = 'none';
+
+    // Сразу грузим данные дашборда
+    refreshData();
+  } else {
+    // Сессии нет или она устарела — показываем окно логина
+    isAuthenticated = false;
+    if (overlay) overlay.style.display = 'flex';
+  }
+
+  // 2) Логин-форма
+  const loginForm = document.getElementById('loginForm');
+  if (loginForm) {
+    loginForm.addEventListener('submit', handleLoginSubmit);
+  }
+
+  // 3) Остальные кнопки раскрытия
   const overdueBtn = document.getElementById('toggleClientsOverdue');
   const overduePanel = document.getElementById('clientsOverduePanel');
   if (overdueBtn && overduePanel) {
@@ -2887,7 +3930,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Кнопка "Структура кредиторки по поставщикам"
   const suppliersBtn = document.getElementById('toggleSuppliersPayables');
   const suppliersPanel = document.getElementById('suppliersPayablesPanel');
   if (suppliersBtn && suppliersPanel) {
@@ -2896,7 +3938,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Кнопка "Структура по ремонтам"
   const repairsBtn = document.getElementById('toggleRepairsTable');
   const repairsPanel = document.getElementById('repairsTablePanel');
   if (repairsBtn && repairsPanel) {
@@ -2905,7 +3946,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Вчерашняя погрузка: показать/скрыть список по станциям
   const yestBtn = document.getElementById('toggleLoadingYesterday');
   const yestPanel = document.getElementById('loadingYesterdayPanel');
   if (yestBtn && yestPanel) {
@@ -2914,7 +3954,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Бюджет: раскрытие панелей "Производственная / Коммерческая служба"
   const budgetProdBtn = document.getElementById('toggleBudgetProd');
   const budgetProdPanel = document.getElementById('budgetProdPanel');
   if (budgetProdBtn && budgetProdPanel) {
@@ -2931,7 +3970,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Кнопка "Поступления по клиентам"
   const paymentsBtn = document.getElementById('toggleClientsPayments');
   const paymentsPanel = document.getElementById('clientsPaymentsPanel');
   if (paymentsBtn && paymentsPanel) {
@@ -2939,10 +3977,8 @@ document.addEventListener('DOMContentLoaded', () => {
       paymentsPanel.classList.toggle('hidden');
     });
   }
-
-  // Сразу грузим данные
-  refreshData();
 });
+
 
 </script>
 </body>
