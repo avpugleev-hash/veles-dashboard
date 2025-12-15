@@ -181,6 +181,74 @@ body {
     margin: 0 auto;
     padding: var(--space-24);
 }
+/* === ЛОГИН === */
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.login-box {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+  box-shadow: var(--shadow-lg);
+  max-width: 380px;
+  width: 100%;
+}
+
+.login-box h2 {
+  margin-bottom: 8px;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--navy-primary);
+}
+
+.login-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.login-label {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  margin-top: 8px;
+  margin-bottom: 2px;
+}
+
+.login-input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-base);
+  border: 1px solid var(--border-color);
+  font-size: var(--font-size-sm);
+  margin-bottom: 4px;
+}
+
+.login-input:focus {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-color: var(--color-primary);
+}
+
+.login-error {
+  margin-top: 6px;
+  margin-bottom: 6px;
+  font-size: var(--font-size-xs);
+  color: var(--color-red-500);
+}
+
+.login-btn {
+  margin-top: 8px;
+  width: 100%;
+  justify-content: center;
+}
 
 /* Header */
 .dashboard-header {
@@ -889,9 +957,29 @@ body {
         font-size: 32px;
     }
 }
-    </style>
+</style>
 </head>
 <body>
+
+  <!-- Оверлей логина -->
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-box">
+      <h2>Вход в дашборд</h2>
+      <p class="login-subtitle">Введите логин и пароль для доступа.</p>
+
+      <form id="loginForm">
+        <label class="login-label" for="loginLogin">Логин</label>
+        <input class="login-input" type="text" id="loginLogin" autocomplete="username">
+
+        <label class="login-label" for="loginPassword">Пароль</label>
+        <input class="login-input" type="password" id="loginPassword" autocomplete="current-password">
+
+        <div class="login-error" id="loginError" style="display:none;"></div>
+
+        <button type="submit" class="refresh-btn login-btn">Войти</button>
+      </form>
+    </div>
+  </div>
     <div class="dashboard-container">
         <!-- Header -->
         <header class="dashboard-header">
@@ -1331,6 +1419,54 @@ const SHEET_COMM_KPI_CSV_URL =
 const SHEET_COMM_NAT_CSV_URL =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=78706492&single=true&output=csv';
 const SHEET_COMM_CLIENTS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=1437651939&single=true&output=csv';
+const DASHBOARD_API_URL = 'https://alekseipugleev.app.n8n.cloud/webhook/dashboard-data';
+const LOGIN_API_URL = 'https://alekseipugleev.app.n8n.cloud/webhook/dashboard-login';
+let isAuthenticated = false;
+// --- Настройки "запоминания" логина ---
+const AUTH_STORAGE_KEY = 'veles_dashboard_auth_v1'; // ключ в localStorage
+const AUTH_TTL_MS = 8 * 60 * 60 * 1000; // срок жизни сессии: 8 часов
+
+function saveAuthSession(login) {
+  try {
+    const payload = {
+      login,
+      ts: Date.now()
+    };
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(payload));
+  } catch (e) {
+    console.warn('Не удалось сохранить сессию в localStorage', e);
+  }
+}
+
+function loadAuthSession() {
+  try {
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!raw) return null;
+
+    const data = JSON.parse(raw);
+    if (!data || typeof data.ts !== 'number') return null;
+
+    // проверяем срок действия
+    const age = Date.now() - data.ts;
+    if (age > AUTH_TTL_MS) {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+      return null;
+    }
+
+    return data;
+  } catch (e) {
+    console.warn('Не удалось прочитать сессию из localStorage', e);
+    return null;
+  }
+}
+
+function clearAuthSession() {
+  try {
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+  } catch (e) {
+    console.warn('Не удалось удалить сессию из localStorage', e);
+  }
+}
 
     
 let dashboardData = null;
@@ -2564,232 +2700,172 @@ const planMonth   = rowsThisMonth.reduce((sum, r) => sum + (r.planned_wagons || 
 
 async function loadDataFromSheet() {
   let snapshotDate = null; // будет использоваться и для ремонтов
+
+  // 0) Забираем всё одним запросом (n8n агрегатор)
+  const url = DASHBOARD_API_URL + (DASHBOARD_API_URL.includes('?') ? '&' : '?') + '_ts=' + Date.now();
+  const apiRes = await fetch(url, { cache: 'no-store' });
+  if (!apiRes.ok) throw new Error('HTTP ' + apiRes.status);
+
+  const api = await apiRes.json().catch(() => null);
+  if (!api || api.ok !== true || !api.csv) {
+    throw new Error('Bad API response from dashboard-data');
+  }
+
+  const csvMap = api.csv || {};
+
   // 1) основной raw_data
-  const res = await fetch(SHEET_CSV_URL);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const csvText = await res.text();
-    const rows = parseCSV(csvText);
-   
-    // Ищем план на месяц в первой строке (как было)
-    let monthPlanFromHeader = 0;
-    if (rows.length) {
-        const headerRow = rows[0];
-        for (let i = headerRow.length - 1; i >= 0; i--) {
-            const cell = headerRow[i];
-            if (cell !== '') {
-                monthPlanFromHeader = toNumber(cell);
-                break;
-            }
-        }
-    }
+  const csvText = csvMap.raw || '';
+  const rows = csvText ? parseCSV(csvText) : [];
 
-    const rowObjs = rowsToObjects(rows);
-    dashboardData = buildDashboardDataFromRaw(rowObjs, monthPlanFromHeader);
-        // 3) ar_payments_daily
-    if (SHEET_PAYMENTS_CSV_URL) {
-        try {
-            const resPay = await fetch(SHEET_PAYMENTS_CSV_URL);
-            if (resPay.ok) {
-                const csvTextPay = await resPay.text();
-                const rowsPay = parseCSV(csvTextPay);
-
-                const payments = buildPaymentsFromRows(rowsPay);
-                paymentsLastDate = payments.lastDate;
-                paymentsByClient = payments.items;
-            } else {
-                console.warn('Не удалось загрузить ar_payments_daily, статус:', resPay.status);
-            }
-        } catch (e) {
-            console.error('Ошибка загрузки ar_payments_daily:', e);
-        }
-    }
-    // 2) структура просрочки по клиентам + суммы из ar_agg_client_contract
-    receivablesByClient = [];
-
-    if (SHEET_CLIENTS_CSV_URL) {
-        try {
-            const resClients = await fetch(SHEET_CLIENTS_CSV_URL);
-            if (resClients.ok) {
-                const csvTextClients = await resClients.text();
-                const rowsClients = parseCSV(csvTextClients);
-                // дата среза (аналог G1 на листе ar_agg_client_contract)
-                  snapshotDate = getSnapshotDateFromAggRows(rowsClients);
-                if (snapshotDate && dashboardData) {
-                    dashboardData.receivables_date = snapshotDate;
-                }
-
-                // а) считаем общую и просроченную задолженность по agg-листу
-                const aggTotals = computeTotalsFromAggRows(rowsClients);
-                    if (dashboardData && dashboardData.receivables) {
-                        dashboardData.receivables.total_debt   = aggTotals.total;
-                        dashboardData.receivables.overdue_debt = aggTotals.overdue;
-                        dashboardData.receivables.overdue_percent =
-                            aggTotals.total
-                                ? Math.round(aggTotals.overdue / aggTotals.total * 100)
-                                : 0;
-                    }
-
-                // б) строим структуру по клиентам (ТОП > 1 млн)
-                receivablesByClient = buildReceivablesByClientFromRows(rowsClients);
-            } else {
-                console.warn('Не удалось загрузить ar_agg_client_contract, статус:', resClients.status);
-            }
-        } catch (e) {
-            console.error('Ошибка загрузки сводки по клиентам:', e);
-        }
-    }
-        // 3) Кредиторка: ap_suppliers
-    if (SHEET_AP_SUPPLIERS_CSV_URL) {
-      try {
-        const resAp = await fetch(SHEET_AP_SUPPLIERS_CSV_URL);
-        if (resAp.ok) {
-          const csvAp = await resAp.text();
-          const rowsAp = parseCSV(csvAp);
-          const ap = buildPayablesFromRows(rowsAp);
-
-          if (!dashboardData.payables) {
-            dashboardData.payables = {};
-          }
-
-          dashboardData.payables.total_debt = ap.total;
-          dashboardData.payables.overdue_debt = ap.overdue;
-          dashboardData.payables.overdue_percent =
-            ap.total ? Math.round((ap.overdue / ap.total) * 100) : 0;
-          dashboardData.payables_date = ap.date;
-
-          payablesBySupplier = ap.suppliers;
-        } else {
-          console.warn(
-            'Не удалось загрузить ap_suppliers, статус:',
-            resAp.status
-          );
-        }
-      } catch (e) {
-        console.error('Ошибка загрузки ap_suppliers:', e);
+  // Ищем план на месяц в первой строке (как было)
+  let monthPlanFromHeader = 0;
+  if (rows.length) {
+    const headerRow = rows[0];
+    for (let i = headerRow.length - 1; i >= 0; i--) {
+      const cell = headerRow[i];
+      if (cell !== '') {
+        monthPlanFromHeader = toNumber(cell);
+        break;
       }
     }
-    // 4) Журнал погрузки: разбивка "вчера погружено" по станциям
-    yesterdayLoadingStations = [];
-    yesterdayLoadingDate = null;
+  }
 
-    if (SHEET_LOADING_JOURNAL_CSV_URL) {
-        try {
-            const resLog = await fetch(SHEET_LOADING_JOURNAL_CSV_URL);
-            if (resLog.ok) {
-                const csvLog = await resLog.text();
-                const rowsLog = parseCSV(csvLog);
-                const result = buildYesterdayLoadingFromRows(rowsLog);
-                yesterdayLoadingDate = result.date;
-                yesterdayLoadingStations = result.items;
-            } else {
-                console.warn('Не удалось загрузить журнал погрузки, статус:', resLog.status);
-            }
-        } catch (e) {
-            console.error('Ошибка загрузки журнала погрузки:', e);
-        }
+  const rowObjs = rowsToObjects(rows);
+  dashboardData = buildDashboardDataFromRaw(rowObjs, monthPlanFromHeader);
+
+  // 2) ar_payments_daily
+  if (csvMap.payments) {
+    try {
+      const rowsPay = parseCSV(csvMap.payments);
+      const payments = buildPaymentsFromRows(rowsPay);
+      paymentsLastDate = payments.lastDate;
+      paymentsByClient = payments.items;
+    } catch (e) {
+      console.error('Ошибка обработки ar_payments_daily:', e);
     }
-// 5) Остатки денежных средств
-if (SHEET_CASH_CSV_URL) {
-  try {
-    const resCash = await fetch(SHEET_CASH_CSV_URL);
-    if (resCash.ok) {
-      const csvCash = await resCash.text();
-      const rowsCash = parseCSV(csvCash);
+  } else {
+    paymentsLastDate = null;
+    paymentsByClient = [];
+  }
+
+  // 3) структура просрочки по клиентам + суммы из ar_agg_client_contract
+  receivablesByClient = [];
+  if (csvMap.clients) {
+    try {
+      const rowsClients = parseCSV(csvMap.clients);
+
+      // дата среза (аналог G1 на листе ar_agg_client_contract)
+      snapshotDate = getSnapshotDateFromAggRows(rowsClients);
+      if (snapshotDate && dashboardData) {
+        dashboardData.receivables_date = snapshotDate;
+      }
+
+      // а) считаем общую и просроченную задолженность по agg-листу
+      const aggTotals = computeTotalsFromAggRows(rowsClients);
+      if (dashboardData && dashboardData.receivables) {
+        dashboardData.receivables.total_debt = aggTotals.total;
+        dashboardData.receivables.overdue_debt = aggTotals.overdue;
+        dashboardData.receivables.overdue_percent =
+          aggTotals.total ? Math.round(aggTotals.overdue / aggTotals.total * 100) : 0;
+      }
+
+      // б) строим структуру по клиентам (ТОП > 1 млн)
+      receivablesByClient = buildReceivablesByClientFromRows(rowsClients);
+    } catch (e) {
+      console.error('Ошибка обработки ar_agg_client_contract:', e);
+    }
+  }
+
+  // 4) Кредиторка: ap_suppliers
+  if (csvMap.ap_suppliers) {
+    try {
+      const rowsAp = parseCSV(csvMap.ap_suppliers);
+      const ap = buildPayablesFromRows(rowsAp);
+
+      if (!dashboardData.payables) dashboardData.payables = {};
+
+      dashboardData.payables.total_debt = ap.total;
+      dashboardData.payables.overdue_debt = ap.overdue;
+      dashboardData.payables.overdue_percent =
+        ap.total ? Math.round((ap.overdue / ap.total) * 100) : 0;
+      dashboardData.payables_date = ap.date;
+
+      payablesBySupplier = ap.suppliers;
+    } catch (e) {
+      console.error('Ошибка обработки ap_suppliers:', e);
+    }
+  } else {
+    payablesBySupplier = [];
+  }
+
+  // 5) Журнал погрузки: разбивка "вчера погружено" по станциям
+  yesterdayLoadingStations = [];
+  yesterdayLoadingDate = null;
+
+  if (csvMap.loading_journal) {
+    try {
+      const rowsLog = parseCSV(csvMap.loading_journal);
+      const result = buildYesterdayLoadingFromRows(rowsLog);
+      yesterdayLoadingDate = result.date;
+      yesterdayLoadingStations = result.items;
+    } catch (e) {
+      console.error('Ошибка обработки журнала погрузки:', e);
+    }
+  }
+
+  // 6) Остатки денежных средств
+  if (csvMap.cash) {
+    try {
+      const rowsCash = parseCSV(csvMap.cash);
       const cash = buildCashFromRows(rowsCash);
       if (cash) {
         if (!dashboardData) dashboardData = {};
         dashboardData.cash = cash;
       }
-    } else {
-      console.warn('Не удалось загрузить cash_balances, статус:', resCash.status);
+    } catch (e) {
+      console.error('Ошибка обработки cash_balances:', e);
     }
-  } catch (e) {
-    console.error('Ошибка загрузки cash_balances:', e);
   }
-}
 
-// 6) budget_production (бюджет производственной службы)
-budgetProduction = null;
-budgetCommercial = null; // 👈 обнуляем коммерческий бюджет перед загрузкой
+  // 7) budget_production (бюджет производственной службы)
+  budgetProduction = null;
+  budgetCommercial = null; // 👈 обнуляем коммерческий бюджет перед загрузкой
 
-if (typeof SHEET_BUDGET_PROD_CSV_URL !== 'undefined' && SHEET_BUDGET_PROD_CSV_URL) {
-  try {
-    const resBudget = await fetch(SHEET_BUDGET_PROD_CSV_URL);
-    if (resBudget.ok) {
-      const csvBudget = await resBudget.text();
-      const rowsBudget = parseCSV(csvBudget);
-      budgetProduction = buildBudgetProductionFromRows(rowsBudget);
-    } else {
-      console.warn('Не удалось загрузить budget_production, статус:', resBudget.status);
+  if (csvMap.budget_prod) {
+    try {
+      const prodRows = parseCSV(csvMap.budget_prod);
+      budgetProduction = buildBudgetProductionFromRows(prodRows);
+    } catch (e) {
+      console.error('Ошибка обработки budget_production:', e);
     }
-  } catch (e) {
-    console.error('Ошибка загрузки budget_production:', e);
   }
-}
 
-// 7) budget_commercial (коммерческая служба: KPI + натурка + доходность по продуктам)
-if (typeof SHEET_COMM_KPI_CSV_URL !== 'undefined' && SHEET_COMM_KPI_CSV_URL) {
-  try {
-    const resKpi = await fetch(SHEET_COMM_KPI_CSV_URL);
-    if (resKpi.ok) {
-      const csvKpi = await resKpi.text();
-      const kpiRows = parseCSV(csvKpi);
-
-      let natRows = null;
-      if (typeof SHEET_COMM_NAT_CSV_URL !== 'undefined' && SHEET_COMM_NAT_CSV_URL) {
-        try {
-          const resNat = await fetch(SHEET_COMM_NAT_CSV_URL);
-          if (resNat.ok) {
-            const csvNat = await resNat.text();
-            natRows = parseCSV(csvNat);
-          } else {
-            console.warn('Не удалось загрузить comm_nat, статус:', resNat.status);
-          }
-        } catch (e) {
-          console.error('Ошибка загрузки comm_nat:', e);
-        }
-      }
-
-      let clientsRows = null;
-      if (typeof SHEET_COMM_CLIENTS_CSV_URL !== 'undefined' && SHEET_COMM_CLIENTS_CSV_URL) {
-        try {
-          const resCl = await fetch(SHEET_COMM_CLIENTS_CSV_URL);
-          if (resCl.ok) {
-            const csvCl = await resCl.text();
-            clientsRows = parseCSV(csvCl);
-          } else {
-            console.warn('Не удалось загрузить comm_clients, статус:', resCl.status);
-          }
-        } catch (e) {
-          console.error('Ошибка загрузки comm_clients:', e);
-        }
-      }
-
+  // 8) comm_kpi / comm_nat / comm_clients (коммерческая служба)
+  if (csvMap.comm_kpi && csvMap.comm_nat && csvMap.comm_clients) {
+    try {
+      const kpiRows = parseCSV(csvMap.comm_kpi);
+      const natRows = parseCSV(csvMap.comm_nat);
+      const clientsRows = parseCSV(csvMap.comm_clients);
       budgetCommercial = buildBudgetCommercialFromRows(kpiRows, natRows, clientsRows);
+    } catch (e) {
+      console.error('Ошибка обработки comm_*:', e);
+    }
+  }
+
+  // 9) repairs_snapshot (последним, когда уже есть snapshotDate)
+  try {
+    if (csvMap.repairs) {
+      const repRows = parseCSV(csvMap.repairs);
+      const repairsData = buildRepairsFromSnapshot(repRows);
+      const repairsDate = repairsData.date || snapshotDate || null;
+      renderRepairsCard(repairsData.items, repairsDate);
     } else {
-      console.warn('Не удалось загрузить comm_kpi, статус:', resKpi.status);
+      renderRepairsCard([], snapshotDate);
     }
   } catch (e) {
-    console.error('Ошибка загрузки comm_kpi / comm_nat / comm_clients:', e);
+    console.error('Ошибка обработки repairs_snapshot:', e);
+    renderRepairsCard([], snapshotDate);
   }
-}
-
-
-// 8) repairs_snapshot (последним, когда уже есть snapshotDate)
-try {
-  const repairsCsv = await fetch(SHEET_REPAIRS_CSV_URL).then(r => r.text());
-  const repRows = parseCSV(repairsCsv);
-
-  const repairsData = buildRepairsFromSnapshot(repRows);
-  const repairsDate = repairsData.date || snapshotDate || null;
-
-  renderRepairsCard(repairsData.items, repairsDate);
-} catch (e) {
-  console.error('Ошибка загрузки repairs_snapshot:', e);
-  renderRepairsCard([], snapshotDate);
-}
-
-
 }
 
 // ==========================
@@ -3728,6 +3804,10 @@ function populateDashboard() {
 // ==========================
 
 async function refreshData() {
+        if (!isAuthenticated) {
+        console.warn('Попытка обновить данные без авторизации');
+        return;
+    }
     const btn = document.querySelector('.refresh-btn');
     if (btn) btn.disabled = true;
 
@@ -3823,6 +3903,58 @@ function renderPaymentsByClient(paymentsData) {
     tbody.appendChild(tr);
   });
 }
+async function tryLogin(login, password) {
+  const resp = await fetch(LOGIN_API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ login, password })
+  });
+
+  if (!resp.ok) {
+    return false;
+  }
+
+  const data = await resp.json().catch(() => null);
+  return data && data.ok === true;
+}
+
+async function handleLoginSubmit(event) {
+  event.preventDefault();
+
+  const login = document.getElementById('loginLogin').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errorEl = document.getElementById('loginError');
+
+  errorEl.style.display = 'none';
+
+  if (!login || !password) {
+    errorEl.textContent = 'Введите логин и пароль';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    const ok = await tryLogin(login, password);
+
+    if (!ok) {
+      errorEl.textContent = 'Неверный логин или пароль';
+      errorEl.style.display = 'block';
+      return;
+    }
+
+        // успех
+    isAuthenticated = true;
+    saveAuthSession(login); // <-- запомнили, кто залогинился и время
+    document.getElementById('loginOverlay').style.display = 'none';
+
+    // теперь можно подгружать данные дашборда
+    await refreshData();
+  } catch (e) {
+    console.error(e);
+    errorEl.textContent = 'Ошибка подключения к серверу авторизации';
+    errorEl.style.display = 'block';
+  }
+}
 
 // === Обработчики кнопок раскрытия ===
 document.addEventListener('DOMContentLoaded', () => {
@@ -3830,7 +3962,30 @@ document.addEventListener('DOMContentLoaded', () => {
   updateDateTime();
   setInterval(updateDateTime, 60 * 1000);
 
-  // Кнопка "Структура просрочки по клиентам"
+  const overlay = document.getElementById('loginOverlay');
+
+  // 1) Проверяем, есть ли актуальная сессия в localStorage
+  const saved = loadAuthSession();
+  if (saved) {
+    // Сессия жива — считаем пользователя авторизованным
+    isAuthenticated = true;
+    if (overlay) overlay.style.display = 'none';
+
+    // Сразу грузим данные дашборда
+    refreshData();
+  } else {
+    // Сессии нет или она устарела — показываем окно логина
+    isAuthenticated = false;
+    if (overlay) overlay.style.display = 'flex';
+  }
+
+  // 2) Логин-форма
+  const loginForm = document.getElementById('loginForm');
+  if (loginForm) {
+    loginForm.addEventListener('submit', handleLoginSubmit);
+  }
+
+  // 3) Остальные кнопки раскрытия
   const overdueBtn = document.getElementById('toggleClientsOverdue');
   const overduePanel = document.getElementById('clientsOverduePanel');
   if (overdueBtn && overduePanel) {
@@ -3839,7 +3994,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Кнопка "Структура кредиторки по поставщикам"
   const suppliersBtn = document.getElementById('toggleSuppliersPayables');
   const suppliersPanel = document.getElementById('suppliersPayablesPanel');
   if (suppliersBtn && suppliersPanel) {
@@ -3848,7 +4002,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Кнопка "Структура по ремонтам"
   const repairsBtn = document.getElementById('toggleRepairsTable');
   const repairsPanel = document.getElementById('repairsTablePanel');
   if (repairsBtn && repairsPanel) {
@@ -3857,7 +4010,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Вчерашняя погрузка: показать/скрыть список по станциям
   const yestBtn = document.getElementById('toggleLoadingYesterday');
   const yestPanel = document.getElementById('loadingYesterdayPanel');
   if (yestBtn && yestPanel) {
@@ -3866,7 +4018,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Бюджет: раскрытие панелей "Производственная / Коммерческая служба"
   const budgetProdBtn = document.getElementById('toggleBudgetProd');
   const budgetProdPanel = document.getElementById('budgetProdPanel');
   if (budgetProdBtn && budgetProdPanel) {
@@ -3883,7 +4034,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Кнопка "Поступления по клиентам"
   const paymentsBtn = document.getElementById('toggleClientsPayments');
   const paymentsPanel = document.getElementById('clientsPaymentsPanel');
   if (paymentsBtn && paymentsPanel) {
@@ -3891,10 +4041,8 @@ document.addEventListener('DOMContentLoaded', () => {
       paymentsPanel.classList.toggle('hidden');
     });
   }
-
-  // Сразу грузим данные
-  refreshData();
 });
+
 
 </script>
 </body>
