@@ -557,6 +557,8 @@ body {
     color: var(--text-primary);
 }
 
+.nowrap { white-space: nowrap; }
+
 /* Акцентный текст (проценты, просрочка) */
 .text-accent {
     color: var(--warning-orange);
@@ -974,6 +976,22 @@ body {
 
     .main-metric {
         font-size: 32px;
+    }
+
+    /* Mobile: метрики (Маржа / Доходность и др.) */
+    .subsection-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-4);
+    }
+    .metric-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-4);
+    }
+    .metric-value {
+        width: 100%;
+        text-align: right;
     }
 }
 </style>
@@ -3495,7 +3513,7 @@ if (budgetCommercial && commMonthsEl && commSummaryEl) {
       }
     }
 
-    commSummaryEl.innerHTML = `${planText} / ${factHtml} млн. р.`;
+    commSummaryEl.innerHTML = `${planText} / ${factHtml} <span class="nowrap">млн.&nbsp;р.</span>`;
   }
 
    // --- Доходность вагона (план / факт), руб./ваг.-сут. ---
@@ -3535,7 +3553,7 @@ if (budgetCommercial && commMonthsEl && commSummaryEl) {
       }
 
       commYieldEl.innerHTML =
-        `${planText} / ${factHtml} руб./ваг.-сут.`;
+        `${planText} / ${factHtml} <span class="nowrap">руб./ваг.-сут.</span>`;
     }
   }
 } else {
