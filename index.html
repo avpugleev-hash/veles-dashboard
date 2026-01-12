@@ -3763,10 +3763,12 @@ function populateDashboard() {
         `${dashboardData.loading.progress_percent}%`;
     document.getElementById('progressFill').style.width =
         `${dashboardData.loading.progress_percent}%`;
-    document.getElementById('planMonth').textContent =
-        formatNumber(dashboardData.loading.plan_month);
-    document.getElementById('fullMonthPlan').textContent =
-        formatNumber(dashboardData.loading.month_total_plan || 0);
+document.getElementById('planMonth').textContent =
+    formatNumber(Math.round(dashboardData.loading.plan_month));
+
+document.getElementById('fullMonthPlan').textContent =
+    formatNumber(Math.round(dashboardData.loading.month_total_plan || 0));
+
     document.getElementById('loadedYesterday').textContent =
         formatNumber(dashboardData.loading.loaded_wagons_yesterday);
     renderYesterdayLoadingList();
