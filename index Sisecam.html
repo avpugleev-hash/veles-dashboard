@@ -3,24 +3,32 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>VELES • Мониторинг поездов (РСЗ/Шакша)</title>
+  <title>ВЕЛЕС • Мониторинг рейсов (РСЗ/Шакша)</title>
+
   <style>
     :root{
-      --bg:#0b1020;
-      --panel:#121a33;
-      --panel2:#0f1730;
-      --text:#e9ecf5;
-      --muted:#a7afc7;
-      --muted2:#7f88a3;
-      --line:rgba(255,255,255,.10);
-      --line2:rgba(255,255,255,.14);
+      /* Light UI (как на вашем примере) */
+      --bg:#f3f5f9;
+      --panel:#ffffff;
+      --panel2:#ffffff;
 
-      --ok:#28c28a;
-      --warn:#f6c445;
-      --crit:#ff4d4f;
+      --text:#1f2937;
+      --muted:#6b7280;
+      --muted2:#9ca3af;
 
-      --chip:#1b2547;
-      --shadow: 0 16px 36px rgba(0,0,0,.35);
+      --line:rgba(15,23,42,.10);
+      --line2:rgba(15,23,42,.14);
+
+      --ok:#16a34a;
+      --warn:#f59e0b;
+      --crit:#ef4444;
+
+      --brand:#2563eb;
+      --chip:#f3f4f6;
+
+      --shadow: 0 10px 24px rgba(15,23,42,.08);
+      --shadow2: 0 8px 18px rgba(15,23,42,.06);
+
       --r:18px;
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
@@ -28,60 +36,88 @@
 
     *{box-sizing:border-box}
     html,body{height:100%}
+
     body{
       margin:0;
       font-family: var(--sans);
-      background:
-        radial-gradient(1200px 700px at 15% 10%, rgba(93,130,255,.26), transparent 60%),
-        radial-gradient(1000px 700px at 85% 20%, rgba(255,141,86,.18), transparent 55%),
-        radial-gradient(900px 600px at 55% 85%, rgba(40,194,138,.14), transparent 60%),
-        var(--bg);
-      color:var(--text);
+      background: var(--bg);
+      color: var(--text);
     }
 
     .wrap{
-      max-width:1200px;
+      max-width:1240px;
       margin:0 auto;
-      padding:20px 18px 40px;
+      padding:18px 18px 32px;
     }
 
-    /* Header */
+    /* ===== Header ===== */
     .top{
       display:flex;
       align-items:center;
       justify-content:space-between;
       gap:14px;
       margin-bottom:14px;
-    }
-    .brand{
-      display:flex; align-items:center; gap:12px;
-    }
-    .logo{
-      width:44px; height:44px;
-      border-radius:14px;
-      background: linear-gradient(135deg, rgba(93,130,255,.95), rgba(40,194,138,.85));
+      padding:14px 16px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--r);
       box-shadow: var(--shadow);
-      position:relative;
-      overflow:hidden;
     }
-    .logo:after{
-      content:"";
-      position:absolute; inset:-30%;
-      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.45), transparent 55%);
-      transform: rotate(20deg);
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width: 240px;
     }
-    .title{
-      display:flex; flex-direction:column; gap:2px;
+
+    .logo{
+      width:44px;height:44px;
+      border-radius: 12px;
+      background: var(--brand);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow: 0 10px 18px rgba(37,99,235,.16);
+    }
+    .logo svg{display:block}
+
+    .brandText{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
       line-height:1.1;
     }
-    .title h1{
+    .brandText .name{
+      font-weight:900;
+      letter-spacing:.2px;
+      font-size:16px;
+      color: var(--brand);
+    }
+    .brandText .desc{
+      font-size:12px;
+      color: var(--muted);
+      font-weight:700;
+    }
+
+    .headerMid{
+      flex: 1;
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      padding: 0 8px;
+    }
+    .headerMid h1{
       margin:0;
-      font-size:18px;
+      font-size:16px;
+      font-weight:900;
       letter-spacing:.2px;
     }
-    .subtitle{
-      color:var(--muted);
-      font-size:13px;
+    .headerMid .sub{
+      color: var(--muted);
+      font-size:12px;
+      font-weight:700;
+      line-height:1.35;
     }
 
     .actions{
@@ -93,48 +129,142 @@
     }
 
     .pill{
-      display:flex; align-items:center; gap:10px;
+      display:flex;
+      align-items:center;
+      gap:10px;
       padding:10px 12px;
       border:1px solid var(--line);
       border-radius: 999px;
-      background: rgba(18,26,51,.65);
-      backdrop-filter: blur(8px);
-      box-shadow: 0 10px 22px rgba(0,0,0,.22);
+      background: #fff;
+      box-shadow: 0 6px 16px rgba(15,23,42,.06);
       color:var(--text);
-      font-size:13px;
+      font-size:12px;
+      font-weight:800;
+      white-space:nowrap;
     }
+    .pill .muted{ color: var(--muted); font-weight:800; }
 
     button{
-      border:1px solid var(--line2);
-      background: rgba(18,26,51,.75);
+      border:1px solid var(--line);
+      background:#fff;
       color:var(--text);
-      border-radius: 12px;
+      border-radius:12px;
       padding:10px 12px;
       cursor:pointer;
-      transition: .15s ease;
-      font-weight:700;
+      transition:.15s ease;
+      font-weight:900;
+      box-shadow: 0 6px 16px rgba(15,23,42,.06);
     }
-    button:hover{ transform: translateY(-1px); border-color: rgba(255,255,255,.22) }
-    button:active{ transform: translateY(0px); opacity:.95 }
-
+    button:hover{ transform: translateY(-1px); }
+    button:active{ transform: translateY(0px); opacity:.95; }
     .btn-primary{
-      background: linear-gradient(135deg, rgba(93,130,255,.95), rgba(93,130,255,.65));
-      border-color: rgba(93,130,255,.55);
+      background: var(--brand);
+      color:#fff;
+      border-color: rgba(37,99,235,.30);
+      box-shadow: 0 10px 18px rgba(37,99,235,.16);
     }
 
-    /* Layout */
+    /* ===== Alerts top (like your example banners) ===== */
+    .banners{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-bottom:14px;
+    }
+
+    .banner{
+      display:flex;
+      gap:12px;
+      align-items:flex-start;
+      padding:12px 14px;
+      border-radius: 14px;
+      border:1px solid var(--line);
+      background:#fff;
+      box-shadow: var(--shadow2);
+    }
+    .banner .icon{
+      width:22px;height:22px;border-radius: 999px;
+      display:flex;align-items:center;justify-content:center;
+      margin-top:2px;
+      flex:0 0 auto;
+    }
+    .banner .content{ flex: 1; }
+    .banner .title{
+      font-weight:900;
+      font-size:13px;
+      margin:0 0 4px 0;
+    }
+    .banner .text{
+      margin:0;
+      font-size:12px;
+      color: var(--muted);
+      font-weight:700;
+      line-height:1.35;
+    }
+    .banner .close{
+      border:none; box-shadow:none; background:transparent;
+      padding:4px 6px;
+      font-weight:900;
+      color: var(--muted);
+      cursor:pointer;
+    }
+
+    .banner.warn{ background: rgba(245,158,11,.10); border-color: rgba(245,158,11,.25); }
+    .banner.warn .icon{ background: rgba(245,158,11,.18); color: #a16207; }
+    .banner.crit{ background: rgba(239,68,68,.10); border-color: rgba(239,68,68,.25); }
+    .banner.crit .icon{ background: rgba(239,68,68,.18); color: #991b1b; }
+
+    /* ===== Tabs like your screenshot ===== */
+    .tabs{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-bottom: 14px;
+    }
+    .tab{
+      padding:10px 14px;
+      border-radius: 999px;
+      border:1px solid var(--line);
+      background:#fff;
+      box-shadow: 0 6px 16px rgba(15,23,42,.06);
+      cursor:pointer;
+      font-weight:900;
+      font-size:13px;
+      color: var(--text);
+      user-select:none;
+      transition:.12s ease;
+    }
+    .tab:hover{ transform: translateY(-1px); }
+    .tab.active{
+      background: rgba(37,99,235,.10);
+      border-color: rgba(37,99,235,.30);
+      color: var(--brand);
+    }
+    .tabsRight{
+      margin-left:auto;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+      color: var(--muted);
+      font-weight:800;
+      font-size:12px;
+    }
+
+    /* ===== Layout ===== */
     .grid{
       display:grid;
       grid-template-columns: 1.25fr .75fr;
       gap:14px;
-      margin-top:14px;
     }
-    @media (max-width: 980px){
+    @media(max-width: 980px){
       .grid{ grid-template-columns: 1fr; }
+      .headerMid{ display:none; } /* на мобиле компактнее */
     }
 
     .panel{
-      background: rgba(18,26,51,.70);
+      background: var(--panel);
       border: 1px solid var(--line);
       border-radius: var(--r);
       box-shadow: var(--shadow);
@@ -143,51 +273,63 @@
     .ph{
       padding:14px 16px;
       border-bottom:1px solid var(--line);
-      display:flex; align-items:center; justify-content:space-between; gap:10px;
-      background: rgba(15,23,48,.55);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      background: #fff;
     }
     .ph .h{
       font-weight:900;
       letter-spacing:.2px;
       font-size:14px;
-      display:flex; align-items:center; gap:10px;
+      display:flex;
+      align-items:center;
+      gap:10px;
     }
-    .ph .h small{ color:var(--muted); font-weight:600 }
+    .ph .h small{
+      color: var(--muted);
+      font-weight:800;
+      font-size:12px;
+    }
     .ph .right{
-      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
     }
-
     .bd{ padding:14px 16px; }
 
-    /* Chips */
+    /* ===== Chips ===== */
     .chip{
       display:inline-flex;
       align-items:center;
       gap:8px;
       padding:6px 10px;
       border-radius: 999px;
-      background: rgba(27,37,71,.8);
+      background: var(--chip);
       border:1px solid var(--line);
       font-size:12px;
       color: var(--text);
-      font-weight:800;
+      font-weight:900;
       white-space:nowrap;
     }
     .chip .dot{
-      width:8px; height:8px; border-radius:999px;
+      width:8px;height:8px;border-radius:999px;
       background: var(--muted2);
-      box-shadow: 0 0 0 4px rgba(127,136,163,.12);
+      box-shadow: 0 0 0 4px rgba(156,163,175,.18);
     }
-    .chip.ok .dot{ background: var(--ok); box-shadow: 0 0 0 4px rgba(40,194,138,.14); }
-    .chip.warn .dot{ background: var(--warn); box-shadow: 0 0 0 4px rgba(246,196,69,.14); }
-    .chip.crit .dot{ background: var(--crit); box-shadow: 0 0 0 4px rgba(255,77,79,.14); }
+    .chip.ok .dot{ background: var(--ok); box-shadow: 0 0 0 4px rgba(22,163,74,.14); }
+    .chip.warn .dot{ background: var(--warn); box-shadow: 0 0 0 4px rgba(245,158,11,.14); }
+    .chip.crit .dot{ background: var(--crit); box-shadow: 0 0 0 4px rgba(239,68,68,.14); }
 
     .chip.stage{ font-weight:900; }
-    .chip.stage.load{ background: rgba(93,130,255,.12); border-color: rgba(93,130,255,.22); }
-    .chip.stage.way{ background: rgba(246,196,69,.10); border-color: rgba(246,196,69,.20); }
-    .chip.stage.unload{ background: rgba(40,194,138,.10); border-color: rgba(40,194,138,.20); }
+    .chip.stage.load{ background: rgba(37,99,235,.10); border-color: rgba(37,99,235,.20); color: #1e40af; }
+    .chip.stage.way{ background: rgba(245,158,11,.10); border-color: rgba(245,158,11,.22); color: #92400e; }
+    .chip.stage.unload{ background: rgba(22,163,74,.10); border-color: rgba(22,163,74,.22); color: #14532d; }
+    .chip.gray{ color: var(--muted); font-weight:900; }
 
-    /* Cards (trains) */
+    /* ===== Cards ===== */
     .cards{
       display:grid;
       grid-template-columns: repeat(3, 1fr);
@@ -196,29 +338,37 @@
     @media (max-width: 980px){
       .cards{ grid-template-columns: 1fr; }
     }
+
     .card{
       border:1px solid var(--line);
       border-radius: 16px;
-      background: rgba(15,23,48,.55);
+      background: #fff;
       overflow:hidden;
+      box-shadow: var(--shadow2);
     }
     .card .ch{
       padding:12px 12px 10px;
-      display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
       border-bottom:1px solid var(--line);
+      background:#fff;
     }
-    .card .ch .name{
+    .card .name{
       font-weight:900;
       letter-spacing:.2px;
       font-size:14px;
       margin-bottom:6px;
     }
-    .card .ch .meta{
+    .card .meta{
       color:var(--muted);
       font-size:12px;
-      line-height:1.3;
+      line-height:1.35;
+      font-weight:700;
     }
     .card .cb{ padding:12px; }
+
     .kpis{
       display:grid;
       grid-template-columns: 1fr 1fr;
@@ -229,12 +379,16 @@
       padding:10px 10px;
       border-radius:14px;
       border:1px solid var(--line);
-      background: rgba(18,26,51,.55);
+      background:#fff;
     }
-    .kpi .t{ color:var(--muted); font-size:12px; }
+    .kpi .t{ color:var(--muted); font-size:12px; font-weight:800; }
     .kpi .v{ font-weight:900; font-size:16px; margin-top:4px; }
+
     .row{
-      display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
       margin-top:10px;
     }
     .foot{
@@ -242,625 +396,789 @@
       color:var(--muted);
       font-size:12px;
       line-height:1.35;
+      font-weight:800;
     }
-    .mono{ font-family: var(--mono); }
 
-    /* Tables */
+    .mono{ font-family: var(--mono); }
+    .muted{ color: var(--muted); }
+
+    /* ===== Tables ===== */
     table{
       width:100%;
       border-collapse:separate;
       border-spacing:0;
-      overflow:hidden;
       border:1px solid var(--line);
       border-radius: 16px;
-      background: rgba(15,23,48,.35);
+      background:#fff;
+      overflow:hidden;
+      box-shadow: var(--shadow2);
     }
     thead th{
       text-align:left;
       padding:10px 10px;
       font-size:12px;
-      color:var(--muted);
+      color: var(--muted);
       border-bottom:1px solid var(--line);
-      background: rgba(18,26,51,.55);
+      background: #f8fafc;
       white-space:nowrap;
+      font-weight:900;
     }
     tbody td{
       padding:10px 10px;
-      border-bottom:1px solid rgba(255,255,255,.06);
+      border-bottom:1px solid rgba(15,23,42,.06);
       font-size:13px;
       vertical-align:top;
+      font-weight:700;
     }
     tbody tr:last-child td{ border-bottom:none; }
     .right{text-align:right}
-    .muted{ color:var(--muted) }
 
     .badge{
-      display:inline-flex; align-items:center; gap:8px;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
       font-weight:900;
+      font-size:13px;
     }
     .badge .sd{
-      width:9px; height:9px; border-radius:999px; background: var(--muted2);
+      width:9px;height:9px;border-radius:999px;background: var(--muted2);
     }
     .badge.ok .sd{ background: var(--ok); }
     .badge.warn .sd{ background: var(--warn); }
     .badge.crit .sd{ background: var(--crit); }
 
-    /* Modal */
+    /* ===== Modal ===== */
     .modal{
       position:fixed; inset:0;
       display:none;
       align-items:center;
       justify-content:center;
       padding:18px;
-      background: rgba(0,0,0,.55);
+      background: rgba(15,23,42,.35);
       z-index:999;
     }
     .modal.show{ display:flex; }
+
     .box{
-      width:min(640px, 100%);
+      width:min(680px, 100%);
       border-radius: 18px;
-      border:1px solid rgba(255,255,255,.14);
-      background: rgba(18,26,51,.92);
-      backdrop-filter: blur(10px);
+      border:1px solid rgba(15,23,42,.14);
+      background: #fff;
       box-shadow: var(--shadow);
       overflow:hidden;
     }
     .box .bh{
       padding:14px 16px;
-      border-bottom:1px solid rgba(255,255,255,.10);
-      display:flex; justify-content:space-between; align-items:center; gap:10px;
+      border-bottom:1px solid rgba(15,23,42,.10);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
       font-weight:900;
     }
     .box .bb{ padding:14px 16px; color:var(--text); }
     .field{ display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
-    .field label{ color:var(--muted); font-size:12px; font-weight:800; }
+    .field label{ color:var(--muted); font-size:12px; font-weight:900; }
+
     input, select{
       width:100%;
       padding:10px 12px;
       border-radius: 12px;
-      border:1px solid rgba(255,255,255,.16);
-      background: rgba(15,23,48,.55);
+      border:1px solid rgba(15,23,42,.14);
+      background: #fff;
       color:var(--text);
       outline:none;
+      font-weight:800;
     }
-    .help{ color:var(--muted); font-size:12px; line-height:1.35; }
+    .help{
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.35;
+      font-weight:700;
+    }
     .box .bf{
       padding:12px 16px;
-      border-top:1px solid rgba(255,255,255,.10);
+      border-top:1px solid rgba(15,23,42,.10);
       display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap;
     }
 
-    /* Toast */
+    /* ===== Toast ===== */
     .toast{
       position:fixed;
       right:18px;
       bottom:18px;
-      max-width: 520px;
+      max-width: 560px;
       padding:12px 14px;
       border-radius: 14px;
-      border:1px solid rgba(255,255,255,.14);
-      background: rgba(18,26,51,.92);
+      border:1px solid rgba(15,23,42,.14);
+      background: #fff;
       color: var(--text);
       box-shadow: var(--shadow);
       display:none;
       z-index: 1000;
       font-size:13px;
       line-height:1.35;
+      font-weight:800;
     }
     .toast.show{ display:block; }
     .toast .t{ font-weight:900; margin-bottom:4px; }
-    .toast .m{ color:var(--muted); }
+    .toast .m{ color:var(--muted); font-weight:800; }
 
+    /* ===== Small helpers ===== */
+    .sectionHint{
+      font-size:12px;
+      margin:6px 0 10px;
+      color: var(--muted);
+      font-weight:800;
+    }
   </style>
 </head>
 
 <body>
-<div class="wrap">
+  <div class="wrap">
 
-  <div class="top">
-    <div class="brand">
-      <div class="logo" aria-hidden="true"></div>
-      <div class="title">
-        <h1>VELES • Мониторинг поездов (РСЗ / Шакша)</h1>
-        <div class="subtitle">
-          План/факт и алерты по 3 поездам • Стадии: <b>Погрузка</b> / <b>В пути</b> / <b>Выгрузка</b>
+    <!-- Header -->
+    <div class="top">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">
+          <!-- simple train icon -->
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M6 17h12" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            <path d="M7 17l-2 3" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            <path d="M17 17l2 3" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            <path d="M8 3h8a4 4 0 0 1 4 4v8a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V7a4 4 0 0 1 4-4Z" stroke="white" stroke-width="2"/>
+            <path d="M8 7h8" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="9" cy="13" r="1.2" fill="white"/>
+            <circle cx="15" cy="13" r="1.2" fill="white"/>
+          </svg>
         </div>
+        <div class="brandText">
+          <div class="name">ВЕЛЕС</div>
+          <div class="desc">Транспортная компания</div>
+        </div>
+      </div>
+
+      <div class="headerMid">
+        <h1>Мониторинг рейсов</h1>
+        <div class="sub">
+          ООО «РСЗ» • Целевая станция: <b id="targetLabel">Шакша</b> • Стадии: <b>Погрузка</b> / <b>В пути</b> / <b>Под выгрузкой</b>
+        </div>
+      </div>
+
+      <div class="actions">
+        <div class="pill">
+          <span class="muted">Источник:</span>
+          <span class="mono" id="srcLabel">—</span>
+        </div>
+        <div class="pill">
+          <span class="muted">Последнее обновление:</span>
+          <span class="mono" id="updatedAt">—</span>
+        </div>
+        <button class="btn-primary" id="btnRefresh">Обновить</button>
+        <button id="btnSettings">Настройки</button>
       </div>
     </div>
 
-    <div class="actions">
-      <div class="pill">
-        <span class="muted">Источник:</span>
-        <span class="mono" id="srcLabel">—</span>
+    <!-- Banners (top alerts) -->
+    <div class="banners" id="banners"></div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active" data-filter="all">Все рейсы</div>
+      <div class="tab" data-filter="way">В пути</div>
+      <div class="tab" data-filter="unload">Под выгрузкой</div>
+      <div class="tab" data-filter="done">Завершенные</div>
+      <div class="tab" data-filter="plan">В плане</div>
+
+      <div class="tabsRight">
+        <span>Всего рейсов:</span>
+        <b class="mono" id="totalTrains">0</b>
       </div>
-      <div class="pill">
-        <span class="muted">Обновлено:</span>
-        <span class="mono" id="updatedAt">—</span>
+    </div>
+
+    <!-- Main grid -->
+    <div class="grid">
+
+      <!-- LEFT: trains -->
+      <div class="panel">
+        <div class="ph">
+          <div class="h">
+            График движения
+            <small id="monthLabel">—</small>
+          </div>
+          <div class="right">
+            <span class="chip ok" id="chipOK"><span class="dot"></span>OK: 0</span>
+            <span class="chip warn" id="chipWarn"><span class="dot"></span>Предупр.: 0</span>
+            <span class="chip crit" id="chipCrit"><span class="dot"></span>Критично: 0</span>
+          </div>
+        </div>
+
+        <div class="bd">
+          <div class="cards" id="trainCards"></div>
+
+          <div style="height:12px"></div>
+          <div class="sectionHint">Таблица для контроля (копирование в отчёты)</div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Рейс</th>
+                <th>Маршрут</th>
+                <th>Статус</th>
+                <th class="right">Всего</th>
+                <th class="right">Погрузка</th>
+                <th class="right">В пути</th>
+                <th class="right">Выгрузка</th>
+                <th class="right">Выгрузка, дн</th>
+                <th>Сейчас</th>
+              </tr>
+            </thead>
+            <tbody id="trainTableBody">
+              <tr><td colspan="9" class="muted">Загрузка…</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
-      <button class="btn-primary" id="btnRefresh">Обновить</button>
-      <button id="btnSettings">Настройки</button>
+
+      <!-- RIGHT: risks -->
+      <div class="panel">
+        <div class="ph">
+          <div class="h">Контроль отклонений</div>
+          <div class="right">
+            <span class="chip" id="riskChip"><span class="dot"></span>—</span>
+          </div>
+        </div>
+
+        <div class="bd">
+          <div class="sectionHint">Сегодня в риске</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Статус</th>
+                <th>Рейс</th>
+                <th>Причина</th>
+                <th>Где</th>
+                <th class="right">Δ, дн</th>
+              </tr>
+            </thead>
+            <tbody id="riskBody">
+              <tr><td colspan="5" class="muted">Загрузка…</td></tr>
+            </tbody>
+          </table>
+
+          <div style="height:12px"></div>
+          <div class="sectionHint">Все алерты</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Статус</th>
+                <th>Рейс</th>
+                <th>Тип</th>
+                <th>Сообщение</th>
+              </tr>
+            </thead>
+            <tbody id="alertsBody">
+              <tr><td colspan="4" class="muted">Загрузка…</td></tr>
+            </tbody>
+          </table>
+
+          <div style="margin-top:10px" class="help">
+            Логика стадий по вашим правилам должна считаться в n8n и приходить в JSON как <span class="mono">current_state</span>.
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
-  <div class="grid">
-
-    <!-- LEFT: trains -->
-    <div class="panel">
-      <div class="ph">
-        <div class="h">
-          Поезда на месяц
-          <small id="monthLabel">—</small>
-        </div>
-        <div class="right">
-          <span class="chip ok" id="chipOK"><span class="dot"></span>OK: 0</span>
-          <span class="chip warn" id="chipWarn"><span class="dot"></span>Предупр.: 0</span>
-          <span class="chip crit" id="chipCrit"><span class="dot"></span>Критично: 0</span>
-        </div>
+  <!-- Settings Modal -->
+  <div class="modal" id="modal">
+    <div class="box">
+      <div class="bh">
+        Настройки источника
+        <button id="btnClose">Закрыть</button>
       </div>
-      <div class="bd">
-        <div class="cards" id="trainCards">
-          <!-- cards inserted here -->
+      <div class="bb">
+        <div class="field">
+          <label>URL n8n Webhook (возвращает JSON)</label>
+          <input id="inpUrl" placeholder="https://.../webhook/veles-train-monitor" />
+          <div class="help">Ожидаемые поля: <span class="mono">month_label, updated_at, trains[], alerts[], today_risk[]</span>.</div>
         </div>
 
-        <div style="height:12px"></div>
-
-        <div class="muted" style="font-size:12px;margin:4px 0 10px;">
-          Таблица поезда (для копирования в отчёты / контроля состава)
+        <div class="field">
+          <label>Автообновление</label>
+          <select id="selRefresh">
+            <option value="0">выключено</option>
+            <option value="60">каждую 1 минуту</option>
+            <option value="120">каждые 2 минуты</option>
+            <option value="300" selected>каждые 5 минут</option>
+            <option value="600">каждые 10 минут</option>
+            <option value="900">каждые 15 минут</option>
+          </select>
         </div>
 
-        <table>
-          <thead>
-            <tr>
-              <th>Поезд</th>
-              <th>Маршрут</th>
-              <th>Где сейчас</th>
-              <th class="right">Всего</th>
-              <th class="right">Погрузка</th>
-              <th class="right">В пути</th>
-              <th class="right">Выгрузка</th>
-              <th class="right">Выгрузка, дн</th>
-              <th>Статус</th>
-            </tr>
-          </thead>
-          <tbody id="trainTableBody">
-            <tr><td colspan="9" class="muted">Загрузка…</td></tr>
-          </tbody>
-        </table>
-
-      </div>
-    </div>
-
-    <!-- RIGHT: risk -->
-    <div class="panel">
-      <div class="ph">
-        <div class="h">Сегодня в риске</div>
-        <div class="right">
-          <span class="chip" id="riskChip"><span class="dot"></span>—</span>
-        </div>
-      </div>
-      <div class="bd">
-
-        <table>
-          <thead>
-            <tr>
-              <th>Статус</th>
-              <th>Поезд</th>
-              <th>Причина</th>
-              <th>Где</th>
-              <th class="right">Δ, дн</th>
-            </tr>
-          </thead>
-          <tbody id="riskBody">
-            <tr><td colspan="5" class="muted">Загрузка…</td></tr>
-          </tbody>
-        </table>
-
-        <div style="height:12px"></div>
-
-        <div class="muted" style="font-size:12px;margin:4px 0 10px;">
-          Все алерты (для ретроспективы)
+        <div class="field">
+          <label>Целевая станция</label>
+          <input id="inpTarget" placeholder="Шакша" value="Шакша" />
+          <div class="help">Используется в подписи. Логику стадий формирует n8n.</div>
         </div>
 
-        <table>
-          <thead>
-            <tr>
-              <th>Статус</th>
-              <th>Поезд</th>
-              <th>Тип</th>
-              <th>Сообщение</th>
-            </tr>
-          </thead>
-          <tbody id="alertsBody">
-            <tr><td colspan="4" class="muted">Загрузка…</td></tr>
-          </tbody>
-        </table>
-
-        <div style="margin-top:10px" class="help">
-          Логика стадий: <b>ПОГРУЗКА</b> если (станция назн = текущая = отправления), <b>ВЫГРУЗКА</b> если (станция назн = текущая = Шакша), иначе при целевой Шакше — <b>В ПУТИ</b>.
+        <div class="help">
+          Если HTML на GitHub Pages, а webhook на другом домене — включите CORS в n8n (заголовок <span class="mono">Access-Control-Allow-Origin: *</span>).
         </div>
-
       </div>
-    </div>
-
-  </div>
-</div>
-
-<!-- Settings Modal -->
-<div class="modal" id="modal">
-  <div class="box">
-    <div class="bh">
-      Настройки источника
-      <button id="btnClose">Закрыть</button>
-    </div>
-    <div class="bb">
-      <div class="field">
-        <label>URL n8n Webhook (возвращает JSON)</label>
-        <input id="inpUrl" placeholder="https://.../webhook/veles-train-monitor" />
-        <div class="help">Должен отдавать поля: <span class="mono">month_label, updated_at, trains[], alerts[], today_risk[]</span>.</div>
+      <div class="bf">
+        <button id="btnSave" class="btn-primary">Сохранить</button>
       </div>
-
-      <div class="field">
-        <label>Автообновление</label>
-        <select id="selRefresh">
-          <option value="0">выключено</option>
-          <option value="60">каждую 1 минуту</option>
-          <option value="120">каждые 2 минуты</option>
-          <option value="300" selected>каждые 5 минут</option>
-          <option value="600">каждые 10 минут</option>
-          <option value="900">каждые 15 минут</option>
-        </select>
-      </div>
-
-      <div class="field">
-        <label>Целевая станция выгрузки</label>
-        <input id="inpTarget" placeholder="Шакша" value="Шакша" />
-        <div class="help">Используется для подсказок/лейблов. Стадия в JSON уже должна быть рассчитана n8n.</div>
-      </div>
-
-      <div class="help">
-        Если вы публикуете этот HTML на GitHub Pages — убедитесь, что ваш webhook разрешает CORS.
-        Иначе используйте n8n “Respond to Webhook” с заголовками:
-        <span class="mono">Access-Control-Allow-Origin: *</span>
-      </div>
-    </div>
-    <div class="bf">
-      <button id="btnSave" class="btn-primary">Сохранить</button>
     </div>
   </div>
-</div>
 
-<!-- Toast -->
-<div class="toast" id="toast">
-  <div class="t" id="toastT">—</div>
-  <div class="m" id="toastM">—</div>
-</div>
+  <!-- Toast -->
+  <div class="toast" id="toast">
+    <div class="t" id="toastT">—</div>
+    <div class="m" id="toastM">—</div>
+  </div>
 
-<script>
-  // =====================
-  // Config (localStorage)
-  // =====================
-  const LS_URL = "VELES_MONITOR_URL";
-  const LS_REFRESH = "VELES_MONITOR_REFRESH_SEC";
-  const LS_TARGET = "VELES_MONITOR_TARGET";
+  <script>
+    // =====================
+    // Config (localStorage)
+    // =====================
+    const LS_URL = "VELES_MONITOR_URL";
+    const LS_REFRESH = "VELES_MONITOR_REFRESH_SEC";
+    const LS_TARGET = "VELES_MONITOR_TARGET";
 
-  // Default example: оставьте пустым и задайте в Настройках
-  const DEFAULT_URL = localStorage.getItem(LS_URL) || "";
-  const DEFAULT_REFRESH = Number(localStorage.getItem(LS_REFRESH) || "300");
-  const DEFAULT_TARGET = localStorage.getItem(LS_TARGET) || "Шакша";
+    const DEFAULT_URL = localStorage.getItem(LS_URL) || "";
+    const DEFAULT_REFRESH = Number(localStorage.getItem(LS_REFRESH) || "300");
+    const DEFAULT_TARGET = localStorage.getItem(LS_TARGET) || "Шакша";
 
-  let timer = null;
+    let timer = null;
+    let lastApi = null;
+    let activeFilter = "all"; // all | way | unload | done | plan
 
-  // =====================
-  // DOM helpers
-  // =====================
-  const $ = (id) => document.getElementById(id);
+    // =====================
+    // DOM helpers
+    // =====================
+    const $ = (id) => document.getElementById(id);
 
-  function showToast(title, msg){
-    $("toastT").textContent = title || "";
-    $("toastM").textContent = msg || "";
-    $("toast").classList.add("show");
-    setTimeout(()=> $("toast").classList.remove("show"), 3800);
-  }
-
-  function fmtDT(iso){
-    if(!iso) return "—";
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return "—";
-    // ru format: dd.mm.yyyy hh:mm
-    const pad = (x) => String(x).padStart(2,"0");
-    return `${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  }
-
-  function safeNum(v){
-    const n = Number(v);
-    return Number.isFinite(n) ? n : null;
-  }
-
-  function statusClass(s){
-    const t = (s||"").toLowerCase();
-    if (t.includes("крит")) return "crit";
-    if (t.includes("пред")) return "warn";
-    if (t.includes("ok")) return "ok";
-    // fallback
-    return "";
-  }
-
-  function stageChip(stage){
-    const s = (stage||"").toUpperCase();
-    if (s.includes("ПОГРУЗ")) return `<span class="chip stage load"><span class="dot"></span>ПОГРУЗКА</span>`;
-    if (s.includes("ВЫГРУЗ")) return `<span class="chip stage unload"><span class="dot"></span>ВЫГРУЗКА</span>`;
-    if (s.includes("ПУТИ")) return `<span class="chip stage way"><span class="dot"></span>В ПУТИ</span>`;
-    return `<span class="chip"><span class="dot"></span>${stage || "—"}</span>`;
-  }
-
-  function badge(sev){
-    const cls = statusClass(sev);
-    const label = sev || "OK";
-    return `<span class="badge ${cls}"><span class="sd"></span>${label}</span>`;
-  }
-
-  function clamp3(trains){
-    // на март у вас 3 поезда, но если придёт больше — покажем первые 3 по сортировке (крит->пред->ok)
-    const pr = (x) => {
-      const c = statusClass(x.overall_status);
-      if (c==="crit") return 0;
-      if (c==="warn") return 1;
-      return 2;
-    };
-    return (trains || []).slice().sort((a,b)=> pr(a)-pr(b)).slice(0,3);
-  }
-
-  // =====================
-  // Renderers
-  // =====================
-  function renderSummary(trains){
-    let ok=0,warn=0,crit=0;
-    (trains||[]).forEach(t=>{
-      const c = statusClass(t.overall_status || "OK");
-      if (c==="crit") crit++;
-      else if (c==="warn") warn++;
-      else ok++;
-    });
-    $("chipOK").innerHTML   = `<span class="dot"></span>OK: ${ok}`;
-    $("chipWarn").innerHTML = `<span class="dot"></span>Предупр.: ${warn}`;
-    $("chipCrit").innerHTML = `<span class="dot"></span>Критично: ${crit}`;
-  }
-
-  function renderTrainCards(trains){
-    const el = $("trainCards");
-    el.innerHTML = "";
-
-    if(!trains || !trains.length){
-      el.innerHTML = `<div class="muted">Нет данных по поездам</div>`;
-      return;
+    function showToast(title, msg){
+      $("toastT").textContent = title || "";
+      $("toastM").textContent = msg || "";
+      $("toast").classList.add("show");
+      setTimeout(()=> $("toast").classList.remove("show"), 3800);
     }
 
-    trains.forEach(t=>{
-      const cls = statusClass(t.overall_status || "OK");
-      const st = stageChip(t.current_state);
-      const total = safeNum(t.wagons_fact ?? t.wagons_total) ?? 0;
+    function fmtDT(iso){
+      if(!iso) return "—";
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return "—";
+      const pad = (x) => String(x).padStart(2,"0");
+      return `${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
 
-      const inLoad = safeNum(t.wagons_in_loading) ?? 0;
-      const inWay  = safeNum(t.wagons_in_transit) ?? 0;
-      const inUnl  = safeNum(t.wagons_in_unloading) ?? 0;
+    function safeNum(v){
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    }
 
-      const unloadAge = safeNum(t.fact_unload_days);
-      const unloadNorm = safeNum(t.norm_unload_days);
+    function statusClass(s){
+      const t = String(s||"").toLowerCase();
+      if (t.includes("крит")) return "crit";
+      if (t.includes("пред")) return "warn";
+      if (t.includes("ok")) return "ok";
+      return "ok";
+    }
 
-      const unloadText = (unloadAge!=null) ? unloadAge.toFixed(1) : "—";
-      const unloadNormText = (unloadNorm!=null) ? unloadNorm.toFixed(1) : "—";
+    function stageNorm(stage){
+      const s = String(stage||"").toUpperCase();
+      if (s.includes("ПОГРУЗ")) return "load";
+      if (s.includes("ВЫГРУЗ")) return "unload";
+      if (s.includes("ПУТИ")) return "way";
+      return "other";
+    }
 
-      const card = document.createElement("div");
-      card.className = "card";
-      card.innerHTML = `
-        <div class="ch">
-          <div>
-            <div class="name">${t.train_name || "Поезд"}</div>
-            <div class="meta">
-              <span class="mono">${t.train_id || ""}</span><br/>
-              Маршрут: <b>${t.route_name || "—"}</b>
+    function stageChip(stage){
+      const s = String(stage||"").toUpperCase();
+      if (s.includes("ПОГРУЗ")) return `<span class="chip stage load"><span class="dot"></span>Погрузка</span>`;
+      if (s.includes("ВЫГРУЗ")) return `<span class="chip stage unload"><span class="dot"></span>Под выгрузкой</span>`;
+      if (s.includes("ПУТИ")) return `<span class="chip stage way"><span class="dot"></span>В пути</span>`;
+      return `<span class="chip gray"><span class="dot"></span>${stage || "—"}</span>`;
+    }
+
+    function badge(sev){
+      const cls = statusClass(sev);
+      const label = sev || "OK";
+      return `<span class="badge ${cls}"><span class="sd"></span>${label}</span>`;
+    }
+
+    // Фильтрация по вкладкам (простая, под ваш MVP)
+    function filterTrains(trains){
+      const list = (trains || []).slice();
+
+      if (activeFilter === "all") return list;
+
+      if (activeFilter === "way"){
+        return list.filter(t => stageNorm(t.current_state) === "way");
+      }
+      if (activeFilter === "unload"){
+        return list.filter(t => stageNorm(t.current_state) === "unload");
+      }
+
+      // done/plan — если позже добавите флаги из n8n (например is_done/is_planned),
+      // пока оставим пустыми:
+      if (activeFilter === "done") return [];
+      if (activeFilter === "plan") return [];
+
+      return list;
+    }
+
+    // =====================
+    // Render: Banners (top alerts)
+    // =====================
+    function renderBanners(api){
+      const box = $("banners");
+      box.innerHTML = "";
+
+      const alerts = (api && api.alerts) ? api.alerts.slice() : [];
+      if (!alerts.length) return;
+
+      // возьмём максимум 2 баннера (как на примере)
+      const pr = (a)=>{
+        const c = statusClass(a.severity);
+        if (c==="crit") return 0;
+        if (c==="warn") return 1;
+        return 2;
+      };
+      const top = alerts.sort((a,b)=> pr(a)-pr(b)).slice(0,2);
+
+      top.forEach((a, idx)=>{
+        const cls = statusClass(a.severity);
+        const banner = document.createElement("div");
+        banner.className = `banner ${cls === "crit" ? "crit" : "warn"}`;
+
+        const title = (cls==="crit")
+          ? `Внимание! ${a.type || "Отклонение"}`
+          : `${a.type || "Отклонение"}`;
+
+        const text = a.message || "";
+
+        banner.innerHTML = `
+          <div class="icon" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M12 9v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M12 17h.01" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+              <path d="M10.3 4.2 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0Z" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </div>
+          <div class="content">
+            <p class="title">${title} <span class="muted">${a.train_name ? "• " + a.train_name : ""}</span></p>
+            <p class="text">${text}</p>
+          </div>
+          <button class="close" title="Закрыть" aria-label="Закрыть">✕</button>
+        `;
+
+        banner.querySelector(".close").addEventListener("click", ()=>{
+          banner.remove();
+        });
+
+        box.appendChild(banner);
+      });
+    }
+
+    // =====================
+    // Render: Summary chips
+    // =====================
+    function renderSummary(trains){
+      let ok=0,warn=0,crit=0;
+      (trains||[]).forEach(t=>{
+        const c = statusClass(t.overall_status || "OK");
+        if (c==="crit") crit++;
+        else if (c==="warn") warn++;
+        else ok++;
+      });
+      $("chipOK").innerHTML   = `<span class="dot"></span>OK: ${ok}`;
+      $("chipWarn").innerHTML = `<span class="dot"></span>Предупр.: ${warn}`;
+      $("chipCrit").innerHTML = `<span class="dot"></span>Критично: ${crit}`;
+    }
+
+    // =====================
+    // Render: Cards
+    // =====================
+    function renderTrainCards(trains){
+      const el = $("trainCards");
+      el.innerHTML = "";
+
+      if(!trains || !trains.length){
+        el.innerHTML = `<div class="muted" style="font-weight:800">Нет данных по выбранному фильтру</div>`;
+        return;
+      }
+
+      trains.forEach(t=>{
+        const total = safeNum(t.wagons_fact ?? t.wagons_total) ?? 0;
+        const inLoad = safeNum(t.wagons_in_loading) ?? 0;
+        const inWay  = safeNum(t.wagons_in_transit) ?? 0;
+        const inUnl  = safeNum(t.wagons_in_unloading) ?? 0;
+
+        const unloadAge = safeNum(t.fact_unload_days);
+        const unloadNorm = safeNum(t.norm_unload_days);
+
+        const unloadText = (unloadAge!=null) ? unloadAge.toFixed(1) : "—";
+        const unloadNormText = (unloadNorm!=null) ? unloadNorm.toFixed(1) : "—";
+
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="ch">
+            <div>
+              <div class="name">${t.train_name || "Рейс"}</div>
+              <div class="meta">
+                <span class="mono">${t.train_id || ""}</span><br/>
+                Маршрут: <b>${t.route_name || "—"}</b>
+              </div>
+            </div>
+            <div>${badge(t.overall_status || "OK")}</div>
+          </div>
+
+          <div class="cb">
+            <div class="row">
+              ${stageChip(t.current_state)}
+              <span class="chip"><span class="dot"></span>${t.current_station || "—"}</span>
+              <span class="chip"><span class="dot"></span>обн: <span class="mono">${fmtDT(t.dislocation_updated_at)}</span></span>
+            </div>
+
+            <div class="kpis">
+              <div class="kpi">
+                <div class="t">Состав (вагонов)</div>
+                <div class="v"><span class="mono">${total}</span></div>
+              </div>
+              <div class="kpi">
+                <div class="t">Выгрузка (дн)</div>
+                <div class="v"><span class="mono">${unloadText}</span> <span class="muted" style="font-size:12px;font-weight:900">/ норма ${unloadNormText}</span></div>
+              </div>
+            </div>
+
+            <div class="foot">
+              Погрузка: <b class="mono">${inLoad}</b> •
+              В пути: <b class="mono">${inWay}</b> •
+              Выгрузка: <b class="mono">${inUnl}</b>
             </div>
           </div>
-          <div>${badge(t.overall_status || "OK")}</div>
-        </div>
-        <div class="cb">
-          <div class="row">
-            ${st}
-            <span class="chip"><span class="dot"></span>${t.current_station || "—"}</span>
-            <span class="chip"><span class="dot"></span>обн: <span class="mono">${fmtDT(t.dislocation_updated_at)}</span></span>
-          </div>
-
-          <div class="kpis">
-            <div class="kpi">
-              <div class="t">Состав (вагонов)</div>
-              <div class="v"><span class="mono">${total}</span></div>
-            </div>
-            <div class="kpi">
-              <div class="t">Выгрузка (дн)</div>
-              <div class="v"><span class="mono">${unloadText}</span> <span class="muted" style="font-size:12px;">/ норма ${unloadNormText}</span></div>
-            </div>
-          </div>
-
-          <div class="foot">
-            Погрузка: <b class="mono">${inLoad}</b> •
-            В пути: <b class="mono">${inWay}</b> •
-            Выгрузка: <b class="mono">${inUnl}</b>
-          </div>
-        </div>
-      `;
-      el.appendChild(card);
-    });
-  }
-
-  function renderTrainTable(trains){
-    const tb = $("trainTableBody");
-    tb.innerHTML = "";
-
-    if(!trains || !trains.length){
-      tb.innerHTML = `<tr><td colspan="9" class="muted">Нет данных</td></tr>`;
-      return;
+        `;
+        el.appendChild(card);
+      });
     }
 
-    trains.forEach(t=>{
-      const total = safeNum(t.wagons_fact ?? t.wagons_total) ?? 0;
-      const inLoad = safeNum(t.wagons_in_loading) ?? 0;
-      const inWay  = safeNum(t.wagons_in_transit) ?? 0;
-      const inUnl  = safeNum(t.wagons_in_unloading) ?? 0;
-      const unloadAge = safeNum(t.fact_unload_days);
+    // =====================
+    // Render: Train table
+    // =====================
+    function renderTrainTable(trains){
+      const tb = $("trainTableBody");
+      tb.innerHTML = "";
 
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>
-          <div style="font-weight:900">${t.train_name || "—"}</div>
-          <div class="muted mono" style="font-size:12px">${t.train_id || ""}</div>
-        </td>
-        <td>${t.route_name || "—"}</td>
-        <td>
-          ${stageChip(t.current_state)}
-          <div class="muted" style="margin-top:6px">${t.current_station || "—"}</div>
-        </td>
-        <td class="right mono">${total}</td>
-        <td class="right mono">${inLoad}</td>
-        <td class="right mono">${inWay}</td>
-        <td class="right mono">${inUnl}</td>
-        <td class="right mono">${unloadAge!=null ? unloadAge.toFixed(1) : "—"}</td>
-        <td>${badge(t.overall_status || "OK")}</td>
-      `;
-      tb.appendChild(tr);
-    });
-  }
+      if(!trains || !trains.length){
+        tb.innerHTML = `<tr><td colspan="9" class="muted" style="font-weight:800">Нет данных</td></tr>`;
+        return;
+      }
 
-  function renderTodayRisk(api){
-    const list = api.today_risk || [];
-    $("riskChip").innerHTML = `<span class="dot"></span>В риске: ${list.length}`;
+      trains.forEach(t=>{
+        const total = safeNum(t.wagons_fact ?? t.wagons_total) ?? 0;
+        const inLoad = safeNum(t.wagons_in_loading) ?? 0;
+        const inWay  = safeNum(t.wagons_in_transit) ?? 0;
+        const inUnl  = safeNum(t.wagons_in_unloading) ?? 0;
+        const unloadAge = safeNum(t.fact_unload_days);
 
-    const tb = $("riskBody");
-    tb.innerHTML = "";
-
-    if(!list.length){
-      tb.innerHTML = `<tr><td colspan="5" class="muted">Нет срочных отклонений ✅</td></tr>`;
-      return;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>
+            <div style="font-weight:900">${t.train_name || "—"}</div>
+            <div class="muted mono" style="font-size:12px;font-weight:900">${t.train_id || ""}</div>
+          </td>
+          <td>${t.route_name || "—"}</td>
+          <td>${badge(t.overall_status || "OK")}</td>
+          <td class="right mono">${total}</td>
+          <td class="right mono">${inLoad}</td>
+          <td class="right mono">${inWay}</td>
+          <td class="right mono">${inUnl}</td>
+          <td class="right mono">${unloadAge!=null ? unloadAge.toFixed(1) : "—"}</td>
+          <td>
+            ${stageChip(t.current_state)}
+            <div class="muted" style="margin-top:6px;font-weight:900">${t.current_station || "—"}</div>
+          </td>
+        `;
+        tb.appendChild(tr);
+      });
     }
 
-    list.forEach(r=>{
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${badge(r.severity || "Предупреждение")}</td>
-        <td class="mono">${r.train_name || "—"}</td>
-        <td>${r.reason || "—"}</td>
-        <td>${r.current_station || "—"}</td>
-        <td class="right mono">${(r.age_days!=null && !isNaN(Number(r.age_days))) ? Number(r.age_days).toFixed(1) : "—"}</td>
-      `;
-      tb.appendChild(tr);
-    });
-  }
+    // =====================
+    // Render: Today risk
+    // =====================
+    function renderTodayRisk(api){
+      const list = api && api.today_risk ? api.today_risk : [];
+      $("riskChip").innerHTML = `<span class="dot"></span>В риске: ${list.length}`;
 
-  function renderAlerts(api){
-    const list = api.alerts || [];
-    const tb = $("alertsBody");
-    tb.innerHTML = "";
+      const tb = $("riskBody");
+      tb.innerHTML = "";
 
-    if(!list.length){
-      tb.innerHTML = `<tr><td colspan="4" class="muted">Алертов нет</td></tr>`;
-      return;
+      if(!list.length){
+        tb.innerHTML = `<tr><td colspan="5" class="muted" style="font-weight:800">Нет срочных отклонений ✅</td></tr>`;
+        return;
+      }
+
+      list.forEach(r=>{
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${badge(r.severity || "Предупреждение")}</td>
+          <td class="mono">${r.train_name || "—"}</td>
+          <td>${r.reason || "—"}</td>
+          <td>${r.current_station || "—"}</td>
+          <td class="right mono">${(r.age_days!=null && !isNaN(Number(r.age_days))) ? Number(r.age_days).toFixed(1) : "—"}</td>
+        `;
+        tb.appendChild(tr);
+      });
     }
 
-    // сортировка: критично сверху
-    const pr = (a)=>{
-      const c = statusClass(a.severity);
-      if(c==="crit") return 0;
-      if(c==="warn") return 1;
-      return 2;
-    };
+    // =====================
+    // Render: Alerts list
+    // =====================
+    function renderAlerts(api){
+      const list = api && api.alerts ? api.alerts : [];
+      const tb = $("alertsBody");
+      tb.innerHTML = "";
 
-    list.slice().sort((a,b)=> pr(a)-pr(b)).forEach(a=>{
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${badge(a.severity || "Предупреждение")}</td>
-        <td class="mono">${a.train_name || "—"}</td>
-        <td>${a.type || "—"}</td>
-        <td>${a.message || "—"}</td>
-      `;
-      tb.appendChild(tr);
-    });
-  }
+      if(!list.length){
+        tb.innerHTML = `<tr><td colspan="4" class="muted" style="font-weight:800">Алертов нет</td></tr>`;
+        return;
+      }
 
-  // =====================
-  // Data load
-  // =====================
-  async function load(){
-    const url = localStorage.getItem(LS_URL) || DEFAULT_URL;
-    $("srcLabel").textContent = url ? url : "не задан";
+      const pr = (a)=>{
+        const c = statusClass(a.severity);
+        if(c==="crit") return 0;
+        if(c==="warn") return 1;
+        return 2;
+      };
 
-    if(!url){
-      $("monthLabel").textContent = "";
-      $("updatedAt").textContent = "—";
-      $("trainCards").innerHTML = `<div class="muted">Откройте «Настройки» и укажите URL webhook n8n.</div>`;
-      $("trainTableBody").innerHTML = `<tr><td colspan="9" class="muted">Нет данных</td></tr>`;
-      $("riskBody").innerHTML = `<tr><td colspan="5" class="muted">Нет данных</td></tr>`;
-      $("alertsBody").innerHTML = `<tr><td colspan="4" class="muted">Нет данных</td></tr>`;
-      return;
+      list.slice().sort((a,b)=> pr(a)-pr(b)).forEach(a=>{
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${badge(a.severity || "Предупреждение")}</td>
+          <td class="mono">${a.train_name || "—"}</td>
+          <td>${a.type || "—"}</td>
+          <td>${a.message || "—"}</td>
+        `;
+        tb.appendChild(tr);
+      });
     }
 
-    try{
-      const res = await fetch(url, { cache: "no-store" });
-      if(!res.ok) throw new Error(`HTTP ${res.status}`);
-      const api = await res.json();
+    // =====================
+    // Tabs UI
+    // =====================
+    function initTabs(){
+      document.querySelectorAll(".tab").forEach(tab=>{
+        tab.addEventListener("click", ()=>{
+          document.querySelectorAll(".tab").forEach(t=> t.classList.remove("active"));
+          tab.classList.add("active");
+          activeFilter = tab.getAttribute("data-filter") || "all";
+          if (lastApi) renderAll(lastApi);
+        });
+      });
+    }
+
+    // =====================
+    // Render all
+    // =====================
+    function renderAll(api){
+      lastApi = api;
 
       $("monthLabel").textContent = api.month_label ? ("• " + api.month_label) : "";
       $("updatedAt").textContent = fmtDT(api.updated_at);
+      $("totalTrains").textContent = String((api.trains || []).length);
 
-      const trains = clamp3(api.trains || []);
-      renderSummary(trains);
-      renderTrainCards(trains);
-      renderTrainTable(trains);
+      renderBanners(api);
+
+      const trainsFiltered = filterTrains(api.trains || []);
+      renderSummary(trainsFiltered);
+      renderTrainCards(trainsFiltered);
+      renderTrainTable(trainsFiltered);
+
       renderTodayRisk(api);
       renderAlerts(api);
-
-    }catch(err){
-      console.error(err);
-      showToast("Не удалось загрузить данные", String(err && err.message ? err.message : err));
     }
-  }
 
-  function schedule(){
-    if(timer){ clearInterval(timer); timer = null; }
-    const sec = Number(localStorage.getItem(LS_REFRESH) || DEFAULT_REFRESH);
-    if(sec > 0){
-      timer = setInterval(load, sec*1000);
+    // =====================
+    // Data load
+    // =====================
+    async function load(){
+      const url = localStorage.getItem(LS_URL) || DEFAULT_URL;
+      const target = localStorage.getItem(LS_TARGET) || DEFAULT_TARGET;
+
+      $("srcLabel").textContent = url ? url : "не задан";
+      $("targetLabel").textContent = target || "Шакша";
+
+      if(!url){
+        $("monthLabel").textContent = "";
+        $("updatedAt").textContent = "—";
+        $("trainCards").innerHTML = `<div class="muted" style="font-weight:800">Откройте «Настройки» и укажите URL webhook n8n.</div>`;
+        $("trainTableBody").innerHTML = `<tr><td colspan="9" class="muted" style="font-weight:800">Нет данных</td></tr>`;
+        $("riskBody").innerHTML = `<tr><td colspan="5" class="muted" style="font-weight:800">Нет данных</td></tr>`;
+        $("alertsBody").innerHTML = `<tr><td colspan="4" class="muted" style="font-weight:800">Нет данных</td></tr>`;
+        $("banners").innerHTML = "";
+        return;
+      }
+
+      try{
+        const res = await fetch(url, { cache: "no-store" });
+        if(!res.ok) throw new Error(`HTTP ${res.status}`);
+        const api = await res.json();
+        renderAll(api);
+      }catch(err){
+        console.error(err);
+        showToast("Не удалось загрузить данные", String(err && err.message ? err.message : err));
+      }
     }
-  }
 
-  // =====================
-  // UI events
-  // =====================
-  $("btnRefresh").addEventListener("click", load);
+    function schedule(){
+      if(timer){ clearInterval(timer); timer = null; }
+      const sec = Number(localStorage.getItem(LS_REFRESH) || DEFAULT_REFRESH);
+      if(sec > 0){
+        timer = setInterval(load, sec*1000);
+      }
+    }
 
-  $("btnSettings").addEventListener("click", ()=>{
-    $("inpUrl").value = localStorage.getItem(LS_URL) || DEFAULT_URL;
-    $("selRefresh").value = String(localStorage.getItem(LS_REFRESH) || DEFAULT_REFRESH);
-    $("inpTarget").value = localStorage.getItem(LS_TARGET) || DEFAULT_TARGET;
-    $("modal").classList.add("show");
-  });
+    // =====================
+    // Settings modal
+    // =====================
+    function initSettings(){
+      $("btnSettings").addEventListener("click", ()=>{
+        $("inpUrl").value = localStorage.getItem(LS_URL) || DEFAULT_URL;
+        $("selRefresh").value = String(localStorage.getItem(LS_REFRESH) || DEFAULT_REFRESH);
+        $("inpTarget").value = localStorage.getItem(LS_TARGET) || DEFAULT_TARGET;
+        $("modal").classList.add("show");
+      });
 
-  $("btnClose").addEventListener("click", ()=> $("modal").classList.remove("show"));
-  $("modal").addEventListener("click", (e)=>{
-    if(e.target === $("modal")) $("modal").classList.remove("show");
-  });
+      $("btnClose").addEventListener("click", ()=> $("modal").classList.remove("show"));
+      $("modal").addEventListener("click", (e)=>{
+        if(e.target === $("modal")) $("modal").classList.remove("show");
+      });
 
-  $("btnSave").addEventListener("click", ()=>{
-    localStorage.setItem(LS_URL, $("inpUrl").value.trim());
-    localStorage.setItem(LS_REFRESH, $("selRefresh").value);
-    localStorage.setItem(LS_TARGET, $("inpTarget").value.trim() || "Шакша");
-    $("modal").classList.remove("show");
+      $("btnSave").addEventListener("click", ()=>{
+        localStorage.setItem(LS_URL, $("inpUrl").value.trim());
+        localStorage.setItem(LS_REFRESH, $("selRefresh").value);
+        localStorage.setItem(LS_TARGET, $("inpTarget").value.trim() || "Шакша");
+        $("modal").classList.remove("show");
+        schedule();
+        load();
+        showToast("Сохранено", "Настройки применены.");
+      });
+    }
+
+    // =====================
+    // Init
+    // =====================
+    $("btnRefresh").addEventListener("click", load);
+    initTabs();
+    initSettings();
+
     schedule();
     load();
-    showToast("Сохранено", "Настройки применены.");
-  });
-
-  // init
-  schedule();
-  load();
-</script>
+  </script>
 </body>
 </html>
