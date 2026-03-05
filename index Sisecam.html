@@ -6,32 +6,32 @@
   <title>VELES — Train Monitor</title>
   <style>
     :root{
-      --bg:#0b1220;
-      --card:#0f1a2e;
-      --card2:#0c1628;
-      --text:#e7edf7;
-      --muted:#9fb0c7;
-      --line:rgba(255,255,255,.08);
-      --ok:#25c26a;
-      --warn:#ffb020;
-      --bad:#ff4d4f;
-      --info:#4da3ff;
+      --bg:#f0f4f8;
+      --card:#ffffff;
+      --card2:#f8fafc;
+      --text:#1a2332;
+      --muted:#64748b;
+      --line:rgba(0,0,0,.10);
+      --ok:#16a34a;
+      --warn:#d97706;
+      --bad:#dc2626;
+      --info:#2563eb;
     }
     *{box-sizing:border-box}
     body{
       margin:0;
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
       color:var(--text);
-      background: radial-gradient(1200px 600px at 20% 0%, rgba(77,163,255,.18), transparent 60%),
-                  radial-gradient(900px 500px at 80% 10%, rgba(37,194,106,.16), transparent 55%),
-                  radial-gradient(800px 500px at 50% 100%, rgba(255,176,32,.12), transparent 55%),
+      background: radial-gradient(1200px 600px at 20% 0%, rgba(77,163,255,.10), transparent 60%),
+                  radial-gradient(900px 500px at 80% 10%, rgba(37,194,106,.08), transparent 55%),
+                  radial-gradient(800px 500px at 50% 100%, rgba(255,176,32,.07), transparent 55%),
                   var(--bg);
       min-height:100vh;
     }
     header{
       position:sticky; top:0;
       backdrop-filter: blur(10px);
-      background: rgba(11,18,32,.68);
+      background: rgba(255,255,255,.85);
       border-bottom:1px solid var(--line);
       z-index:10;
     }
@@ -55,7 +55,7 @@
     }
     .pill{
       border:1px solid var(--line);
-      background: rgba(255,255,255,.03);
+      background: rgba(0,0,0,.04);
       border-radius:999px;
       padding:8px 10px;
       display:flex; gap:8px; align-items:center;
@@ -64,7 +64,7 @@
     .btn{
       cursor:pointer;
       border:1px solid var(--line);
-      background: rgba(255,255,255,.05);
+      background: rgba(0,0,0,.05);
       color:var(--text);
       border-radius:12px;
       padding:10px 12px;
@@ -72,7 +72,7 @@
       font-size:12px;
       transition:.15s transform, .15s background;
     }
-    .btn:hover{background: rgba(255,255,255,.08)}
+    .btn:hover{background: rgba(0,0,0,.09)}
     .btn:active{transform: translateY(1px)}
     main .wrap{padding-top:18px}
     .grid{
@@ -82,11 +82,11 @@
     }
     .card{
       grid-column: span 4;
-      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      background: linear-gradient(180deg, #ffffff, #f8fafc);
       border:1px solid var(--line);
       border-radius:20px;
       padding:14px;
-      box-shadow: 0 18px 45px rgba(0,0,0,.35);
+      box-shadow: 0 4px 20px rgba(0,0,0,.08);
       position:relative;
       overflow:hidden;
     }
@@ -114,7 +114,7 @@
       font-weight:800;
       letter-spacing:.2px;
       border:1px solid var(--line);
-      background: rgba(0,0,0,.18);
+      background: rgba(0,0,0,.06);
       white-space:nowrap;
     }
     .badge.ok{color:var(--ok); border-color: rgba(37,194,106,.35); background: rgba(37,194,106,.08)}
@@ -128,8 +128,8 @@
       gap:10px;
     }
     .kv{
-      background: rgba(0,0,0,.14);
-      border:1px solid rgba(255,255,255,.06);
+      background: rgba(0,0,0,.04);
+      border:1px solid rgba(0,0,0,.07);
       border-radius:16px;
       padding:10px;
     }
@@ -141,13 +141,13 @@
       display:flex; justify-content:space-between; gap:10px; align-items:center;
       color:var(--muted);
       font-size:11px;
-      border-top:1px solid rgba(255,255,255,.06);
+      border-top:1px solid rgba(0,0,0,.07);
       padding-top:10px;
     }
     .err{
-      border:1px solid rgba(255,77,79,.35);
-      background: rgba(255,77,79,.08);
-      color: #ffd6d6;
+      border:1px solid rgba(220,38,38,.3);
+      background: rgba(220,38,38,.06);
+      color: #7f1d1d;
       border-radius:16px;
       padding:12px 14px;
       font-size:13px;
@@ -354,7 +354,11 @@
       const text = await res.text();
       const table = csvParse(text);
       if(table.length < 2) {
+        const preview = table.length === 1
+          ? "Заголовки найдены, но строк данных нет.\nКолонки: " + table[0].join(", ")
+          : "CSV пустой (0 строк). Возможно, загружается не тот лист.\nДобавьте &gid=XXXXXXX к CSV_URL для листа API_TRAINS.";
         setPill("⚠️ пусто");
+        setError(preview);
         render([]);
         return;
       }
