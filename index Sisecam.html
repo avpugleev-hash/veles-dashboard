@@ -3,404 +3,588 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>VELES — Train Monitor</title>
+  <title>ВЕЛЕС — Мониторинг рейсов</title>
   <style>
-    :root{
-      --bg:#f0f4f8;
-      --card:#ffffff;
-      --card2:#f8fafc;
-      --text:#1a2332;
-      --muted:#64748b;
-      --line:rgba(0,0,0,.10);
-      --ok:#16a34a;
-      --warn:#d97706;
-      --bad:#dc2626;
-      --info:#2563eb;
+    :root {
+      --blue: #2563eb;
+      --blue-bg: #eff6ff;
+      --green: #16a34a;
+      --green-bg: #f0fdf4;
+      --yellow: #d97706;
+      --yellow-bg: #fffbeb;
+      --red: #dc2626;
+      --red-bg: #fef2f2;
+      --purple-bg: #faf5ff;
+      --purple: #7e22ce;
+      --text: #111827;
+      --text2: #6b7280;
+      --border: #e5e7eb;
+      --bg: #f3f4f6;
     }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
-      color:var(--text);
-      background: radial-gradient(1200px 600px at 20% 0%, rgba(77,163,255,.10), transparent 60%),
-                  radial-gradient(900px 500px at 80% 10%, rgba(37,194,106,.08), transparent 55%),
-                  radial-gradient(800px 500px at 50% 100%, rgba(255,176,32,.07), transparent 55%),
-                  var(--bg);
-      min-height:100vh;
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.4;
     }
-    header{
-      position:sticky; top:0;
-      backdrop-filter: blur(10px);
-      background: rgba(255,255,255,.85);
-      border-bottom:1px solid var(--line);
-      z-index:10;
+
+    /* HEADER */
+    header {
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 20;
     }
-    .wrap{max-width:1200px;margin:0 auto;padding:16px 18px}
-    .top{
-      display:flex; gap:12px; align-items:center; justify-content:space-between;
-      flex-wrap:wrap;
+    .header-inner {
+      max-width: 1400px; margin: 0 auto;
+      padding: 0 24px;
+      height: 60px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
     }
-    .brand{
-      display:flex; gap:12px; align-items:center;
+    .brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .brand-logo {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%);
+      display: flex; align-items: center; justify-content: center;
     }
-    .logo{
-      width:36px;height:36px;border-radius:12px;
-      background: linear-gradient(135deg, rgba(77,163,255,.95), rgba(37,194,106,.9));
-      box-shadow:0 10px 30px rgba(0,0,0,.35);
+    .brand-logo svg { width: 22px; height: 22px; fill: #fff; }
+    .brand-name { font-size: 15px; font-weight: 800; color: var(--blue); line-height: 1.2; }
+    .brand-sub { font-size: 11px; color: var(--text2); }
+    .header-center { text-align: center; flex: 1; }
+    .header-center h1 { font-size: 17px; font-weight: 700; }
+    .header-center p { font-size: 12px; color: var(--text2); margin-top: 1px; }
+    .header-right { font-size: 12px; color: var(--text2); text-align: right; flex-shrink: 0; }
+    .header-right span { font-weight: 700; color: var(--text); }
+
+    /* PAGE */
+    .page { max-width: 1400px; margin: 0 auto; padding: 16px 24px 32px; }
+
+    /* ERROR BANNER */
+    .err-banner {
+      background: #fef2f2; border: 1px solid #fecaca;
+      border-radius: 8px; padding: 12px 14px;
+      color: #991b1b; font-size: 13px; margin-bottom: 14px;
+      white-space: pre-wrap;
     }
-    h1{font-size:18px;margin:0}
-    .sub{color:var(--muted); font-size:12px}
-    .controls{
-      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+
+    /* ALERTS */
+    .alert-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+    .alert {
+      display: flex; align-items: flex-start; gap: 10px;
+      border-radius: 8px; padding: 12px 14px; border: 1px solid;
     }
-    .pill{
-      border:1px solid var(--line);
-      background: rgba(0,0,0,.04);
-      border-radius:999px;
-      padding:8px 10px;
-      display:flex; gap:8px; align-items:center;
-      font-size:12px; color:var(--muted);
+    .alert.red  { background: #fff5f5; border-color: #fecaca; }
+    .alert.yellow { background: #fffbeb; border-color: #fde68a; }
+    .alert-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+    .alert-body { flex: 1; min-width: 0; }
+    .alert-title { font-weight: 700; font-size: 13px; }
+    .alert.red    .alert-title { color: #b91c1c; }
+    .alert.yellow .alert-title { color: #92400e; }
+    .alert-desc { font-size: 12px; margin-top: 2px; }
+    .alert.red    .alert-desc { color: #ef4444; }
+    .alert.yellow .alert-desc { color: #b45309; }
+    .alert-close {
+      background: none; border: none; cursor: pointer;
+      color: var(--text2); font-size: 18px; line-height: 1;
+      padding: 0; flex-shrink: 0; margin-left: 8px;
     }
-    .btn{
-      cursor:pointer;
-      border:1px solid var(--line);
-      background: rgba(0,0,0,.05);
-      color:var(--text);
-      border-radius:12px;
-      padding:10px 12px;
-      font-weight:600;
-      font-size:12px;
-      transition:.15s transform, .15s background;
+    .alert-close:hover { color: var(--text); }
+
+    /* FILTER BAR */
+    .filter-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; margin-bottom: 14px; flex-wrap: wrap;
     }
-    .btn:hover{background: rgba(0,0,0,.09)}
-    .btn:active{transform: translateY(1px)}
-    main .wrap{padding-top:18px}
-    .grid{
-      display:grid;
-      grid-template-columns: repeat(12, 1fr);
-      gap:14px;
+    .filter-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tab {
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: #fff;
+      border-radius: 20px;
+      padding: 7px 16px;
+      font-size: 13px; font-weight: 500;
+      color: var(--text2);
+      transition: background .1s, color .1s, border-color .1s;
     }
-    .card{
-      grid-column: span 4;
-      background: linear-gradient(180deg, #ffffff, #f8fafc);
-      border:1px solid var(--line);
-      border-radius:20px;
-      padding:14px;
-      box-shadow: 0 4px 20px rgba(0,0,0,.08);
-      position:relative;
-      overflow:hidden;
+    .tab:hover { background: var(--blue-bg); color: var(--blue); border-color: #bfdbfe; }
+    .tab.active { background: var(--blue); color: #fff; border-color: var(--blue); font-weight: 600; }
+    .total-label { font-size: 13px; color: var(--text2); white-space: nowrap; }
+    .total-label span { font-weight: 700; color: var(--text); }
+
+    /* PANEL */
+    .panel { background: #fff; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .panel-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px; border-bottom: 1px solid var(--border);
+      flex-wrap: wrap; gap: 10px;
     }
-    @media (max-width: 1020px){ .card{grid-column: span 6;} }
-    @media (max-width: 640px){ .card{grid-column: span 12;} }
-    .card:before{
-      content:"";
-      position:absolute; inset:-80px -80px auto auto;
-      width:220px; height:220px;
-      background: radial-gradient(circle at 30% 30%, rgba(77,163,255,.22), transparent 60%);
-      transform: rotate(25deg);
-      pointer-events:none;
+    .panel-title { font-size: 15px; font-weight: 700; }
+    .legend { display: flex; gap: 14px; }
+    .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text2); }
+    .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+    .dot.plan    { background: #9ca3af; }
+    .dot.fact-ok { background: var(--green); }
+    .dot.fact-bad{ background: var(--red); }
+
+    /* COL HEADERS */
+    .col-headers {
+      display: grid;
+      grid-template-columns: 36px minmax(200px,1.8fr) 160px 200px 110px 170px;
+      padding: 8px 18px;
+      background: #f9fafb;
+      border-bottom: 1px solid var(--border);
+      font-size: 11px; font-weight: 600; color: var(--text2);
+      text-transform: uppercase; letter-spacing: .4px;
+      gap: 6px;
     }
-    .row{display:flex; justify-content:space-between; gap:10px; align-items:flex-start}
-    .title{
-      display:flex; flex-direction:column; gap:4px;
-      min-width:0;
+
+    /* TRAIN ROW */
+    .train-row { border-bottom: 1px solid var(--border); }
+    .train-row:last-child { border-bottom: none; }
+    .row-main {
+      display: grid;
+      grid-template-columns: 36px minmax(200px,1.8fr) 160px 200px 110px 170px;
+      align-items: center;
+      padding: 12px 18px;
+      cursor: pointer;
+      gap: 6px;
+      transition: background .1s;
     }
-    .train{font-size:16px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-    .route{font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-    .badge{
-      padding:6px 10px;
-      border-radius:999px;
-      font-size:12px;
-      font-weight:800;
-      letter-spacing:.2px;
-      border:1px solid var(--line);
-      background: rgba(0,0,0,.06);
-      white-space:nowrap;
+    .row-main:hover { background: #f9fafb; }
+
+    /* EXPAND BUTTON */
+    .expand-btn {
+      background: none; border: 1px solid var(--border);
+      border-radius: 4px; cursor: pointer;
+      color: var(--text2); font-size: 12px;
+      width: 22px; height: 22px;
+      display: flex; align-items: center; justify-content: center;
+      transition: transform .2s, border-color .1s;
+      flex-shrink: 0;
     }
-    .badge.ok{color:var(--ok); border-color: rgba(37,194,106,.35); background: rgba(37,194,106,.08)}
-    .badge.warn{color:var(--warn); border-color: rgba(255,176,32,.35); background: rgba(255,176,32,.08)}
-    .badge.bad{color:var(--bad); border-color: rgba(255,77,79,.35); background: rgba(255,77,79,.08)}
-    .badge.info{color:var(--info); border-color: rgba(77,163,255,.35); background: rgba(77,163,255,.08)}
-    .meta{
-      margin-top:12px;
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:10px;
+    .expand-btn:hover { border-color: var(--blue); color: var(--blue); }
+    .expand-btn.open { transform: rotate(90deg); }
+
+    /* ROUTE INFO */
+    .route-name { font-weight: 700; font-size: 14px; }
+    .route-num  { font-size: 12px; color: var(--text2); margin-top: 2px; }
+    .wagons-list { margin-top: 5px; display: flex; flex-direction: column; gap: 2px; }
+    .wagon-id { font-size: 11px; color: var(--text2); display: flex; align-items: center; gap: 4px; }
+    .wagon-icon { font-size: 10px; }
+
+    /* DATE CELL */
+    .date-cell { font-size: 12px; }
+    .date-plan { color: var(--text2); }
+    .date-fact { font-weight: 600; margin-top: 2px; }
+    .date-fact.ok   { color: var(--green); }
+    .date-fact.late { color: var(--red); }
+    .date-dash { color: var(--text2); }
+
+    /* PROGRESS CELL */
+    .progress-text { font-size: 12px; font-weight: 600; }
+    .progress-sub  { font-size: 11px; color: var(--text2); margin-top: 1px; }
+    .progress-bar  { height: 5px; background: #e5e7eb; border-radius: 3px; overflow: hidden; margin: 4px 0 2px; }
+    .progress-fill { height: 100%; background: var(--blue); border-radius: 3px; transition: width .3s; }
+
+    /* STATUS BADGES */
+    .badge {
+      display: inline-block;
+      padding: 4px 10px; border-radius: 12px;
+      font-size: 11px; font-weight: 700; white-space: nowrap;
     }
-    .kv{
-      background: rgba(0,0,0,.04);
-      border:1px solid rgba(0,0,0,.07);
-      border-radius:16px;
-      padding:10px;
+    .badge.transit   { background: var(--blue-bg);   color: #1d4ed8; }
+    .badge.unloading { background: var(--yellow-bg); color: #92400e; }
+    .badge.done      { background: var(--green-bg);  color: #15803d; }
+    .badge.planned   { background: #f9fafb; color: #6b7280; border: 1px solid var(--border); }
+    .badge.loading   { background: var(--purple-bg); color: var(--purple); }
+
+    /* ACTION BUTTONS */
+    .actions-cell { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+    .action-btn {
+      cursor: pointer; border: 1px solid var(--border);
+      background: #fff; color: var(--text);
+      border-radius: 7px; padding: 5px 10px;
+      font-size: 12px; font-weight: 500;
+      display: flex; align-items: center; gap: 4px;
+      transition: background .1s;
+      white-space: nowrap;
     }
-    .k{font-size:11px; color:var(--muted)}
-    .v{margin-top:4px; font-size:14px; font-weight:800}
-    .small{font-size:12px; font-weight:700; color:var(--text)}
-    .footer{
-      margin-top:14px;
-      display:flex; justify-content:space-between; gap:10px; align-items:center;
-      color:var(--muted);
-      font-size:11px;
-      border-top:1px solid rgba(0,0,0,.07);
-      padding-top:10px;
+    .action-btn:hover { background: #f3f4f6; }
+
+    /* EXPANDED ROW */
+    .row-expanded {
+      background: #f9fafb;
+      border-top: 1px solid var(--border);
+      padding: 12px 18px 14px 54px;
     }
-    .err{
-      border:1px solid rgba(220,38,38,.3);
-      background: rgba(220,38,38,.06);
-      color: #7f1d1d;
-      border-radius:16px;
-      padding:12px 14px;
-      font-size:13px;
-      margin-top:10px;
-      white-space:pre-wrap;
+    .location-line {
+      display: flex; align-items: center; gap: 6px;
+      color: var(--blue); font-size: 12px; font-weight: 600;
+      margin-bottom: 10px;
     }
-    .skeleton{
-      opacity:.7;
-      animation: pulse 1.2s ease-in-out infinite;
+    .location-dot { width: 8px; height: 8px; background: var(--blue); border-radius: 50%; }
+    .expanded-grid { display: flex; gap: 24px; flex-wrap: wrap; }
+    .expanded-kv { }
+    .expanded-k { font-size: 11px; color: var(--text2); }
+    .expanded-v { font-size: 13px; font-weight: 600; margin-top: 2px; }
+
+    /* EMPTY */
+    .empty-state { padding: 48px 24px; text-align: center; color: var(--text2); font-size: 14px; }
+
+    /* RESPONSIVE */
+    @media (max-width: 960px) {
+      .col-headers { display: none; }
+      .row-main {
+        grid-template-columns: 36px 1fr;
+        grid-template-rows: auto;
+      }
+      .row-main > *:not(:nth-child(1)):not(:nth-child(2)) { grid-column: 2; }
     }
-    @keyframes pulse { 0%,100%{opacity:.6} 50%{opacity:.95} }
+    @media (max-width: 600px) {
+      .header-center { display: none; }
+      .page { padding: 12px 14px 24px; }
+    }
   </style>
 </head>
 <body>
+
 <header>
-  <div class="wrap">
-    <div class="top">
-      <div class="brand">
-        <div class="logo" aria-hidden="true"></div>
-        <div>
-          <h1>VELES — Train Monitor</h1>
-          <div class="sub">Источник: Google Sheets → Published CSV (лист API_TRAINS)</div>
-        </div>
+  <div class="header-inner">
+    <div class="brand">
+      <div class="brand-logo">
+        <svg viewBox="0 0 24 24"><path d="M4 16v2h2a2 2 0 004 0h4a2 2 0 004 0h2v-2H4zM17 6H7L4.5 12H19.5L17 6zM3 13v3h18v-3H3z"/></svg>
       </div>
-      <div class="controls">
-        <div class="pill" id="statusPill">⏳ загрузка…</div>
-        <button class="btn" id="refreshBtn">Обновить</button>
+      <div>
+        <div class="brand-name">ВЕЛЕС</div>
+        <div class="brand-sub">Транспортная компания</div>
       </div>
     </div>
-    <div id="errorBox" class="err" style="display:none"></div>
+    <div class="header-center">
+      <h1>Мониторинг рейсов</h1>
+      <p>ООО «РСХ»</p>
+    </div>
+    <div class="header-right">
+      Последнее обновление: <span id="lastUpdate">—</span>
+    </div>
   </div>
 </header>
-<main>
-  <div class="wrap">
-    <div class="grid" id="grid"></div>
+
+<div class="page">
+  <div id="errBanner" class="err-banner" style="display:none"></div>
+  <div id="alertList" class="alert-list"></div>
+
+  <div class="filter-bar">
+    <div class="filter-tabs" id="filterTabs">
+      <button class="tab active" data-filter="all">Все рейсы</button>
+      <button class="tab" data-filter="transit">В пути</button>
+      <button class="tab" data-filter="unloading">Под выгрузкой</button>
+      <button class="tab" data-filter="done">Завершённые</button>
+      <button class="tab" data-filter="planned">В плане</button>
+    </div>
+    <div class="total-label">Всего рейсов: <span id="totalCount">—</span></div>
   </div>
-</main>
+
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title" id="panelTitle">График движения</div>
+      <div class="legend">
+        <div class="legend-item"><span class="dot plan"></span> План</div>
+        <div class="legend-item"><span class="dot fact-ok"></span> Факт (в графике)</div>
+        <div class="legend-item"><span class="dot fact-bad"></span> Факт (задержка)</div>
+      </div>
+    </div>
+    <div class="col-headers">
+      <div></div>
+      <div>Маршрут и Состав</div>
+      <div>Отправка груженого</div>
+      <div>Прибытие на выгрузку</div>
+      <div>Статус</div>
+      <div>Действия</div>
+    </div>
+    <div id="tableBody"></div>
+  </div>
+</div>
+
 <script>
-  // Published CSV URL (лист API_TRAINS, Google Sheets → Файл → Поделиться → Опубликовать)
-  // Если лист API_TRAINS не первый — добавьте &gid=ВАШИ_ЦИФРЫ к URL ниже
   const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSXBERFavHCGXPd3ftSaIFRzWkLOO9k3yH0E1QKfL8LseyXoaXG3Ll11U8XTVU78BpJcv2DUM8-siSF/pub?output=csv&gid=1293717555";
-  // автообновление (сек)
   const REFRESH_EVERY_SEC = 60;
-  const grid = document.getElementById("grid");
-  const pill = document.getElementById("statusPill");
-  const errorBox = document.getElementById("errorBox");
-  document.getElementById("refreshBtn").addEventListener("click", () => load(true));
-  function setError(msg){
-    if(!msg){
-      errorBox.style.display="none";
-      errorBox.textContent="";
-      return;
-    }
-    errorBox.style.display="block";
-    errorBox.textContent=msg;
+
+  let allRows = [];
+  let currentFilter = "all";
+
+  const tableBody  = document.getElementById("tableBody");
+  const alertList  = document.getElementById("alertList");
+  const errBanner  = document.getElementById("errBanner");
+  const lastUpdate = document.getElementById("lastUpdate");
+  const totalCount = document.getElementById("totalCount");
+  const panelTitle = document.getElementById("panelTitle");
+
+  document.getElementById("filterTabs").addEventListener("click", e => {
+    const btn = e.target.closest(".tab");
+    if (!btn) return;
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    btn.classList.add("active");
+    currentFilter = btn.dataset.filter;
+    renderTable();
+  });
+
+  function esc(s) {
+    return String(s ?? "")
+      .replaceAll("&", "&amp;").replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;").replaceAll('"', "&quot;");
   }
-  function setPill(text){ pill.textContent = text; }
-  function csvParse(text){
-    // простой CSV парсер с поддержкой кавычек
+
+  function csvParse(text) {
     const rows = [];
     let row = [], cur = "", inQ = false;
-    for(let i=0;i<text.length;i++){
-      const ch = text[i];
-      const next = text[i+1];
-      if(inQ){
-        if(ch === '"' && next === '"'){ cur += '"'; i++; }
-        else if(ch === '"'){ inQ = false; }
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i], nx = text[i + 1];
+      if (inQ) {
+        if (ch === '"' && nx === '"') { cur += '"'; i++; }
+        else if (ch === '"') { inQ = false; }
         else { cur += ch; }
       } else {
-        if(ch === '"'){ inQ = true; }
-        else if(ch === ","){ row.push(cur); cur=""; }
-        else if(ch === "\n"){
-          row.push(cur); cur="";
-          // убираем \r
-          rows.push(row.map(x => x.replace(/\r/g,"")));
-          row=[];
-        } else { cur += ch; }
+        if (ch === '"') { inQ = true; }
+        else if (ch === ',') { row.push(cur); cur = ""; }
+        else if (ch === '\n') { row.push(cur); cur = ""; rows.push(row.map(x => x.replace(/\r/g, ""))); row = []; }
+        else { cur += ch; }
       }
     }
-    if(cur.length || row.length){
-      row.push(cur);
-      rows.push(row.map(x => x.replace(/\r/g,"")));
-    }
+    if (cur.length || row.length) { row.push(cur); rows.push(row.map(x => x.replace(/\r/g, ""))); }
     return rows.filter(r => r.some(c => String(c).trim() !== ""));
   }
-  function idxMap(headers){
+
+  function idxMap(headers) {
     const m = {};
-    headers.forEach((h,i)=> m[String(h||"").trim()] = i);
+    headers.forEach((h, i) => m[String(h || "").trim()] = i);
     return m;
   }
-  function n(v){
-    const x = Number(String(v||"").replace(",", "."));
-    return Number.isFinite(x) ? x : 0;
+
+  function stateKey(state) {
+    const s = String(state || "").toLowerCase();
+    if (s.includes("пути"))           return "transit";
+    if (s.includes("выгруз"))         return "unloading";
+    if (s.includes("выполн") || s.includes("завершён") || s.includes("архив")) return "done";
+    return "planned";
   }
-  function badgeClass(overall, state){
-    const o = String(overall||"").toUpperCase().trim();
-    if(o === "ALERT" || o === "BAD") return "bad";
-    if(o === "WARN" || o === "WARNING") return "warn";
-    if(o === "OK") return "ok";
-    // если overall_status пустой — красим по состоянию
-    const s = String(state||"").toLowerCase();
-    if(s.includes("выгруз")) return "warn";
-    if(s.includes("погруз")) return "info";
-    if(s.includes("пути")) return "ok";
-    return "info";
+
+  function stateLabel(state) {
+    const map = {
+      transit:   { label: "В пути",         cls: "transit"   },
+      unloading: { label: "Под выгрузкой",  cls: "unloading" },
+      done:      { label: "Выполнен",        cls: "done"      },
+      planned:   { label: "В плане",         cls: "planned"   },
+    };
+    const s = String(state || "").trim();
+    if (!s) return { label: "—", cls: "planned" };
+    const sl = s.toLowerCase();
+    if (sl.includes("погрузк") || sl.includes("загрузк")) return { label: "Погрузка", cls: "loading" };
+    return map[stateKey(s)] || { label: s, cls: "planned" };
   }
-  function renderSkeleton(){
-    grid.innerHTML = "";
-    for(let i=0;i<3;i++){
-      const c = document.createElement("div");
-      c.className="card skeleton";
-      c.innerHTML = `
-        <div class="row">
-          <div class="title">
-            <div class="train">Загрузка…</div>
-            <div class="route">—</div>
+
+  function parseDate(str) {
+    const [dd, mm, yyyy] = String(str || "").split(".").map(Number);
+    if (!dd || !mm || !yyyy) return null;
+    return new Date(yyyy, mm - 1, dd);
+  }
+
+  function dateCellHtml(plan, fact, etaLabel) {
+    if (!plan && !fact && !etaLabel) return '<div class="date-cell"><span class="date-dash">—</span></div>';
+    let html = '<div class="date-cell">';
+    if (plan) html += `<div class="date-plan">${esc(plan)}</div>`;
+    if (fact) {
+      const late = (() => { const p = parseDate(plan), f = parseDate(fact); return p && f && f > p; })();
+      html += `<div class="date-fact ${late ? 'late' : 'ok'}">(${esc(fact)})</div>`;
+    } else if (etaLabel) {
+      html += `<div class="date-fact late">(ожидается: ${esc(etaLabel)})</div>`;
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function progressHtml(r) {
+    const total = Number(r.wagons_total) || 0;
+    const done  = Number(r.wagons_in_unloading) || 0;
+    if (!total) return '<div class="date-cell"><span class="date-dash">—</span></div>';
+    const pct    = Math.min(100, Math.round(done / total * 100));
+    const remain = total - done;
+    return `
+      <div>
+        <div class="progress-text">${done} из ${total} ваг.(${pct}%)</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+        <div class="progress-sub">Осталось: ${remain} ваг.</div>
+      </div>`;
+  }
+
+  function renderAlerts(rows) {
+    alertList.innerHTML = "";
+    rows
+      .filter(r => { const o = String(r.overall_status || "").toUpperCase(); return o === "BAD" || o === "ALERT" || o === "WARN" || o === "WARNING"; })
+      .slice(0, 5)
+      .forEach(r => {
+        const isBad = ["BAD","ALERT"].includes(String(r.overall_status||"").toUpperCase());
+        const cls   = isBad ? "red" : "yellow";
+        const title = isBad
+          ? `Внимание! Задержка рейса ${esc(r.train_id || r.train_name || "")}`
+          : `Рейс ${esc(r.train_id || r.train_name || "")} подходит к станции выгрузки`;
+        const desc  = esc(r.alert_text || r.current_state || "");
+        const div   = document.createElement("div");
+        div.className = `alert ${cls}`;
+        div.innerHTML = `
+          <div class="alert-icon">⚠</div>
+          <div class="alert-body">
+            <div class="alert-title">${title}</div>
+            ${desc ? `<div class="alert-desc">${desc}</div>` : ""}
           </div>
-          <div class="badge info">…</div>
+          <button class="alert-close" title="Закрыть">×</button>`;
+        div.querySelector(".alert-close").addEventListener("click", () => div.remove());
+        alertList.appendChild(div);
+      });
+  }
+
+  function renderTable() {
+    const filtered = currentFilter === "all"
+      ? allRows
+      : allRows.filter(r => stateKey(r.current_state) === currentFilter);
+
+    totalCount.textContent = allRows.length;
+    tableBody.innerHTML = "";
+
+    if (!filtered.length) {
+      tableBody.innerHTML = '<div class="empty-state">Рейсы не найдены</div>';
+      return;
+    }
+
+    for (const r of filtered) {
+      const st      = stateLabel(r.current_state);
+      const isUnl   = stateKey(r.current_state) === "unloading";
+      const isDone  = stateKey(r.current_state) === "done";
+      const wagIds  = String(r.wagon_ids || "").split(/[,;]+/).map(s => s.trim()).filter(Boolean);
+
+      const arrivalCol = isUnl
+        ? progressHtml(r)
+        : dateCellHtml(r.arrival_plan, r.arrival_fact, r.arrival_eta);
+
+      const wagonListHtml = wagIds.length
+        ? `<div class="wagons-list">
+            ${wagIds.slice(0, 4).map(w => `<span class="wagon-id"><span class="wagon-icon">☐</span>${esc(w)}</span>`).join("")}
+            ${wagIds.length > 4 ? `<span style="color:var(--text2);font-size:11px">+${wagIds.length - 4} ещё</span>` : ""}
+          </div>` : "";
+
+      const row = document.createElement("div");
+      row.className = "train-row";
+      row.innerHTML = `
+        <div class="row-main">
+          <button class="expand-btn" title="Подробнее">›</button>
+          <div>
+            <div class="route-name">${esc(r.route_name || "—")}</div>
+            <div class="route-num">${esc(r.train_id || "")}${r.wagons_total ? " / " + esc(r.wagons_total) + " ваг." : ""}</div>
+            ${wagonListHtml}
+          </div>
+          ${dateCellHtml(r.departure_plan, r.departure_fact, "")}
+          ${arrivalCol}
+          <div><span class="badge ${st.cls}">${esc(st.label)}</span></div>
+          <div class="actions-cell">
+            <button class="action-btn">📄 Отчет</button>
+            <button class="action-btn">📅 Перенос</button>
+            ${isDone ? '<button class="action-btn">🗂 Архив</button>' : ""}
+          </div>
         </div>
-        <div class="meta">
-          <div class="kv"><div class="k">Станция</div><div class="v">—</div></div>
-          <div class="kv"><div class="k">Обновлено</div><div class="v small">—</div></div>
-          <div class="kv"><div class="k">Всего вагонов</div><div class="v">—</div></div>
-          <div class="kv"><div class="k">Погр / В пути / Выгр</div><div class="v small">—</div></div>
-        </div>
-        <div class="footer"><div>—</div><div>—</div></div>
-      `;
-      grid.appendChild(c);
+        <div class="row-expanded" style="display:none">
+          ${r.current_station ? `<div class="location-line"><span class="location-dot"></span>Сейчас: ${esc(r.current_station)}</div>` : ""}
+          <div class="expanded-grid">
+            ${r.dislocation_updated_at ? `<div class="expanded-kv"><div class="expanded-k">Обновлено</div><div class="expanded-v">${esc(r.dislocation_updated_at)}</div></div>` : ""}
+            ${r.wagons_in_transit   ? `<div class="expanded-kv"><div class="expanded-k">В пути вагонов</div><div class="expanded-v">${esc(r.wagons_in_transit)}</div></div>` : ""}
+            ${r.wagons_in_loading   ? `<div class="expanded-kv"><div class="expanded-k">На погрузке</div><div class="expanded-v">${esc(r.wagons_in_loading)}</div></div>` : ""}
+            ${r.norm_unload_days    ? `<div class="expanded-kv"><div class="expanded-k">Норма выгр., сут.</div><div class="expanded-v">${esc(r.norm_unload_days)}</div></div>` : ""}
+            ${r.fact_unload_days    ? `<div class="expanded-kv"><div class="expanded-k">Факт выгр., сут.</div><div class="expanded-v">${esc(r.fact_unload_days)}</div></div>` : ""}
+          </div>
+        </div>`;
+
+      const mainRow    = row.querySelector(".row-main");
+      const expandedEl = row.querySelector(".row-expanded");
+      const expandBtn  = row.querySelector(".expand-btn");
+
+      mainRow.addEventListener("click", e => {
+        if (e.target.closest(".action-btn")) return;
+        const open = expandedEl.style.display === "none";
+        expandedEl.style.display = open ? "block" : "none";
+        expandBtn.classList.toggle("open", open);
+      });
+
+      tableBody.appendChild(row);
     }
   }
-  function render(rows){
-    grid.innerHTML = "";
-    for(const r of rows){
-      const state = r.current_state || "";
-      const overall = r.overall_status || "";
-      const badge = badgeClass(overall, state);
-      const wagTotal = n(r.wagons_total);
-      const wLoad = n(r.wagons_in_loading);
-      const wTransit = n(r.wagons_in_transit);
-      const wUnl = n(r.wagons_in_unloading);
-      const card = document.createElement("div");
-      card.className="card";
-      card.innerHTML = `
-        <div class="row">
-          <div class="title">
-            <div class="train">${escapeHtml(r.train_name || r.train_id || "—")}</div>
-            <div class="route">${escapeHtml(r.route_name || "—")}</div>
-          </div>
-          <div class="badge ${badge}">${escapeHtml(state || overall || "—")}</div>
-        </div>
-        <div class="meta">
-          <div class="kv">
-            <div class="k">Текущая станция</div>
-            <div class="v">${escapeHtml(r.current_station || "—")}</div>
-          </div>
-          <div class="kv">
-            <div class="k">Обновлено</div>
-            <div class="v small">${escapeHtml(r.dislocation_updated_at || "—")}</div>
-          </div>
-          <div class="kv">
-            <div class="k">Всего вагонов</div>
-            <div class="v">${wagTotal}</div>
-          </div>
-          <div class="kv">
-            <div class="k">Погрузка / В пути / Выгрузка</div>
-            <div class="v small">${wLoad} / ${wTransit} / ${wUnl}</div>
-          </div>
-          <div class="kv">
-            <div class="k">Норма выгрузки (сут)</div>
-            <div class="v">${r.norm_unload_days || "—"}</div>
-          </div>
-          <div class="kv">
-            <div class="k">Факт выгрузки (сут)</div>
-            <div class="v">${r.fact_unload_days || "—"}</div>
-          </div>
-        </div>
-        <div class="footer">
-          <div>ID: ${escapeHtml(r.train_id || "—")}</div>
-          <div>Статус: ${escapeHtml(r.overall_status || "OK")}</div>
-        </div>
-      `;
-      grid.appendChild(card);
-    }
+
+  function setError(msg) {
+    if (!msg) { errBanner.style.display = "none"; errBanner.textContent = ""; return; }
+    errBanner.style.display = "block";
+    errBanner.textContent = msg;
   }
-  function escapeHtml(s){
-    return String(s ?? "")
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;")
-      .replaceAll("'","&#039;");
-  }
-  async function load(manual=false){
-    setError("");
-    if(!manual) renderSkeleton();
-    try{
-      if(!CSV_URL || CSV_URL.includes("PASTE_YOUR")) {
-        throw new Error("Не задан CSV_URL. Вставьте Published CSV ссылку из Google Sheets (лист API_TRAINS).");
-      }
-      setPill("🔄 обновление…");
+
+  async function load() {
+    try {
       const bust = (CSV_URL.includes("?") ? "&" : "?") + "t=" + Date.now();
-      const res = await fetch(CSV_URL + bust, { cache: "no-store" });
-      if(!res.ok) throw new Error("Fetch error: " + res.status + " " + res.statusText);
-      const text = await res.text();
+      const res  = await fetch(CSV_URL + bust, { cache: "no-store" });
+      if (!res.ok) throw new Error("HTTP " + res.status + " " + res.statusText);
+      const text  = await res.text();
       const table = csvParse(text);
-      if(table.length < 2) {
-        const preview = table.length === 1
-          ? "Заголовки найдены, но строк данных нет.\nКолонки: " + table[0].join(", ")
-          : "CSV пустой (0 строк). Возможно, загружается не тот лист.\nДобавьте &gid=XXXXXXX к CSV_URL для листа API_TRAINS.";
-        setPill("⚠️ пусто");
-        setError(preview);
-        render([]);
+
+      if (table.length < 2) {
+        setError(table.length === 1
+          ? "Заголовки найдены, строк данных нет. Колонки: " + table[0].join(", ")
+          : "CSV пустой. Возможно, загружается неверный лист.");
         return;
       }
-      const headers = table[0].map(h => String(h||"").trim());
+
+      setError("");
+      const headers = table[0].map(h => String(h || "").trim());
       const m = idxMap(headers);
-      // обязательные поля
-      const required = ["train_name","train_id","current_state","current_station","wagons_total"];
-      const missing = required.filter(k => m[k] === undefined);
-      if(missing.length){
-        throw new Error(
-          "В CSV не хватает колонок: " + missing.join(", ") + "\n" +
-          "Проверьте строку 1 листа API_TRAINS (должны быть ровно ваши заголовки)."
-        );
-      }
-      const rows = table.slice(1).map(arr => ({
-        train_name: arr[m["train_name"]],
-        train_id: arr[m["train_id"]],
-        route_name: arr[m["route_name"]],
-        current_state: arr[m["current_state"]],
-        current_station: arr[m["current_station"]],
-        dislocation_updated_at: arr[m["dislocation_updated_at"]],
-        wagons_total: arr[m["wagons_total"]],
-        wagons_in_loading: arr[m["wagons_in_loading"]],
-        wagons_in_transit: arr[m["wagons_in_transit"]],
-        wagons_in_unloading: arr[m["wagons_in_unloading"]],
-        norm_unload_days: arr[m["norm_unload_days"]],
-        fact_unload_days: arr[m["fact_unload_days"]],
-        overall_status: arr[m["overall_status"]],
-      }))
-      .filter(r => String(r.train_id||"").trim() || String(r.train_name||"").trim());
-      // сортировка по train_id
-      rows.sort((a,b)=> String(a.train_id||"").localeCompare(String(b.train_id||""), "ru"));
-      render(rows);
-      setPill(`✅ обновлено: ${new Date().toLocaleString("ru-RU")}`);
-    } catch(e){
-      setPill("❌ ошибка");
-      setError(String(e && e.message ? e.message : e));
-      grid.innerHTML = "";
+      const g = key => m[key] !== undefined ? arr => arr[m[key]] || "" : () => "";
+
+      allRows = table.slice(1).map(arr => ({
+        train_id:              g("train_id")(arr),
+        train_name:            g("train_name")(arr),
+        route_name:            g("route_name")(arr),
+        current_state:         g("current_state")(arr),
+        current_station:       g("current_station")(arr),
+        dislocation_updated_at:g("dislocation_updated_at")(arr),
+        wagons_total:          g("wagons_total")(arr),
+        wagons_in_loading:     g("wagons_in_loading")(arr),
+        wagons_in_transit:     g("wagons_in_transit")(arr),
+        wagons_in_unloading:   g("wagons_in_unloading")(arr),
+        norm_unload_days:      g("norm_unload_days")(arr),
+        fact_unload_days:      g("fact_unload_days")(arr),
+        overall_status:        g("overall_status")(arr),
+        departure_plan:        g("departure_plan")(arr),
+        departure_fact:        g("departure_fact")(arr),
+        arrival_plan:          g("arrival_plan")(arr),
+        arrival_fact:          g("arrival_fact")(arr),
+        arrival_eta:           g("arrival_eta")(arr),
+        wagon_ids:             g("wagon_ids")(arr),
+        alert_text:            g("alert_text")(arr),
+      })).filter(r => r.train_id || r.train_name);
+
+      allRows.sort((a, b) => String(a.train_id || "").localeCompare(String(b.train_id || ""), "ru"));
+
+      const now = new Date();
+      lastUpdate.textContent = now.toLocaleString("ru-RU", {
+        day: "2-digit", month: "2-digit", year: "numeric",
+        hour: "2-digit", minute: "2-digit"
+      });
+      const months = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
+      panelTitle.textContent = `График движения: ${months[now.getMonth()]} ${now.getFullYear()}`;
+
+      renderAlerts(allRows);
+      renderTable();
+    } catch (e) {
+      setError(String(e?.message || e));
     }
   }
-  load(false);
-  setInterval(()=>load(false), REFRESH_EVERY_SEC * 1000);
+
+  load();
+  setInterval(load, REFRESH_EVERY_SEC * 1000);
 </script>
 </body>
 </html>
