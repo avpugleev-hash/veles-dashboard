@@ -43,6 +43,9 @@ function onOpen() {
     .addSeparator()
     .addItem("Заполнить демо (3 рейса)", "fillDemoApiTrains")
     .addToUi();
+
+  // Автоматически создаём лист при открытии таблицы
+  initApiTrains();
 }
 
 /**
