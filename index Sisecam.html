@@ -186,8 +186,9 @@
   </div>
 </main>
 <script>
-  // ВСТАВЬТЕ ВАШ Published CSV URL:
-  const CSV_URL = "PASTE_YOUR_PUBLISHED_CSV_URL_HERE";
+  // Published CSV URL (лист API_TRAINS, Google Sheets → Файл → Поделиться → Опубликовать)
+  // Если лист API_TRAINS не первый — добавьте &gid=ВАШИ_ЦИФРЫ к URL ниже
+  const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSXBERFavHCGXPd3ftSaIFRzWkLOO9k3yH0E1QKfL8LseyXoaXG3Ll11U8XTVU78BpJcv2DUM8-siSF/pub?output=csv";
   // автообновление (сек)
   const REFRESH_EVERY_SEC = 60;
   const grid = document.getElementById("grid");
