@@ -3691,7 +3691,7 @@ if (natBodyEl && natPlanTotalEl && natFactTotalEl && natYieldTotalEl) {
   if (yieldMonthPanel && yieldMonthBody && yieldMonthTotalEl && toggleYieldMonth) {
     yieldMonthBody.innerHTML = '';
 
-    const nat = budgetCommercial.nat || {};
+    const nat = budgetCommercial ? (budgetCommercial.nat || {}) : {};
     const rows = nat.byProduct || [];
     const total = nat.total || null;
 
