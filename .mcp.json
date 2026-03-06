@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "google-sheets-veles": {
+      "type": "stdio",
+      "command": "python3",
+      "args": ["/home/user/veles-dashboard/mcp_google_sheets.py"],
+      "env": {
+        "SPREADSHEET_ID": "13Xrmh-cfWFoR3-9TGFq2OoYZGmKxDhUhfqXWXC_SMKM",
+        "GOOGLE_SERVICE_ACCOUNT_FILE": "/home/user/veles-dashboard/service_account.json"
+      }
+    }
+  }
+}
