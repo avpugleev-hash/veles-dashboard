@@ -21,7 +21,7 @@
       "typeVersion": 2,
       "position": [460, 300],
       "parameters": {
-        "jsCode": "const b = $json.body || {};\nreturn [{ json: {\n  client_name: (b.client_name || '').trim(),\n  comment:     (b.comment     || '').trim(),\n  login:       (b.login       || '').trim(),\n  updated_at:  b.updated_at   || new Date().toISOString()\n}}];"
+        "jsCode": "const b = $json.body || {};\nreturn [{ json: {\n  client_name: (b.client_name || '').trim(),\n  comment:     (b.comment     || '').trim(),\n  login:       (b.login       || '').trim(),\n  updated_at:  new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow', day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit' })\n}}];"
       }
     },
     {
