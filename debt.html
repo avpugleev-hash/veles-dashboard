@@ -89,14 +89,6 @@
     .toggle-icon { display:inline-block; width:16px; text-align:center; font-style:normal; margin-right:6px; transition:transform .2s; color:var(--text2); }
     .row-client.open .toggle-icon { transform:rotate(90deg); }
 
-    /* СТРОКА ДОГОВОРА */
-    .row-contract { background:#fafbfc; cursor:pointer; border-bottom:1px solid var(--border); }
-    .row-contract:hover { background:#f3f6fa; }
-    .row-contract td { padding:8px 14px 8px 32px; font-size:12px; color:var(--text); }
-    .row-contract td.r { text-align:right; white-space:nowrap; }
-    .row-contract.open .toggle-icon { transform:rotate(90deg); }
-    .row-contract .contract-name { color:var(--text2); font-weight:500; }
-
     /* СТРОКА УПД */
     .row-doc { background:#fff; border-bottom:1px solid #f0f0f0; }
     .row-doc:hover { background:#fffbf8; }
@@ -388,13 +380,11 @@ function renderTable() {
   const tbody = document.getElementById('mainBody');
   tbody.innerHTML = '';
 
-  // Группируем: клиент → договор → документы
+  // Группируем: клиент → документы
   const clientMap = new Map();
   docs.forEach(d => {
-    if (!clientMap.has(d.client)) clientMap.set(d.client, new Map());
-    const cm = clientMap.get(d.client);
-    if (!cm.has(d.contract)) cm.set(d.contract, []);
-    cm.get(d.contract).push(d);
+    if (!clientMap.has(d.client)) clientMap.set(d.client, []);
+    clientMap.get(d.client).push(d);
   });
 
   // Итоги по фильтру
@@ -409,11 +399,17 @@ function renderTable() {
   document.getElementById('fDays').textContent   = totDays ? totDays + ' д. (ср.)' : '—';
   document.getElementById('fCount').textContent  = `Клиентов: ${clientMap.size} / УПД: ${docs.length}`;
 
+  // Сортируем клиентов по убыванию просроченной задолженности
+  const sortedClients = [...clientMap.entries()].sort((a, b) => {
+    const overA = a[1].reduce((s,r)=>s+r.over_amt, 0);
+    const overB = b[1].reduce((s,r)=>s+r.over_amt, 0);
+    return overB - overA;
+  });
+
   // Рендерим клиентов
-  clientMap.forEach((contractMap, clientName) => {
-    const cliDocs = [...contractMap.values()].flat();
-    const cliBal  = cliDocs.reduce((s,r)=>s+r.balance, 0);
-    const cliOver = cliDocs.reduce((s,r)=>s+r.over_amt, 0);
+  sortedClients.forEach(([clientName, docList]) => {
+    const cliBal  = docList.reduce((s,r)=>s+r.balance, 0);
+    const cliOver = docList.reduce((s,r)=>s+r.over_amt, 0);
     const cliId   = 'c_' + Math.random().toString(36).slice(2);
 
     // Строка клиента
@@ -421,71 +417,37 @@ function renderTable() {
     trCli.className = 'row-client';
     trCli.dataset.group = cliId;
     trCli.innerHTML = `
-      <td><i class="toggle-icon">▶</i>${clientName}</td>
-      <td></td><td></td><td></td>
+      <td colspan="3"><i class="toggle-icon">▶</i>${clientName}</td>
+      <td class="r">${fmt(cliBal)}</td>
       <td class="r">${fmt(cliBal)}</td>
       <td class="r">${cliOver > 0 ? '<span class="badge-over">'+fmt(cliOver)+'</span>' : '<span class="badge-ok">нет</span>'}</td>
-      <td class="r"></td>`;
+      <td class="r" style="font-size:11px;color:var(--text2)">${docList.length} УПД</td>`;
     tbody.appendChild(trCli);
 
     trCli.addEventListener('click', () => {
       trCli.classList.toggle('open');
       const isOpen = trCli.classList.contains('open');
-      tbody.querySelectorAll(`[data-parent="${cliId}"]`).forEach(el => {
-        el.classList.toggle('hidden', !isOpen);
-        // Если закрываем клиента — закрываем и все договора
-        if (!isOpen && el.classList.contains('row-contract')) {
-          el.classList.remove('open');
-          const cid = el.dataset.group;
-          if (cid) tbody.querySelectorAll(`[data-parent="${cid}"]`).forEach(d => d.classList.add('hidden'));
-        }
-      });
+      tbody.querySelectorAll(`[data-parent="${cliId}"]`).forEach(el => el.classList.toggle('hidden', !isOpen));
     });
 
-    // Договора
-    contractMap.forEach((docList, contractName) => {
-      const conBal  = docList.reduce((s,r)=>s+r.balance, 0);
-      const conOver = docList.reduce((s,r)=>s+r.over_amt, 0);
-      const conId   = 'k_' + Math.random().toString(36).slice(2);
+    // УПД — сортировка по убыванию просроченной задолженности
+    docList.sort((a,b) => b.over_amt - a.over_amt).forEach(doc => {
+      const trDoc = document.createElement('tr');
+      trDoc.className = 'row-doc hidden';
+      trDoc.dataset.parent = cliId;
 
-      const trCon = document.createElement('tr');
-      trCon.className = 'row-contract hidden';
-      trCon.dataset.parent = cliId;
-      trCon.dataset.group  = conId;
-      trCon.innerHTML = `
-        <td><i class="toggle-icon">▶</i><span class="contract-name">${contractName || '—'}</span></td>
-        <td></td><td></td><td></td>
-        <td class="r">${fmt(conBal)}</td>
-        <td class="r">${conOver > 0 ? '<span class="badge-over">'+fmt(conOver)+'</span>' : '<span style="color:var(--text2)">—</span>'}</td>
-        <td class="r" style="font-size:11px;color:var(--text2)">${docList.length} УПД</td>`;
-      tbody.appendChild(trCon);
+      const daysBadge = doc.days_over > 0
+        ? `<span class="days-badge">${Math.round(doc.days_over)} дн.</span>` : '';
 
-      trCon.addEventListener('click', e => {
-        e.stopPropagation();
-        trCon.classList.toggle('open');
-        const isOpen = trCon.classList.contains('open');
-        tbody.querySelectorAll(`[data-parent="${conId}"]`).forEach(el => el.classList.toggle('hidden', !isOpen));
-      });
-
-      // УПД
-      docList.sort((a,b) => (b.days_over - a.days_over)).forEach(doc => {
-        const trDoc = document.createElement('tr');
-        trDoc.className = 'row-doc hidden';
-        trDoc.dataset.parent = conId;
-
-        const daysBadge = doc.days_over > 0
-          ? `<span class="days-badge">${Math.round(doc.days_over)} дн.</span>` : '';
-
-        trDoc.innerHTML = `
-          <td class="doc-num">УПД ${doc.doc_num}</td>
-          <td>${fmtDate(doc.doc_date)}</td>
-          <td style="${doc.is_over ? 'color:var(--orange);font-weight:600' : ''}">${fmtDate(doc.due_date)}</td>
-          <td class="r">${fmt(doc.doc_amt)}</td>
-          <td class="r">${fmt(doc.balance)}</td>
-          <td class="r">${doc.over_amt > 0 ? '<span class="badge-over">'+fmt(doc.over_amt)+'</span>' : '—'}</td>
-          <td class="r">${doc.days_over > 0 ? daysBadge : '—'}</td>`;
-        tbody.appendChild(trDoc);
-      });
+      trDoc.innerHTML = `
+        <td class="doc-num" style="padding-left:32px">УПД ${doc.doc_num}</td>
+        <td>${fmtDate(doc.doc_date)}</td>
+        <td style="${doc.is_over ? 'color:var(--orange);font-weight:600' : ''}">${fmtDate(doc.due_date)}</td>
+        <td class="r">${fmt(doc.doc_amt)}</td>
+        <td class="r">${fmt(doc.balance)}</td>
+        <td class="r">${doc.over_amt > 0 ? '<span class="badge-over">'+fmt(doc.over_amt)+'</span>' : '—'}</td>
+        <td class="r">${doc.days_over > 0 ? daysBadge : '—'}</td>`;
+      tbody.appendChild(trDoc);
     });
   });
 }
