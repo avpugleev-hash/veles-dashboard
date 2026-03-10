@@ -76,8 +76,7 @@
       "typeVersion": 1,
       "position": [1120, 300],
       "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ JSON.stringify($json) }}",
+        "respondWith": "allIncomingItems",
         "options": {}
       }
     }

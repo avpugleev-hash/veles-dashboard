@@ -732,7 +732,8 @@ async function generateEmail() {
     });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const data = await r.json();
-    document.getElementById('emailText').value = data.text || data.email || '';
+    const item = Array.isArray(data) ? data[0] : data;
+    document.getElementById('emailText').value = item.text || item.email || '';
     document.getElementById('emailResult').classList.remove('hidden');
   } catch(e) {
     alert('Ошибка генерации письма: ' + e.message);
