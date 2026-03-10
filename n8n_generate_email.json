@@ -32,18 +32,18 @@
       "position": [680, 300],
       "parameters": {
         "method": "POST",
-        "url": "https://api.openai.com/v1/chat/completions",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "Bearer REPLACE_WITH_YOUR_OPENAI_API_KEY" },
+            { "name": "Authorization", "value": "Bearer REPLACE_WITH_YOUR_GROQ_API_KEY" },
             { "name": "Content-Type",  "value": "application/json" }
           ]
         },
         "sendBody": true,
         "contentType": "json",
         "body": {
-          "model": "gpt-4o-mini",
+          "model": "llama-3.3-70b-versatile",
           "max_tokens": 1024,
           "messages": [
             {
