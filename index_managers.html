@@ -337,6 +337,22 @@ body {
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(212, 165, 116, 0.3);
 }
+.logout-btn {
+    background: transparent;
+    color: #f9fafb;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    padding: var(--space-8) var(--space-16);
+    border-radius: var(--radius-base);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    cursor: pointer;
+    margin-top: var(--space-8);
+    margin-left: var(--space-8);
+    transition: all var(--duration-normal) var(--ease-standard);
+}
+.logout-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
 .repairs-totals-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -1013,6 +1029,7 @@ body {
                         <span id="dataUpdatedAt">Данные обновлены: —</span>
                     </div>
                     <button class="refresh-btn" onclick="refreshData()">🔄 Обновить данные</button>
+                    <button class="logout-btn" id="logoutBtn" type="button">⎋ Выйти</button>
                 </div>
 
             </div>
@@ -1483,8 +1500,20 @@ function clearAuthSession() {
     console.warn('Не удалось удалить сессию из localStorage', e);
   }
 }
+function logout() {
+  isAuthenticated = false;
+  clearAuthSession();
+  const loginInput = document.getElementById('loginLogin');
+  const pwdInput = document.getElementById('loginPassword');
+  const errorEl = document.getElementById('loginError');
+  if (loginInput) loginInput.value = '';
+  if (pwdInput) pwdInput.value = '';
+  if (errorEl) { errorEl.textContent = ''; errorEl.style.display = 'none'; }
+  const overlay = document.getElementById('loginOverlay');
+  if (overlay) overlay.style.display = 'flex';
+}
 
-    
+
 let dashboardData = null;
 let trendChart = null;
 let receivablesByClient = [];   // сюда положим структуру просрочки по клиентам
@@ -3937,6 +3966,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const loginForm = document.getElementById('loginForm');
   if (loginForm) {
     loginForm.addEventListener('submit', handleLoginSubmit);
+  }
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', logout);
   }
 
   // 3) Остальные кнопки раскрытия
