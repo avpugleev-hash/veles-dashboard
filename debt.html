@@ -208,6 +208,7 @@
             <th>Срок оплаты</th>
             <th class="r">Сумма УПД</th>
             <th class="r">Просрочка</th>
+            <th class="r">Кред. дней</th>
             <th class="r">Дней просрочки</th>
           </tr>
         </thead>
@@ -217,6 +218,7 @@
             <td colspan="3">Итого (по фильтру)</td>
             <td class="r" id="fDocAmt">—</td>
             <td class="r" id="fOver">—</td>
+            <td class="r">—</td>
             <td class="r" id="fDays">—</td>
           </tr>
         </tfoot>
@@ -336,6 +338,7 @@ async function loadData() {
         over_amt:    toNum(r.overdue_amount),
         days_over:   daysActual,   // для алерта
         days_total:  daysTotal,    // для отображения в столбце
+        credit_days: creditDays,   // кредитных дней
       };
     });
 
@@ -472,7 +475,8 @@ function renderTable() {
         <td style="${doc.is_over ? 'color:var(--orange);font-weight:600' : ''}">${fmtDate(doc.due_date)}</td>
         <td class="r">${fmt(doc.doc_amt)}</td>
         <td class="r">${doc.over_amt > 0 ? '<span class="badge-over">'+fmt(doc.over_amt)+'</span>' : '—'}</td>
-        <td class="r">${doc.days_over > 0 ? daysBadge : '—'}</td>`;
+        <td class="r" style="color:var(--text2)">${doc.credit_days > 0 ? doc.credit_days+' дн.' : '—'}</td>
+        <td class="r">${doc.days_total > 0 ? daysBadge : '—'}</td>`;
       tbody.appendChild(trDoc);
     });
   });
