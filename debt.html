@@ -451,8 +451,8 @@ function renderTable() {
       dateMap.get(key).push(d);
     });
 
-    // Сортируем даты по убыванию (новые сверху)
-    const sortedDates = [...dateMap.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+    // Сортируем даты по возрастанию (старые сверху)
+    const sortedDates = [...dateMap.entries()].sort((a, b) => a[0].localeCompare(b[0]));
 
     sortedDates.forEach(([docDate, dateDocs]) => {
       const dateOver = dateDocs.reduce((s,r)=>s+r.over_amt, 0);
