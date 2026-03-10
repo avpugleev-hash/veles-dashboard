@@ -48,7 +48,7 @@
       "typeVersion": 2,
       "position": [680, 300],
       "parameters": {
-        "jsCode": "const client = $('Webhook').first().json.query?.client || '';\nconst all = $input.all().map(i => i.json);\nconst filtered = client\n  ? all.filter(r => r.client_name === client)\n  : all;\nreturn filtered.map(r => ({ json: r }));"
+        "jsCode": "const client = $('Webhook').first().json.query?.client || '';\nconst all = $input.all().map(i => i.json);\nconst filtered = client\n  ? all.filter(r => r.client_name === client)\n  : all;\n// Всегда возвращаем один элемент чтобы Respond to Webhook запустился\nreturn [{ json: { items: filtered } }];"
       }
     },
     {
