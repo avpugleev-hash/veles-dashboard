@@ -6,478 +6,217 @@
   <title>Задолженность | ООО "ТК ВЕЛЕС"</title>
   <style>
     :root {
-      --navy-primary: #1a2a4a;
+      --navy: #1a2a4a;
       --navy-dark: #0f1a2e;
-      --gold-accent: #d4a574;
-      --bg-light: #f7f8fa;
-      --bg-card: #ffffff;
-      --text-primary: #1a2a4a;
-      --text-secondary: #6b7280;
-      --border-color: #e5e7eb;
-      --success-green: #20b2aa;
-      --warning-orange: #e8622b;
-      --color-red-500: rgba(192, 21, 47, 1);
-      --radius-lg: 12px;
-      --radius-base: 8px;
-      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
-      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+      --gold: #d4a574;
+      --bg: #f7f8fa;
+      --card: #ffffff;
+      --text: #1a2a4a;
+      --text2: #6b7280;
+      --border: #e5e7eb;
+      --green: #20b2aa;
+      --orange: #e8622b;
+      --red: rgba(192,21,47,1);
+      --r-lg: 12px;
+      --r-md: 8px;
     }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:"Geist","Inter",-apple-system,sans-serif; background:var(--bg); color:var(--text); line-height:1.5; min-height:100vh; }
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    /* ЛОГИН */
+    .login-overlay { position:fixed; inset:0; background:rgba(15,23,42,.8); display:flex; align-items:center; justify-content:center; z-index:1000; }
+    .login-box { background:var(--card); border-radius:var(--r-lg); padding:28px 32px; max-width:380px; width:100%; box-shadow:0 10px 30px rgba(0,0,0,.15); }
+    .login-box h2 { font-size:20px; font-weight:700; color:var(--navy); margin-bottom:4px; }
+    .login-sub { font-size:12px; color:var(--text2); margin-bottom:16px; }
+    .login-label { display:block; font-size:11px; color:var(--text2); margin:10px 0 3px; }
+    .login-input { width:100%; padding:8px 10px; border-radius:var(--r-md); border:1px solid var(--border); font-size:13px; }
+    .login-input:focus { outline:none; border-color:var(--green); box-shadow:0 0 0 3px rgba(32,178,170,.2); }
+    .login-err { font-size:12px; color:var(--red); margin-top:8px; display:none; }
+    .login-btn { margin-top:14px; width:100%; background:var(--navy); color:#fff; border:none; padding:10px; border-radius:var(--r-md); font-size:14px; font-weight:600; cursor:pointer; }
+    .login-btn:hover { background:#253a6a; }
 
-    body {
-      font-family: "Geist", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: var(--bg-light);
-      color: var(--text-primary);
-      line-height: 1.5;
-      min-height: 100vh;
-    }
+    /* ШАПКА */
+    .hdr { background:var(--navy); color:#fff; padding:18px 28px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+    .hdr h1 { font-size:20px; font-weight:700; }
+    .hdr .sub { font-size:12px; opacity:.75; margin-top:2px; }
+    .hdr-right { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .btn-ghost { background:rgba(255,255,255,.1); color:#fff; border:1px solid rgba(255,255,255,.4); padding:6px 14px; border-radius:var(--r-md); font-size:12px; font-weight:600; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:5px; transition:background .2s; }
+    .btn-ghost:hover { background:rgba(255,255,255,.2); }
+    #updTime { font-size:11px; opacity:.65; }
 
-    /* === ЛОГИН === */
-    .login-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    }
-    .login-box {
-      background: var(--bg-card);
-      border-radius: var(--radius-lg);
-      padding: 28px 32px;
-      box-shadow: var(--shadow-md);
-      max-width: 380px;
-      width: 100%;
-    }
-    .login-box h2 {
-      margin-bottom: 6px;
-      font-size: 20px;
-      font-weight: 700;
-      color: var(--navy-primary);
-    }
-    .login-subtitle {
-      font-size: 12px;
-      color: var(--text-secondary);
-      margin-bottom: 16px;
-    }
-    .login-label {
-      display: block;
-      font-size: 11px;
-      color: var(--text-secondary);
-      margin-top: 10px;
-      margin-bottom: 3px;
-    }
-    .login-input {
-      width: 100%;
-      padding: 8px 10px;
-      border-radius: var(--radius-base);
-      border: 1px solid var(--border-color);
-      font-size: 13px;
-    }
-    .login-input:focus {
-      outline: none;
-      border-color: var(--success-green);
-      box-shadow: 0 0 0 3px rgba(32, 178, 170, 0.2);
-    }
-    .login-error {
-      margin-top: 8px;
-      font-size: 12px;
-      color: var(--color-red-500);
-      display: none;
-    }
-    .login-btn {
-      margin-top: 14px;
-      width: 100%;
-      background: var(--navy-primary);
-      color: #fff;
-      border: none;
-      padding: 10px;
-      border-radius: var(--radius-base);
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    .login-btn:hover { background: #253a6a; }
+    /* КОНТЕЙНЕР */
+    .wrap { max-width:1440px; margin:0 auto; padding:22px; }
 
-    /* === ШАПКА === */
-    .page-header {
-      background: var(--navy-primary);
-      color: #fff;
-      padding: 20px 32px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-    .header-left h1 {
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: -0.01em;
-    }
-    .header-left .subtitle {
-      font-size: 13px;
-      opacity: 0.8;
-      margin-top: 2px;
-    }
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .back-btn {
-      background: rgba(255,255,255,0.12);
-      color: #fff;
-      border: 1px solid rgba(255,255,255,0.4);
-      padding: 7px 16px;
-      border-radius: var(--radius-base);
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: background 0.2s;
-    }
-    .back-btn:hover { background: rgba(255,255,255,0.2); }
-    .logout-btn {
-      background: transparent;
-      color: #f9fafb;
-      border: 1px solid rgba(255,255,255,0.5);
-      padding: 7px 14px;
-      border-radius: var(--radius-base);
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    .logout-btn:hover { background: rgba(255,255,255,0.1); }
-    #lastUpdateTime {
-      font-size: 12px;
-      opacity: 0.7;
-    }
+    /* ИТОГИ */
+    .summary { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px; }
+    @media(max-width:900px){ .summary{ grid-template-columns:repeat(2,1fr); } }
+    @media(max-width:500px){ .summary{ grid-template-columns:1fr; } }
+    .s-card { background:var(--card); border-radius:var(--r-lg); padding:16px 18px; border:1px solid var(--border); box-shadow:0 1px 4px rgba(0,0,0,.05); }
+    .s-card .lbl { font-size:11px; color:var(--text2); font-weight:500; margin-bottom:5px; }
+    .s-card .val { font-size:24px; font-weight:700; line-height:1; }
+    .s-card .hint { font-size:11px; color:var(--text2); margin-top:4px; }
+    .c-navy { color:var(--navy); }
+    .c-orange { color:var(--orange); }
+    .c-green { color:var(--green); }
+    .bar-wrap { margin-top:7px; height:4px; background:var(--border); border-radius:99px; overflow:hidden; }
+    .bar-fill { height:100%; background:var(--orange); border-radius:99px; transition:width .5s; }
 
-    /* === КОНТЕЙНЕР === */
-    .container {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 24px;
-    }
+    /* ФИЛЬТРЫ */
+    .filters { background:var(--card); border-radius:var(--r-lg); padding:12px 18px; border:1px solid var(--border); margin-bottom:16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .f-lbl { font-size:12px; color:var(--text2); font-weight:500; white-space:nowrap; }
+    .f-input { flex:1; min-width:180px; padding:6px 11px; border-radius:var(--r-md); border:1px solid var(--border); font-size:13px; outline:none; }
+    .f-input:focus { border-color:var(--green); box-shadow:0 0 0 2px rgba(32,178,170,.12); }
+    .f-select { padding:6px 11px; border-radius:var(--r-md); border:1px solid var(--border); font-size:13px; background:#fff; cursor:pointer; outline:none; }
+    .f-count { font-size:12px; color:var(--text2); margin-left:auto; white-space:nowrap; }
 
-    /* === ИТОГОВЫЕ КАРТОЧКИ === */
-    .summary-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-    @media (max-width: 1024px) { .summary-grid { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 600px)  { .summary-grid { grid-template-columns: 1fr; } }
+    /* ТАБЛИЦА */
+    .tcard { background:var(--card); border-radius:var(--r-lg); border:1px solid var(--border); overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.05); }
+    .tscroll { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
 
-    .summary-card {
-      background: var(--bg-card);
-      border-radius: var(--radius-lg);
-      padding: 18px 20px;
-      box-shadow: var(--shadow-sm);
-      border: 1px solid var(--border-color);
-    }
-    .summary-card .label {
-      font-size: 12px;
-      color: var(--text-secondary);
-      margin-bottom: 6px;
-      font-weight: 500;
-    }
-    .summary-card .value {
-      font-size: 26px;
-      font-weight: 700;
-      line-height: 1;
-    }
-    .summary-card .sub {
-      font-size: 12px;
-      color: var(--text-secondary);
-      margin-top: 4px;
-    }
-    .value.total   { color: var(--navy-primary); }
-    .value.overdue { color: var(--warning-orange); }
-    .value.green   { color: var(--success-green); }
-    .value.normal  { color: var(--navy-primary); }
+    /* Заголовки */
+    thead th { background:var(--navy); color:#fff; padding:10px 14px; text-align:left; font-size:11px; font-weight:600; letter-spacing:.04em; white-space:nowrap; cursor:pointer; user-select:none; }
+    thead th:hover { background:#253a6a; }
+    thead th.r { text-align:right; }
+    .si { margin-left:3px; opacity:.5; }
+    thead th.sorted .si { opacity:1; }
 
-    /* === ФИЛЬТРЫ === */
-    .filters-bar {
-      background: var(--bg-card);
-      border-radius: var(--radius-lg);
-      padding: 14px 20px;
-      box-shadow: var(--shadow-sm);
-      border: 1px solid var(--border-color);
-      margin-bottom: 20px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-    .filter-label {
-      font-size: 12px;
-      color: var(--text-secondary);
-      font-weight: 500;
-      white-space: nowrap;
-    }
-    .filter-input {
-      flex: 1;
-      min-width: 200px;
-      padding: 7px 12px;
-      border-radius: var(--radius-base);
-      border: 1px solid var(--border-color);
-      font-size: 13px;
-      outline: none;
-    }
-    .filter-input:focus {
-      border-color: var(--success-green);
-      box-shadow: 0 0 0 2px rgba(32,178,170,0.15);
-    }
-    .filter-select {
-      padding: 7px 12px;
-      border-radius: var(--radius-base);
-      border: 1px solid var(--border-color);
-      font-size: 13px;
-      background: #fff;
-      cursor: pointer;
-      outline: none;
-    }
-    .filter-select:focus {
-      border-color: var(--success-green);
-    }
-    .results-count {
-      font-size: 12px;
-      color: var(--text-secondary);
-      margin-left: auto;
-      white-space: nowrap;
-    }
+    /* СТРОКА КЛИЕНТА */
+    .row-client { background:#f0f4f8; cursor:pointer; border-bottom:2px solid #d1dae8; }
+    .row-client:hover { background:#e4ecf5; }
+    .row-client td { padding:10px 14px; font-weight:700; color:var(--navy); font-size:13px; }
+    .row-client td.r { text-align:right; white-space:nowrap; }
+    .toggle-icon { display:inline-block; width:16px; text-align:center; font-style:normal; margin-right:6px; transition:transform .2s; color:var(--text2); }
+    .row-client.open .toggle-icon { transform:rotate(90deg); }
 
-    /* === ТАБЛИЦА === */
-    .table-card {
-      background: var(--bg-card);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-sm);
-      border: 1px solid var(--border-color);
-      overflow: hidden;
-    }
-    .table-wrapper {
-      overflow-x: auto;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-    thead th {
-      background: var(--navy-primary);
-      color: #fff;
-      padding: 11px 14px;
-      text-align: left;
-      font-weight: 600;
-      font-size: 12px;
-      letter-spacing: 0.02em;
-      white-space: nowrap;
-      cursor: pointer;
-      user-select: none;
-      position: sticky;
-      top: 0;
-    }
-    thead th:hover { background: #253a6a; }
-    thead th.num { text-align: right; }
-    thead th .sort-icon {
-      margin-left: 4px;
-      opacity: 0.5;
-      font-style: normal;
-    }
-    thead th.sorted .sort-icon { opacity: 1; }
+    /* СТРОКА ДОГОВОРА */
+    .row-contract { background:#fafbfc; cursor:pointer; border-bottom:1px solid var(--border); }
+    .row-contract:hover { background:#f3f6fa; }
+    .row-contract td { padding:8px 14px 8px 32px; font-size:12px; color:var(--text); }
+    .row-contract td.r { text-align:right; white-space:nowrap; }
+    .row-contract.open .toggle-icon { transform:rotate(90deg); }
+    .row-contract .contract-name { color:var(--text2); font-weight:500; }
 
-    tbody tr {
-      border-bottom: 1px solid var(--border-color);
-      transition: background 0.1s;
-    }
-    tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: rgba(26,42,74,0.03); }
-    tbody tr.has-overdue { background: rgba(232, 98, 43, 0.03); }
-    tbody tr.has-overdue:hover { background: rgba(232, 98, 43, 0.07); }
+    /* СТРОКА УПД */
+    .row-doc { background:#fff; border-bottom:1px solid #f0f0f0; }
+    .row-doc:hover { background:#fffbf8; }
+    .row-doc td { padding:7px 14px 7px 50px; font-size:12px; color:var(--text2); }
+    .row-doc td.r { text-align:right; white-space:nowrap; }
+    .row-doc td.doc-num { color:var(--navy); font-weight:500; font-family:monospace; font-size:11px; }
 
-    td {
-      padding: 10px 14px;
-      vertical-align: middle;
-    }
-    td.num { text-align: right; white-space: nowrap; }
-    td.client-name { font-weight: 600; color: var(--navy-primary); }
-    td.contract-name { color: var(--text-secondary); font-size: 12px; }
+    /* Бейджи */
+    .badge-over { display:inline-block; background:rgba(232,98,43,.12); color:var(--orange); border-radius:4px; padding:2px 6px; font-size:11px; font-weight:600; white-space:nowrap; }
+    .badge-ok { display:inline-block; background:rgba(32,178,170,.1); color:var(--green); border-radius:4px; padding:2px 6px; font-size:11px; font-weight:600; }
+    .days-badge { display:inline-block; background:rgba(192,21,47,.1); color:var(--red); border-radius:4px; padding:1px 5px; font-size:10px; font-weight:600; margin-left:4px; }
 
-    .overdue-badge {
-      display: inline-block;
-      background: rgba(232, 98, 43, 0.12);
-      color: var(--warning-orange);
-      border-radius: 4px;
-      padding: 2px 6px;
-      font-size: 11px;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-    .zero-overdue { color: var(--text-secondary); font-size: 12px; }
+    /* Итоги */
+    tfoot td { padding:10px 14px; font-weight:700; font-size:13px; background:#eef1f6; border-top:2px solid var(--navy); }
+    tfoot td.r { text-align:right; white-space:nowrap; }
 
-    /* Строка итогов */
-    tfoot td {
-      padding: 11px 14px;
-      font-weight: 700;
-      font-size: 13px;
-      background: #f0f4f8;
-      border-top: 2px solid var(--navy-primary);
-    }
-    tfoot td.num { text-align: right; white-space: nowrap; }
+    /* Спиннер */
+    .state { text-align:center; padding:60px 20px; color:var(--text2); font-size:14px; }
+    .spin { display:inline-block; width:26px; height:26px; border:3px solid rgba(26,42,74,.12); border-top-color:var(--navy); border-radius:50%; animation:sp .7s linear infinite; margin-bottom:10px; }
+    @keyframes sp { to { transform:rotate(360deg); } }
 
-    /* === ЗАГРУЗКА / ОШИБКА === */
-    .state-msg {
-      text-align: center;
-      padding: 60px 20px;
-      color: var(--text-secondary);
-      font-size: 14px;
-    }
-    .spinner {
-      display: inline-block;
-      width: 28px;
-      height: 28px;
-      border: 3px solid rgba(26,42,74,0.15);
-      border-top-color: var(--navy-primary);
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      margin-bottom: 10px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* === ДАТА СРЕЗА === */
-    .snapshot-label {
-      font-size: 12px;
-      color: var(--text-secondary);
-      margin-bottom: 14px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .snapshot-label strong { color: var(--text-primary); }
-
-    /* прогресс-бар доли просрочки */
-    .overdue-bar-wrap {
-      margin-top: 8px;
-      height: 4px;
-      background: var(--border-color);
-      border-radius: 99px;
-      overflow: hidden;
-    }
-    .overdue-bar-fill {
-      height: 100%;
-      background: var(--warning-orange);
-      border-radius: 99px;
-      transition: width 0.5s ease;
-    }
+    .hidden { display:none !important; }
   </style>
 </head>
 <body>
 
-<!-- === ЛОГИН === -->
+<!-- ЛОГИН -->
 <div class="login-overlay" id="loginOverlay">
   <div class="login-box">
     <h2>ТК ВЕЛЕС</h2>
-    <p class="login-subtitle">Детализация задолженности</p>
-    <form id="loginForm" autocomplete="off">
-      <label class="login-label" for="loginLogin">Логин</label>
-      <input class="login-input" id="loginLogin" type="text" placeholder="Введите логин" autocomplete="username">
-      <label class="login-label" for="loginPassword">Пароль</label>
-      <input class="login-input" id="loginPassword" type="password" placeholder="Введите пароль" autocomplete="current-password">
-      <div class="login-error" id="loginError"></div>
+    <p class="login-sub">Детализация задолженности</p>
+    <form id="loginForm">
+      <label class="login-label">Логин</label>
+      <input class="login-input" id="fLogin" type="text" placeholder="Введите логин">
+      <label class="login-label">Пароль</label>
+      <input class="login-input" id="fPwd" type="password" placeholder="Введите пароль">
+      <div class="login-err" id="fErr"></div>
       <button class="login-btn" type="submit">Войти</button>
     </form>
   </div>
 </div>
 
-<!-- === ШАПКА === -->
-<div class="page-header">
-  <div class="header-left">
-    <h1>Задолженность клиентов</h1>
-    <div class="subtitle">ООО "ТК ВЕЛЕС" — детализация дебиторской задолженности</div>
+<!-- ШАПКА -->
+<div class="hdr">
+  <div>
+    <h1>Дебиторская задолженность</h1>
+    <div class="sub">ООО "ТК ВЕЛЕС" — детализация по клиентам, договорам и УПД</div>
   </div>
-  <div class="header-right">
-    <span id="lastUpdateTime"></span>
-    <a href="index.html" class="back-btn">← Дашборд</a>
-    <button class="logout-btn" onclick="logout()">Выйти</button>
+  <div class="hdr-right">
+    <span id="updTime"></span>
+    <a href="index.html" class="btn-ghost">← Дашборд</a>
+    <button class="btn-ghost" onclick="logout()">Выйти</button>
   </div>
 </div>
 
-<!-- === ОСНОВНОЙ КОНТЕНТ === -->
-<div class="container">
+<!-- КОНТЕНТ -->
+<div class="wrap">
 
-  <!-- Итоговые карточки -->
-  <div class="summary-grid">
-    <div class="summary-card">
-      <div class="label">Общая задолженность</div>
-      <div class="value total" id="sumTotal">—</div>
-      <div class="sub" id="snapshotDateLabel"></div>
+  <!-- Итоги -->
+  <div class="summary">
+    <div class="s-card">
+      <div class="lbl">Общая задолженность</div>
+      <div class="val c-navy" id="sTotal">—</div>
+      <div class="hint" id="sDate"></div>
     </div>
-    <div class="summary-card">
-      <div class="label">Просроченная</div>
-      <div class="value overdue" id="sumOverdue">—</div>
-      <div class="overdue-bar-wrap"><div class="overdue-bar-fill" id="overdueBarFill" style="width:0%"></div></div>
-      <div class="sub" id="overduePercLabel"></div>
+    <div class="s-card">
+      <div class="lbl">Просроченная</div>
+      <div class="val c-orange" id="sOverdue">—</div>
+      <div class="bar-wrap"><div class="bar-fill" id="sBar" style="width:0%"></div></div>
+      <div class="hint" id="sPct"></div>
     </div>
-    <div class="summary-card">
-      <div class="label">Клиентов с просрочкой</div>
-      <div class="value overdue" id="countOverdue">—</div>
-      <div class="sub" id="countOverdueSub"></div>
+    <div class="s-card">
+      <div class="lbl">Клиентов с просрочкой</div>
+      <div class="val c-orange" id="sCntOver">—</div>
+      <div class="hint">уникальных клиентов</div>
     </div>
-    <div class="summary-card">
-      <div class="label">Клиентов без просрочки</div>
-      <div class="value green" id="countOk">—</div>
-      <div class="sub" id="countOkSub"></div>
+    <div class="s-card">
+      <div class="lbl">УПД с просрочкой</div>
+      <div class="val c-orange" id="sCntDocs">—</div>
+      <div class="hint" id="sCntDocsSub"></div>
     </div>
   </div>
 
   <!-- Фильтры -->
-  <div class="filters-bar">
-    <span class="filter-label">Поиск:</span>
-    <input class="filter-input" id="searchInput" type="text" placeholder="Клиент или договор...">
-    <span class="filter-label">Показать:</span>
-    <select class="filter-select" id="filterSelect">
+  <div class="filters">
+    <span class="f-lbl">Поиск:</span>
+    <input class="f-input" id="fSearch" type="text" placeholder="Клиент, договор или номер УПД...">
+    <span class="f-lbl">Показать:</span>
+    <select class="f-select" id="fFilter">
       <option value="all">Все</option>
       <option value="overdue">Только с просрочкой</option>
       <option value="ok">Без просрочки</option>
     </select>
-    <span class="results-count" id="resultsCount"></span>
+    <span class="f-count" id="fCount"></span>
   </div>
 
   <!-- Таблица -->
-  <div class="table-card">
-    <div class="table-wrapper">
-      <div id="tableState" class="state-msg">
-        <div class="spinner"></div>
-        <div>Загрузка данных...</div>
-      </div>
-      <table id="debtTable" style="display:none">
+  <div class="tcard">
+    <div class="tscroll">
+      <div id="stateMsg" class="state"><div class="spin"></div><div>Загрузка данных...</div></div>
+      <table id="mainTable" class="hidden">
         <thead>
           <tr>
-            <th data-col="client_name">Клиент <i class="sort-icon">↕</i></th>
-            <th data-col="contract_name">Договор <i class="sort-icon">↕</i></th>
-            <th data-col="total_balance" class="num">Общий баланс <i class="sort-icon">↕</i></th>
-            <th data-col="overdue_balance" class="num">Просрочка <i class="sort-icon">↕</i></th>
-            <th data-col="overdue_pct" class="num">Доля <i class="sort-icon">↕</i></th>
+            <th style="min-width:280px">Клиент / Договор / УПД</th>
+            <th>Дата УПД</th>
+            <th>Срок оплаты</th>
+            <th class="r">Сумма УПД</th>
+            <th class="r">Остаток</th>
+            <th class="r">Просрочка</th>
+            <th class="r">Дней просрочки</th>
           </tr>
         </thead>
-        <tbody id="debtBody"></tbody>
+        <tbody id="mainBody"></tbody>
         <tfoot>
-          <tr id="totalRow">
-            <td colspan="2">Итого</td>
-            <td class="num" id="footTotal">—</td>
-            <td class="num" id="footOverdue">—</td>
-            <td class="num" id="footPct">—</td>
+          <tr>
+            <td colspan="3">Итого (по фильтру)</td>
+            <td class="r" id="fDocAmt">—</td>
+            <td class="r" id="fBal">—</td>
+            <td class="r" id="fOver">—</td>
+            <td class="r" id="fDays">—</td>
           </tr>
         </tfoot>
       </table>
@@ -487,283 +226,281 @@
 </div>
 
 <script>
-  const DASHBOARD_API_URL = 'https://alekseipugleev.app.n8n.cloud/webhook/dashboard-data';
-  const LOGIN_API_URL     = 'https://alekseipugleev.app.n8n.cloud/webhook/dashboard-login';
-  const AUTH_STORAGE_KEY  = 'veles_dashboard_auth_v1';
-  const AUTH_TTL_MS       = 8 * 60 * 60 * 1000;
+const LOGIN_API_URL    = 'https://alekseipugleev.app.n8n.cloud/webhook/dashboard-login';
+const AUTH_KEY         = 'veles_dashboard_auth_v1';
+const AUTH_TTL         = 8 * 3600 * 1000;
+const UPD_CSV_URL      = 'https://docs.google.com/spreadsheets/d/1D9-uViFll7h3SUT01lvlHKTF0VnQCx46h8569zSpaCQ/export?format=csv&gid=1164788937';
 
-  let allRows = [];      // все строки из CSV
-  let sortCol = 'overdue_balance';
-  let sortAsc = false;
+let allDocs = [];   // все строки УПД
 
-  // === Утилиты ===
-  function fmt(n) {
-    if (!n) return '—';
-    return (n / 1e6).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' млн ₽';
-  }
-  function fmtPct(n) { return n ? n.toFixed(1) + '%' : '0%'; }
+// ── Форматирование ──────────────────────────────────────────────
+function fmt(n) {
+  if (!n) return '—';
+  return (n / 1e6).toLocaleString('ru-RU', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' млн ₽';
+}
+function fmtDate(s) {
+  if (!s) return '—';
+  const [y,m,d] = String(s).split('-');
+  return d && m && y ? `${d}.${m}.${y}` : s;
+}
 
-  function parseCSV(text) {
-    const lines = text.trim().split(/\r?\n/);
-    const header = splitCSVLine(lines[0]);
-    const rows = [];
-    for (let i = 1; i < lines.length; i++) {
-      const cells = splitCSVLine(lines[i]);
-      const obj = {};
-      header.forEach((h, idx) => { obj[h.trim()] = (cells[idx] || '').trim(); });
-      rows.push(obj);
-    }
-    return rows;
+// ── CSV парсер ──────────────────────────────────────────────────
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  const header = splitLine(lines[0]);
+  return lines.slice(1).map(l => {
+    const cells = splitLine(l);
+    const obj = {};
+    header.forEach((h,i) => { obj[h.trim()] = (cells[i]||'').trim(); });
+    return obj;
+  }).filter(r => Object.values(r).some(v => v));
+}
+function splitLine(line) {
+  const res = []; let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { if (inQ && line[i+1]==='"') { cur+='"'; i++; } else inQ=!inQ; }
+    else if (c === ',' && !inQ) { res.push(cur); cur=''; }
+    else cur += c;
   }
+  res.push(cur);
+  return res;
+}
+function toNum(s) { return parseFloat(String(s||0).replace(/\s/g,'').replace(',','.')) || 0; }
 
-  function splitCSVLine(line) {
-    const result = [];
-    let cur = '', inQ = false;
-    for (let i = 0; i < line.length; i++) {
-      const c = line[i];
-      if (c === '"') {
-        if (inQ && line[i+1] === '"') { cur += '"'; i++; }
-        else inQ = !inQ;
-      } else if (c === ',' && !inQ) { result.push(cur); cur = ''; }
-      else cur += c;
-    }
-    result.push(cur);
-    return result;
-  }
+// ── Авторизация ─────────────────────────────────────────────────
+function saveSession(login) { try { localStorage.setItem(AUTH_KEY, JSON.stringify({login, ts:Date.now()})); } catch(e){} }
+function loadSession() {
+  try {
+    const d = JSON.parse(localStorage.getItem(AUTH_KEY)||'null');
+    if (!d || Date.now()-d.ts > AUTH_TTL) { localStorage.removeItem(AUTH_KEY); return null; }
+    return d;
+  } catch(e) { return null; }
+}
+function clearSession() { try { localStorage.removeItem(AUTH_KEY); } catch(e){} }
+function logout() {
+  clearSession();
+  document.getElementById('loginOverlay').style.display = 'flex';
+  document.getElementById('fLogin').value = '';
+  document.getElementById('fPwd').value   = '';
+}
 
-  function toNum(s) {
-    if (!s) return 0;
-    return parseFloat(String(s).replace(/\s/g, '').replace(',', '.')) || 0;
-  }
+document.getElementById('loginForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const login = document.getElementById('fLogin').value.trim();
+  const pwd   = document.getElementById('fPwd').value;
+  const err   = document.getElementById('fErr');
+  err.style.display = 'none';
+  if (!login || !pwd) { err.textContent='Введите логин и пароль'; err.style.display='block'; return; }
+  try {
+    const r = await fetch(LOGIN_API_URL, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({login, password:pwd})});
+    const d = await r.json().catch(()=>null);
+    if (!d || d.ok !== true) { err.textContent='Неверный логин или пароль'; err.style.display='block'; return; }
+    saveSession(login);
+    document.getElementById('loginOverlay').style.display = 'none';
+    loadData();
+  } catch(ex) { err.textContent='Ошибка подключения к серверу'; err.style.display='block'; }
+});
 
-  // === Авторизация ===
-  function saveAuthSession(login) {
-    try { localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ login, ts: Date.now() })); } catch(e) {}
-  }
-  function loadAuthSession() {
-    try {
-      const raw = localStorage.getItem(AUTH_STORAGE_KEY);
-      if (!raw) return null;
-      const d = JSON.parse(raw);
-      if (!d || typeof d.ts !== 'number') return null;
-      if (Date.now() - d.ts > AUTH_TTL_MS) { localStorage.removeItem(AUTH_STORAGE_KEY); return null; }
-      return d;
-    } catch(e) { return null; }
-  }
-  function clearAuthSession() { try { localStorage.removeItem(AUTH_STORAGE_KEY); } catch(e) {} }
-  function logout() {
-    clearAuthSession();
-    document.getElementById('loginOverlay').style.display = 'flex';
-    document.getElementById('loginLogin').value = '';
-    document.getElementById('loginPassword').value = '';
-  }
+// ── Загрузка данных ─────────────────────────────────────────────
+async function loadData() {
+  showState('<div class="spin"></div><div>Загрузка данных...</div>');
 
-  async function tryLogin(login, password) {
-    const resp = await fetch(LOGIN_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ login, password })
-    });
-    if (!resp.ok) return false;
-    const data = await resp.json().catch(() => null);
-    return data && data.ok === true;
-  }
+  try {
+    const res = await fetch(UPD_CSV_URL, {cache:'no-store'});
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    const raw  = parseCSV(text);
 
-  document.getElementById('loginForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const login    = document.getElementById('loginLogin').value.trim();
-    const password = document.getElementById('loginPassword').value;
-    const errorEl  = document.getElementById('loginError');
-    errorEl.style.display = 'none';
-    if (!login || !password) { errorEl.textContent = 'Введите логин и пароль'; errorEl.style.display = 'block'; return; }
-    try {
-      const ok = await tryLogin(login, password);
-      if (!ok) { errorEl.textContent = 'Неверный логин или пароль'; errorEl.style.display = 'block'; return; }
-      saveAuthSession(login);
-      document.getElementById('loginOverlay').style.display = 'none';
-      loadData();
-    } catch(err) {
-      errorEl.textContent = 'Ошибка подключения к серверу';
-      errorEl.style.display = 'block';
-    }
+    // Берём дату среза
+    const dates = raw.map(r => r.as_of_date).filter(Boolean).sort();
+    const snap  = dates[dates.length-1] || '';
+
+    // Фильтруем по последней дате
+    const rows = (snap ? raw.filter(r => r.as_of_date === snap) : raw).map(r => ({
+      client:    r.client_name    || '',
+      contract:  r.contract_name  || '',
+      doc_num:   r.doc_number     || '',
+      doc_date:  r.doc_date       || '',
+      due_date:  r.due_date       || '',
+      doc_amt:   toNum(r.doc_amount),
+      balance:   toNum(r.balance),
+      is_over:   r.is_overdue === 'TRUE' || r.is_overdue === '1' || r.is_overdue === 'true',
+      days_over: toNum(r.days_overdue),
+      over_amt:  toNum(r.overdue_amount),
+    }));
+
+    allDocs = rows;
+
+    // Итоги
+    const totalBal  = rows.reduce((s,r) => s + r.balance, 0);
+    const totalOver = rows.reduce((s,r) => s + r.over_amt, 0);
+    const pct       = totalBal ? totalOver/totalBal*100 : 0;
+    const cliOver   = new Set(rows.filter(r=>r.over_amt>0).map(r=>r.client)).size;
+    const docsOver  = rows.filter(r=>r.is_over).length;
+
+    document.getElementById('sTotal').textContent   = fmt(totalBal);
+    document.getElementById('sOverdue').textContent = fmt(totalOver);
+    document.getElementById('sBar').style.width     = Math.min(pct,100)+'%';
+    document.getElementById('sPct').textContent     = pct.toFixed(1)+'% от общего';
+    document.getElementById('sCntOver').textContent = cliOver;
+    document.getElementById('sCntDocs').textContent = docsOver;
+    document.getElementById('sCntDocsSub').textContent = 'из ' + rows.length + ' всего';
+    if (snap) document.getElementById('sDate').textContent = 'Данные на ' + fmtDate(snap);
+    document.getElementById('updTime').textContent  =
+      'Обновлено: ' + new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+
+    hideState();
+    renderTable();
+
+  } catch(e) {
+    showState(`<div style="color:#c0152f">Ошибка: ${e.message}</div>
+      <button onclick="loadData()" style="margin-top:12px;padding:7px 18px;border-radius:8px;border:1px solid #ccc;cursor:pointer;font-size:13px;">Повторить</button>`);
+  }
+}
+
+function showState(html) {
+  document.getElementById('stateMsg').innerHTML = html;
+  document.getElementById('stateMsg').style.display = '';
+  document.getElementById('mainTable').classList.add('hidden');
+}
+function hideState() {
+  document.getElementById('stateMsg').style.display = 'none';
+  document.getElementById('mainTable').classList.remove('hidden');
+}
+
+// ── Рендер таблицы ──────────────────────────────────────────────
+function getFiltered() {
+  const q   = document.getElementById('fSearch').value.toLowerCase().trim();
+  const fil = document.getElementById('fFilter').value;
+  return allDocs.filter(r => {
+    if (q && !r.client.toLowerCase().includes(q) &&
+             !r.contract.toLowerCase().includes(q) &&
+             !r.doc_num.toLowerCase().includes(q)) return false;
+    if (fil === 'overdue' && !r.is_over) return false;
+    if (fil === 'ok'      &&  r.is_over) return false;
+    return true;
+  });
+}
+
+function renderTable() {
+  const docs = getFiltered();
+  const tbody = document.getElementById('mainBody');
+  tbody.innerHTML = '';
+
+  // Группируем: клиент → договор → документы
+  const clientMap = new Map();
+  docs.forEach(d => {
+    if (!clientMap.has(d.client)) clientMap.set(d.client, new Map());
+    const cm = clientMap.get(d.client);
+    if (!cm.has(d.contract)) cm.set(d.contract, []);
+    cm.get(d.contract).push(d);
   });
 
-  // === Загрузка данных ===
-  async function loadData() {
-    document.getElementById('tableState').innerHTML = '<div class="spinner"></div><div>Загрузка данных...</div>';
-    document.getElementById('debtTable').style.display = 'none';
+  // Итоги по фильтру
+  const totDocAmt = docs.reduce((s,r)=>s+r.doc_amt, 0);
+  const totBal    = docs.reduce((s,r)=>s+r.balance, 0);
+  const totOver   = docs.reduce((s,r)=>s+r.over_amt, 0);
+  const totDays   = docs.filter(r=>r.days_over>0).length ? Math.round(docs.filter(r=>r.days_over>0).reduce((s,r)=>s+r.days_over,0)/docs.filter(r=>r.days_over>0).length) : 0;
 
-    try {
-      const url = DASHBOARD_API_URL + '?_ts=' + Date.now();
-      const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const api = await res.json();
-      if (!api || api.ok !== true || !api.csv) throw new Error('Bad API response');
+  document.getElementById('fDocAmt').textContent = fmt(totDocAmt);
+  document.getElementById('fBal').textContent    = fmt(totBal);
+  document.getElementById('fOver').textContent   = fmt(totOver);
+  document.getElementById('fDays').textContent   = totDays ? totDays + ' д. (ср.)' : '—';
+  document.getElementById('fCount').textContent  = `Клиентов: ${clientMap.size} / УПД: ${docs.length}`;
 
-      const csvText = api.csv.clients || '';
-      if (!csvText) throw new Error('Нет данных по клиентам');
+  // Рендерим клиентов
+  clientMap.forEach((contractMap, clientName) => {
+    const cliDocs = [...contractMap.values()].flat();
+    const cliBal  = cliDocs.reduce((s,r)=>s+r.balance, 0);
+    const cliOver = cliDocs.reduce((s,r)=>s+r.over_amt, 0);
+    const cliId   = 'c_' + Math.random().toString(36).slice(2);
 
-      const raw = parseCSV(csvText);
+    // Строка клиента
+    const trCli = document.createElement('tr');
+    trCli.className = 'row-client';
+    trCli.dataset.group = cliId;
+    trCli.innerHTML = `
+      <td><i class="toggle-icon">▶</i>${clientName}</td>
+      <td></td><td></td><td></td>
+      <td class="r">${fmt(cliBal)}</td>
+      <td class="r">${cliOver > 0 ? '<span class="badge-over">'+fmt(cliOver)+'</span>' : '<span class="badge-ok">нет</span>'}</td>
+      <td class="r"></td>`;
+    tbody.appendChild(trCli);
 
-      // Берём дату среза
-      const dates = raw.map(r => r.as_of_date).filter(Boolean).sort();
-      const snapshotDate = dates[dates.length - 1] || '';
-
-      // Фильтруем только строки за последнюю дату
-      const rows = raw.filter(r => !snapshotDate || r.as_of_date === snapshotDate);
-
-      allRows = rows.map(r => ({
-        client_name:      r.client_name   || '',
-        contract_name:    r.contract_name || '',
-        total_balance:    toNum(r.total_balance),
-        overdue_balance:  toNum(r.overdue_balance),
-        as_of_date:       r.as_of_date || ''
-      })).map(r => ({
-        ...r,
-        overdue_pct: r.total_balance ? r.overdue_balance / r.total_balance * 100 : 0
-      }));
-
-      // Итоги
-      const totalSum   = allRows.reduce((s, r) => s + r.total_balance,   0);
-      const overdueSum = allRows.reduce((s, r) => s + r.overdue_balance, 0);
-      const pct        = totalSum ? overdueSum / totalSum * 100 : 0;
-      const withOver   = new Set(allRows.filter(r => r.overdue_balance > 0).map(r => r.client_name)).size;
-      const withoutOver= new Set(allRows.filter(r => r.overdue_balance === 0).map(r => r.client_name)).size;
-
-      document.getElementById('sumTotal').textContent    = fmt(totalSum);
-      document.getElementById('sumOverdue').textContent  = fmt(overdueSum);
-      document.getElementById('overdueBarFill').style.width = Math.min(pct, 100) + '%';
-      document.getElementById('overduePercLabel').textContent = fmtPct(pct) + ' от общего';
-      document.getElementById('countOverdue').textContent = withOver;
-      document.getElementById('countOverdueSub').textContent = 'уникальных клиентов';
-      document.getElementById('countOk').textContent = withoutOver;
-      document.getElementById('countOkSub').textContent = 'уникальных клиентов';
-
-      if (snapshotDate) {
-        const [y, m, d] = snapshotDate.split('-');
-        document.getElementById('snapshotDateLabel').textContent = `Данные на ${d}.${m}.${y}`;
-      }
-
-      document.getElementById('lastUpdateTime').textContent =
-        'Обновлено: ' + new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-
-      document.getElementById('tableState').style.display = 'none';
-      document.getElementById('debtTable').style.display  = '';
-
-      renderTable();
-
-    } catch(err) {
-      document.getElementById('tableState').innerHTML =
-        `<div style="color:#c0152f">Ошибка загрузки: ${err.message}</div>
-         <button onclick="loadData()" style="margin-top:12px;padding:8px 20px;border-radius:8px;border:1px solid #ccc;cursor:pointer;font-size:13px;">Повторить</button>`;
-    }
-  }
-
-  // === Рендер таблицы ===
-  function getFiltered() {
-    const search  = document.getElementById('searchInput').value.toLowerCase().trim();
-    const filter  = document.getElementById('filterSelect').value;
-
-    return allRows.filter(r => {
-      if (search && !r.client_name.toLowerCase().includes(search) && !r.contract_name.toLowerCase().includes(search)) return false;
-      if (filter === 'overdue' && r.overdue_balance === 0) return false;
-      if (filter === 'ok'      && r.overdue_balance  > 0) return false;
-      return true;
-    });
-  }
-
-  function renderTable() {
-    const rows = getFiltered().slice().sort((a, b) => {
-      const va = a[sortCol], vb = b[sortCol];
-      if (typeof va === 'string') return sortAsc ? va.localeCompare(vb, 'ru') : vb.localeCompare(va, 'ru');
-      return sortAsc ? va - vb : vb - va;
+    trCli.addEventListener('click', () => {
+      trCli.classList.toggle('open');
+      const isOpen = trCli.classList.contains('open');
+      tbody.querySelectorAll(`[data-parent="${cliId}"]`).forEach(el => {
+        el.classList.toggle('hidden', !isOpen);
+        // Если закрываем клиента — закрываем и все договора
+        if (!isOpen && el.classList.contains('row-contract')) {
+          el.classList.remove('open');
+          const cid = el.dataset.group;
+          if (cid) tbody.querySelectorAll(`[data-parent="${cid}"]`).forEach(d => d.classList.add('hidden'));
+        }
+      });
     });
 
-    // Обновляем иконки сортировки
-    document.querySelectorAll('thead th').forEach(th => {
-      th.classList.remove('sorted');
-      th.querySelector('.sort-icon').textContent = '↕';
-    });
-    const activeTh = document.querySelector(`thead th[data-col="${sortCol}"]`);
-    if (activeTh) {
-      activeTh.classList.add('sorted');
-      activeTh.querySelector('.sort-icon').textContent = sortAsc ? '↑' : '↓';
-    }
+    // Договора
+    contractMap.forEach((docList, contractName) => {
+      const conBal  = docList.reduce((s,r)=>s+r.balance, 0);
+      const conOver = docList.reduce((s,r)=>s+r.over_amt, 0);
+      const conId   = 'k_' + Math.random().toString(36).slice(2);
 
-    const tbody = document.getElementById('debtBody');
-    tbody.innerHTML = '';
+      const trCon = document.createElement('tr');
+      trCon.className = 'row-contract hidden';
+      trCon.dataset.parent = cliId;
+      trCon.dataset.group  = conId;
+      trCon.innerHTML = `
+        <td><i class="toggle-icon">▶</i><span class="contract-name">${contractName || '—'}</span></td>
+        <td></td><td></td><td></td>
+        <td class="r">${fmt(conBal)}</td>
+        <td class="r">${conOver > 0 ? '<span class="badge-over">'+fmt(conOver)+'</span>' : '<span style="color:var(--text2)">—</span>'}</td>
+        <td class="r" style="font-size:11px;color:var(--text2)">${docList.length} УПД</td>`;
+      tbody.appendChild(trCon);
 
-    rows.forEach(r => {
-      const tr = document.createElement('tr');
-      if (r.overdue_balance > 0) tr.classList.add('has-overdue');
+      trCon.addEventListener('click', e => {
+        e.stopPropagation();
+        trCon.classList.toggle('open');
+        const isOpen = trCon.classList.contains('open');
+        tbody.querySelectorAll(`[data-parent="${conId}"]`).forEach(el => el.classList.toggle('hidden', !isOpen));
+      });
 
-      const tdClient = document.createElement('td');
-      tdClient.className = 'client-name';
-      tdClient.textContent = r.client_name;
-      tr.appendChild(tdClient);
+      // УПД
+      docList.sort((a,b) => (b.days_over - a.days_over)).forEach(doc => {
+        const trDoc = document.createElement('tr');
+        trDoc.className = 'row-doc hidden';
+        trDoc.dataset.parent = conId;
 
-      const tdContract = document.createElement('td');
-      tdContract.className = 'contract-name';
-      tdContract.textContent = r.contract_name;
-      tr.appendChild(tdContract);
+        const daysBadge = doc.days_over > 0
+          ? `<span class="days-badge">${Math.round(doc.days_over)} дн.</span>` : '';
 
-      const tdTotal = document.createElement('td');
-      tdTotal.className = 'num';
-      tdTotal.textContent = fmt(r.total_balance);
-      tr.appendChild(tdTotal);
-
-      const tdOver = document.createElement('td');
-      tdOver.className = 'num';
-      if (r.overdue_balance > 0) {
-        tdOver.innerHTML = `<span class="overdue-badge">${fmt(r.overdue_balance)}</span>`;
-      } else {
-        tdOver.innerHTML = `<span class="zero-overdue">—</span>`;
-      }
-      tr.appendChild(tdOver);
-
-      const tdPct = document.createElement('td');
-      tdPct.className = 'num';
-      tdPct.textContent = r.overdue_balance > 0 ? fmtPct(r.overdue_pct) : '—';
-      if (r.overdue_pct > 50) tdPct.style.color = 'var(--warning-orange)';
-      tr.appendChild(tdPct);
-
-      tbody.appendChild(tr);
-    });
-
-    // Итоги по отфильтрованным
-    const filtTotal   = rows.reduce((s, r) => s + r.total_balance, 0);
-    const filtOverdue = rows.reduce((s, r) => s + r.overdue_balance, 0);
-    const filtPct     = filtTotal ? filtOverdue / filtTotal * 100 : 0;
-    document.getElementById('footTotal').textContent   = fmt(filtTotal);
-    document.getElementById('footOverdue').textContent = fmt(filtOverdue);
-    document.getElementById('footPct').textContent     = fmtPct(filtPct);
-
-    document.getElementById('resultsCount').textContent =
-      `Показано: ${rows.length} строк из ${allRows.length}`;
-  }
-
-  // === Сортировка по клику на заголовок ===
-  document.querySelectorAll('thead th[data-col]').forEach(th => {
-    th.addEventListener('click', () => {
-      const col = th.dataset.col;
-      if (sortCol === col) sortAsc = !sortAsc;
-      else { sortCol = col; sortAsc = col === 'client_name' || col === 'contract_name'; }
-      renderTable();
+        trDoc.innerHTML = `
+          <td class="doc-num">УПД ${doc.doc_num}</td>
+          <td>${fmtDate(doc.doc_date)}</td>
+          <td style="${doc.is_over ? 'color:var(--orange);font-weight:600' : ''}">${fmtDate(doc.due_date)}</td>
+          <td class="r">${fmt(doc.doc_amt)}</td>
+          <td class="r">${fmt(doc.balance)}</td>
+          <td class="r">${doc.over_amt > 0 ? '<span class="badge-over">'+fmt(doc.over_amt)+'</span>' : '—'}</td>
+          <td class="r">${doc.days_over > 0 ? daysBadge : '—'}</td>`;
+        tbody.appendChild(trDoc);
+      });
     });
   });
+}
 
-  // === Фильтры ===
-  document.getElementById('searchInput').addEventListener('input', renderTable);
-  document.getElementById('filterSelect').addEventListener('change', renderTable);
+// Фильтры
+document.getElementById('fSearch').addEventListener('input', renderTable);
+document.getElementById('fFilter').addEventListener('change', renderTable);
 
-  // === Инициализация ===
-  document.addEventListener('DOMContentLoaded', () => {
-    const session = loadAuthSession();
-    if (session) {
-      document.getElementById('loginOverlay').style.display = 'none';
-      loadData();
-    }
-  });
+// Инициализация
+document.addEventListener('DOMContentLoaded', () => {
+  if (loadSession()) {
+    document.getElementById('loginOverlay').style.display = 'none';
+    loadData();
+  }
+});
 </script>
 </body>
 </html>
