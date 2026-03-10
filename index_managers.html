@@ -1189,6 +1189,13 @@ body {
       </table>
     </div>
 
+    <!-- Ссылка на детализацию задолженности -->
+    <div class="metric-row mt-2">
+      <a href="debt.html" class="link-button" style="color:var(--color-primary);text-decoration:none;">
+        ↗ Детализация по УПД
+      </a>
+    </div>
+
     <!-- Поступления -->
     <div class="metric-row mt-4">
       <span class="metric-label">Поступления:</span>
@@ -1366,7 +1373,7 @@ body {
     </div>
     <div class="metric-row mt-1">
   <button id="toggleCommYieldMonth" class="link-button">
-    ▼ Развернуть доходность за ноябрь
+    ▼ Развернуть доходность за месяц
   </button>
 </div>
 
@@ -1375,7 +1382,7 @@ body {
     <thead>
       <tr>
         <th class="text-left">Группа</th>
-        <th class="text-right">Доходность, руб./ваг.-сут. (ноябрь)</th>
+        <th class="text-right">Доходность, руб./ваг.-сут.</th>
       </tr>
     </thead>
     <tbody id="commYieldMonthBody"></tbody>
@@ -1741,8 +1748,12 @@ function buildBudgetCommercialFromRows(kpiRows, natRows, clientsRows) {
     return null;
   }
 
-  const usedItems = kpiItems.filter(r => r.key <= usedKey);
-  const lastItem  = kpiItems.find(r => r.key === usedKey);
+ const lastItem  = kpiItems.find(r => r.key === usedKey);
+const currentYear = lastItem ? lastItem.year : null;
+
+const usedItems = kpiItems.filter(r =>
+  r.year === currentYear && r.key <= usedKey
+);
 
   let marginPlanTotal = 0;
   let marginFactTotal = 0;
@@ -1790,7 +1801,7 @@ function buildBudgetCommercialFromRows(kpiRows, natRows, clientsRows) {
         if (!y || !m) continue;
 
         const keyN = y * 12 + m;
-        if (keyN > usedKey) continue; // берём только месяцы до usedKey
+        if (y !== currentYear || keyN > usedKey) continue;
 
         const code = row[idxCode];
         if (!code) continue;
@@ -1865,7 +1876,7 @@ function buildBudgetCommercialFromRows(kpiRows, natRows, clientsRows) {
             if (!y || !m) continue;
     
             const k = y * 12 + m;
-            if (k > usedKey) continue; // берём только месяцы, которые уже вошли в бюджет
+            if (y !== currentYear || k > usedKey) continue;
     
             const code = (row[idxCCode] || '').toString().trim().toUpperCase();
             if (!code) continue;
@@ -3672,12 +3683,16 @@ if (natBodyEl && natPlanTotalEl && natFactTotalEl && natYieldTotalEl) {
       }
 
       // переключатель панели
-      toggleYieldMonth.onclick = () => {
-        yieldMonthPanel.classList.toggle('hidden');
-        toggleYieldMonth.textContent = yieldMonthPanel.classList.contains('hidden')
-          ? '▼ Развернуть доходность за ноябрь'
-          : '▲ Свернуть доходность за ноябрь';
-      };
+     const periodMonth = budgetCommercial?.period?.month;
+const monthNameForToggle = periodMonth ? monthsNames[periodMonth - 1] : 'месяц';
+toggleYieldMonth.textContent = `▼ Развернуть доходность за ${monthNameForToggle}`;
+
+toggleYieldMonth.onclick = () => {
+  yieldMonthPanel.classList.toggle('hidden');
+  toggleYieldMonth.textContent = yieldMonthPanel.classList.contains('hidden')
+    ? `▼ Развернуть доходность за ${monthNameForToggle}`
+    : `▲ Свернуть доходность за ${monthNameForToggle}`;
+};
     }
   }
 

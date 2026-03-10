@@ -112,6 +112,13 @@
 
     .hidden { display:none !important; }
 
+    /* КОММЕНТАРИЙ МЕНЕДЖЕРА */
+    .comment-cell { min-width:180px; max-width:280px; }
+    .comment-text { font-size:12px; color:var(--text2); cursor:pointer; padding:3px 7px; border-radius:4px; display:block; min-height:22px; white-space:pre-wrap; word-break:break-word; }
+    .comment-text:hover { background:rgba(0,0,0,.05); }
+    .comment-placeholder { opacity:.38; font-style:italic; }
+    .comment-input { width:100%; padding:4px 7px; border-radius:var(--r-md); border:1px solid var(--green); font-size:12px; font-family:inherit; outline:none; resize:none; box-shadow:0 0 0 2px rgba(32,178,170,.15); }
+
     /* АЛЕРТЫ */
     .alert-dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:7px; flex-shrink:0; vertical-align:middle; }
     .alert-dot.yellow { background:#f59e0b; box-shadow:0 0 0 3px rgba(245,158,11,.2); }
@@ -210,6 +217,7 @@
             <th class="r">Просрочка</th>
             <th class="r">Кред. дней</th>
             <th class="r">Дней просрочки</th>
+            <th style="min-width:180px">Комментарий менеджера</th>
           </tr>
         </thead>
         <tbody id="mainBody"></tbody>
@@ -220,6 +228,7 @@
             <td class="r" id="fOver">—</td>
             <td class="r">—</td>
             <td class="r" id="fDays">—</td>
+            <td></td>
           </tr>
         </tfoot>
       </table>
@@ -230,11 +239,14 @@
 
 <script>
 const LOGIN_API_URL    = 'https://alekseipugleev.app.n8n.cloud/webhook/dashboard-login';
+const COMMENTS_GET_URL = 'https://alekseipugleev.app.n8n.cloud/webhook/get-comments';
+const COMMENTS_SAVE_URL= 'https://alekseipugleev.app.n8n.cloud/webhook/save-comment';
 const AUTH_KEY         = 'veles_dashboard_auth_v1';
 const AUTH_TTL         = 8 * 3600 * 1000;
 const UPD_CSV_URL      = 'https://docs.google.com/spreadsheets/d/1D9-uViFll7h3SUT01lvlHKTF0VnQCx46h8569zSpaCQ/export?format=csv&gid=1164788937';
 
-let allDocs = [];   // все строки УПД
+let allDocs = [];        // все строки УПД
+let commentsMap = new Map(); // client_name → comment
 
 // ── Форматирование ──────────────────────────────────────────────
 function fmt(n) {
@@ -273,6 +285,101 @@ function splitLine(line) {
   return res;
 }
 function toNum(s) { return parseFloat(String(s||0).replace(/\s/g,'').replace(',','.')) || 0; }
+
+// ── Вычисление срока оплаты ───────────────────────────────────────
+function calcDueDate(docDateStr, creditDays) {
+  if (!docDateStr || !creditDays) return '';
+  const parts = String(docDateStr).split('.');
+  if (parts.length !== 3) return '';
+  const [d, m, y] = parts.map(Number);
+  if (!d || !m || !y) return '';
+  const date = new Date(y, m - 1, d);
+  if (isNaN(date.getTime())) return '';
+  date.setDate(date.getDate() + creditDays);
+  return `${String(date.getDate()).padStart(2,'0')}.${String(date.getMonth()+1).padStart(2,'0')}.${date.getFullYear()}`;
+}
+
+// ── Комментарии менеджера ────────────────────────────────────────
+function getSessionLogin() {
+  try { const d = JSON.parse(localStorage.getItem(AUTH_KEY)||'null'); return d ? d.login : ''; } catch(e) { return ''; }
+}
+// localStorage — резервная копия
+function lsGetComment(clientName) {
+  try { return localStorage.getItem('veles_cm_' + clientName) || ''; } catch(e) { return ''; }
+}
+function lsSaveComment(clientName, text) {
+  try {
+    if (text) localStorage.setItem('veles_cm_' + clientName, text);
+    else localStorage.removeItem('veles_cm_' + clientName);
+  } catch(e) {}
+}
+// Загрузка всех комментариев с сервера
+async function loadComments() {
+  try {
+    const r = await fetch(COMMENTS_GET_URL, {cache:'no-store'});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    commentsMap.clear();
+    (Array.isArray(data) ? data : []).forEach(row => {
+      if (row.client_name) commentsMap.set(row.client_name, row.comment || '');
+    });
+  } catch(e) {
+    console.warn('Комментарии не загружены с сервера, используется localStorage:', e.message);
+  }
+}
+// Получить комментарий: сервер → localStorage → ''
+function getComment(clientName) {
+  if (commentsMap.has(clientName)) return commentsMap.get(clientName);
+  return lsGetComment(clientName);
+}
+// Сохранить: в память + на сервер + в localStorage
+async function saveCommentRemote(clientName, text) {
+  commentsMap.set(clientName, text);
+  lsSaveComment(clientName, text);
+  try {
+    await fetch(COMMENTS_SAVE_URL, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        client_name: clientName,
+        comment:     text,
+        login:       getSessionLogin(),
+        updated_at:  new Date().toISOString()
+      })
+    });
+  } catch(e) {
+    console.warn('Ошибка сохранения комментария на сервере:', e.message);
+  }
+}
+function renderCommentCell(td, clientName) {
+  td.innerHTML = '';
+  const saved = getComment(clientName);
+  const span = document.createElement('span');
+  span.className = 'comment-text' + (saved ? '' : ' comment-placeholder');
+  span.textContent = saved || '+ добавить комментарий';
+  span.title = 'Нажмите для редактирования';
+  span.addEventListener('click', e => {
+    e.stopPropagation();
+    const prev = getComment(clientName);
+    td.innerHTML = '';
+    const ta = document.createElement('textarea');
+    ta.className = 'comment-input';
+    ta.value = prev;
+    ta.rows = 2;
+    td.appendChild(ta);
+    ta.focus();
+    ta.addEventListener('blur', () => {
+      const val = ta.value.trim();
+      saveCommentRemote(clientName, val);
+      renderCommentCell(td, clientName);
+    });
+    ta.addEventListener('keydown', ev => {
+      if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); ta.blur(); }
+      if (ev.key === 'Escape') { ta.value = prev; ta.blur(); }
+    });
+  });
+  td.appendChild(span);
+}
 
 // ── Авторизация ─────────────────────────────────────────────────
 function saveSession(login) { try { localStorage.setItem(AUTH_KEY, JSON.stringify({login, ts:Date.now()})); } catch(e){} }
@@ -327,15 +434,19 @@ async function loadData() {
       const daysTotal  = toNum(r.days_overdue);
       const creditDays = toNum(r.credit_days_from_registry);
       const daysActual = Math.max(0, daysTotal - creditDays);
+      // Срок оплаты: берём из данных или вычисляем из даты УПД + кредитные дни
+      const due_date = r.due_date || calcDueDate(r.doc_date, creditDays);
+      const over_amt = toNum(r.overdue_amount);
       return {
         client:      r.client_name    || '',
         contract:    r.contract_name  || '',
         doc_num:     r.doc_number     || '',
         doc_date:    r.doc_date       || '',
-        due_date:    r.due_date       || '',
+        due_date,
         doc_amt:     toNum(r.doc_amount),
         balance:     toNum(r.balance),
-        over_amt:    toNum(r.overdue_amount),
+        over_amt,
+        is_over:     over_amt > 0,
         days_over:   daysActual,   // для алерта
         days_total:  daysTotal,    // для отображения в столбце
         credit_days: creditDays,   // кредитных дней
@@ -363,6 +474,7 @@ async function loadData() {
       'Обновлено: ' + new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
 
     hideState();
+    await loadComments();
     renderTable();
 
   } catch(e) {
@@ -450,8 +562,11 @@ function renderTable() {
       <td colspan="3"><i class="toggle-icon">▶</i>${alertDot}${clientName}</td>
       <td class="r">${fmt(cliBal)}</td>
       <td class="r">${cliOver > 0 ? '<span class="badge-over">'+fmt(cliOver)+'</span>' : '<span class="badge-ok">нет</span>'}</td>
-      <td class="r" style="font-size:11px;color:var(--text2)">${docList.length} УПД</td>`;
+      <td class="r" style="font-size:11px;color:var(--text2)">${docList.length} УПД</td>
+      <td></td>
+      <td class="comment-cell"></td>`;
     tbody.appendChild(trCli);
+    renderCommentCell(trCli.querySelector('.comment-cell'), clientName);
 
     trCli.addEventListener('click', () => {
       trCli.classList.toggle('open');
@@ -476,7 +591,8 @@ function renderTable() {
         <td class="r">${fmt(doc.doc_amt)}</td>
         <td class="r">${doc.over_amt > 0 ? '<span class="badge-over">'+fmt(doc.over_amt)+'</span>' : '—'}</td>
         <td class="r" style="color:var(--text2)">${doc.credit_days > 0 ? doc.credit_days+' дн.' : '—'}</td>
-        <td class="r">${doc.days_total > 0 ? daysBadge : '—'}</td>`;
+        <td class="r">${doc.days_total > 0 ? daysBadge : '—'}</td>
+        <td></td>`;
       tbody.appendChild(trDoc);
     });
   });
