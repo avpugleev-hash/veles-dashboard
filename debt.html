@@ -89,6 +89,13 @@
     .toggle-icon { display:inline-block; width:16px; text-align:center; font-style:normal; margin-right:6px; transition:transform .2s; color:var(--text2); }
     .row-client.open .toggle-icon { transform:rotate(90deg); }
 
+    /* СТРОКА ДАТЫ */
+    .row-date { background:#f4f7fb; cursor:pointer; border-bottom:1px solid var(--border); }
+    .row-date:hover { background:#eaf0f8; }
+    .row-date td { padding:7px 14px 7px 28px; font-size:12px; font-weight:600; color:var(--navy); }
+    .row-date td.r { text-align:right; white-space:nowrap; }
+    .row-date.open .toggle-icon { transform:rotate(90deg); }
+
     /* СТРОКА УПД */
     .row-doc { background:#fff; border-bottom:1px solid #f0f0f0; }
     .row-doc:hover { background:#fffbf8; }
@@ -426,26 +433,69 @@ function renderTable() {
     trCli.addEventListener('click', () => {
       trCli.classList.toggle('open');
       const isOpen = trCli.classList.contains('open');
-      tbody.querySelectorAll(`[data-parent="${cliId}"]`).forEach(el => el.classList.toggle('hidden', !isOpen));
+      tbody.querySelectorAll(`[data-parent="${cliId}"]`).forEach(el => {
+        el.classList.toggle('hidden', !isOpen);
+        if (!isOpen && el.classList.contains('row-date')) {
+          el.classList.remove('open');
+          const did = el.dataset.group;
+          if (did) tbody.querySelectorAll(`[data-parent="${did}"]`).forEach(d => d.classList.add('hidden'));
+        }
+      });
     });
 
-    // УПД — сортировка по убыванию просроченной задолженности
-    docList.sort((a,b) => b.over_amt - a.over_amt).forEach(doc => {
-      const trDoc = document.createElement('tr');
-      trDoc.className = 'row-doc hidden';
-      trDoc.dataset.parent = cliId;
+    // Группируем УПД по дате выставления
+    const dateMap = new Map();
+    docList.forEach(d => {
+      const key = d.doc_date || '—';
+      if (!dateMap.has(key)) dateMap.set(key, []);
+      dateMap.get(key).push(d);
+    });
 
-      const daysBadge = doc.days_over > 0
-        ? `<span class="days-badge">${Math.round(doc.days_over)} дн.</span>` : '';
+    // Сортируем даты по убыванию (новые сверху)
+    const sortedDates = [...dateMap.entries()].sort((a, b) => b[0].localeCompare(a[0]));
 
-      trDoc.innerHTML = `
-        <td class="doc-num" style="padding-left:32px">УПД ${doc.doc_num}</td>
-        <td>${fmtDate(doc.doc_date)}</td>
-        <td style="${doc.is_over ? 'color:var(--orange);font-weight:600' : ''}">${fmtDate(doc.due_date)}</td>
-        <td class="r">${fmt(doc.doc_amt)}</td>
-        <td class="r">${doc.over_amt > 0 ? '<span class="badge-over">'+fmt(doc.over_amt)+'</span>' : '—'}</td>
-        <td class="r">${doc.days_over > 0 ? daysBadge : '—'}</td>`;
-      tbody.appendChild(trDoc);
+    sortedDates.forEach(([docDate, dateDocs]) => {
+      const dateOver = dateDocs.reduce((s,r)=>s+r.over_amt, 0);
+      const dateAmt  = dateDocs.reduce((s,r)=>s+r.doc_amt, 0);
+      const dateId   = 'd_' + Math.random().toString(36).slice(2);
+
+      // Строка даты
+      const trDate = document.createElement('tr');
+      trDate.className = 'row-date hidden';
+      trDate.dataset.parent = cliId;
+      trDate.dataset.group  = dateId;
+      trDate.innerHTML = `
+        <td colspan="3"><i class="toggle-icon">▶</i>${fmtDate(docDate)}</td>
+        <td class="r">${fmt(dateAmt)}</td>
+        <td class="r">${dateOver > 0 ? '<span class="badge-over">'+fmt(dateOver)+'</span>' : '—'}</td>
+        <td class="r" style="font-size:11px;color:var(--text2)">${dateDocs.length} УПД</td>`;
+      tbody.appendChild(trDate);
+
+      trDate.addEventListener('click', e => {
+        e.stopPropagation();
+        trDate.classList.toggle('open');
+        const isOpen = trDate.classList.contains('open');
+        tbody.querySelectorAll(`[data-parent="${dateId}"]`).forEach(el => el.classList.toggle('hidden', !isOpen));
+      });
+
+      // УПД — сортировка по убыванию просрочки
+      dateDocs.sort((a,b) => b.over_amt - a.over_amt).forEach(doc => {
+        const trDoc = document.createElement('tr');
+        trDoc.className = 'row-doc hidden';
+        trDoc.dataset.parent = dateId;
+
+        const daysBadge = doc.days_over > 0
+          ? `<span class="days-badge">${Math.round(doc.days_over)} дн.</span>` : '';
+
+        trDoc.innerHTML = `
+          <td class="doc-num" style="padding-left:48px">УПД ${doc.doc_num}</td>
+          <td>${fmtDate(doc.doc_date)}</td>
+          <td style="${doc.is_over ? 'color:var(--orange);font-weight:600' : ''}">${fmtDate(doc.due_date)}</td>
+          <td class="r">${fmt(doc.doc_amt)}</td>
+          <td class="r">${doc.over_amt > 0 ? '<span class="badge-over">'+fmt(doc.over_amt)+'</span>' : '—'}</td>
+          <td class="r">${doc.days_over > 0 ? daysBadge : '—'}</td>`;
+        tbody.appendChild(trDoc);
+      });
     });
   });
 }
