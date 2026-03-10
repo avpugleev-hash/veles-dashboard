@@ -374,10 +374,10 @@ function hideState() {
 }
 
 // ── Рендер таблицы ──────────────────────────────────────────────
-function alertLevel(days) {
-  if (days > 7)  return 'red';
-  if (days > 0)  return 'yellow';
-  return '';
+function alertLevel(days, overAmt) {
+  if (!overAmt) return '';   // нет суммы просрочки — нет алерта
+  if (days > 7) return 'red';
+  return 'yellow';
 }
 
 function getFiltered() {
@@ -389,8 +389,8 @@ function getFiltered() {
              !r.doc_num.toLowerCase().includes(q)) return false;
     if (fil === 'overdue' && !r.is_over) return false;
     if (fil === 'ok'      &&  r.is_over) return false;
-    if (fil === 'yellow'  && alertLevel(r.days_over) !== 'yellow') return false;
-    if (fil === 'red'     && alertLevel(r.days_over) !== 'red')    return false;
+    if (fil === 'yellow'  && alertLevel(r.days_over, r.over_amt) !== 'yellow') return false;
+    if (fil === 'red'     && alertLevel(r.days_over, r.over_amt) !== 'red')    return false;
     return true;
   });
 }
@@ -429,8 +429,8 @@ function renderTable() {
   sortedClients.forEach(([clientName, docList]) => {
     const cliBal    = docList.reduce((s,r)=>s+r.balance, 0);
     const cliOver   = docList.reduce((s,r)=>s+r.over_amt, 0);
-    const maxDays   = Math.max(0, ...docList.map(r=>r.days_over));
-    const cliAlert  = alertLevel(maxDays);
+    const maxDays   = Math.max(0, ...docList.filter(r=>r.over_amt>0).map(r=>r.days_over));
+    const cliAlert  = alertLevel(maxDays, cliOver);
     const cliId     = 'c_' + Math.random().toString(36).slice(2);
 
     // Строка клиента
@@ -454,7 +454,7 @@ function renderTable() {
     // УПД — сортировка по возрастанию даты выставления
     docList.sort((a,b) => a.doc_date.localeCompare(b.doc_date)).forEach(doc => {
       const trDoc = document.createElement('tr');
-      const docAlert = alertLevel(doc.days_over);
+      const docAlert = alertLevel(doc.days_over, doc.over_amt);
       trDoc.className = 'row-doc hidden' + (docAlert ? ' alert-'+docAlert : '');
       trDoc.dataset.parent = cliId;
 
