@@ -334,7 +334,8 @@ async function loadData() {
         doc_amt:     toNum(r.doc_amount),
         balance:     toNum(r.balance),
         over_amt:    toNum(r.overdue_amount),
-        days_over:   daysActual,
+        days_over:   daysActual,   // для алерта
+        days_total:  daysTotal,    // для отображения в столбце
       };
     });
 
@@ -462,8 +463,8 @@ function renderTable() {
       trDoc.className = 'row-doc hidden' + (docAlert ? ' alert-'+docAlert : '');
       trDoc.dataset.parent = cliId;
 
-      const daysBadge = doc.days_over > 0
-        ? `<span class="days-badge">${Math.round(doc.days_over)} дн.</span>` : '';
+      const daysBadge = doc.days_total > 0
+        ? `<span class="days-badge">${Math.round(doc.days_total)} дн.</span>` : '';
 
       trDoc.innerHTML = `
         <td class="doc-num" style="padding-left:32px">УПД ${doc.doc_num}</td>
