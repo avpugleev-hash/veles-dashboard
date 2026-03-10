@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Задолженность | ООО "ТК ВЕЛЕС"</title>
+  <style>
+    :root {
+      --navy-primary: #1a2a4a;
+      --navy-dark: #0f1a2e;
+      --gold-accent: #d4a574;
+      --bg-light: #f7f8fa;
+      --bg-card: #ffffff;
+      --text-primary: #1a2a4a;
+      --text-secondary: #6b7280;
+      --border-color: #e5e7eb;
+      --success-green: #20b2aa;
+      --warning-orange: #e8622b;
+      --color-red-500: rgba(192, 21, 47, 1);
+      --radius-lg: 12px;
+      --radius-base: 8px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: "Geist", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg-light);
+      color: var(--text-primary);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* === ЛОГИН === */
+    .login-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .login-box {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: 28px 32px;
+      box-shadow: var(--shadow-md);
+      max-width: 380px;
+      width: 100%;
+    }
+    .login-box h2 {
+      margin-bottom: 6px;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--navy-primary);
+    }
+    .login-subtitle {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+    }
+    .login-label {
+      display: block;
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 10px;
+      margin-bottom: 3px;
+    }
+    .login-input {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: var(--radius-base);
+      border: 1px solid var(--border-color);
+      font-size: 13px;
+    }
+    .login-input:focus {
+      outline: none;
+      border-color: var(--success-green);
+      box-shadow: 0 0 0 3px rgba(32, 178, 170, 0.2);
+    }
+    .login-error {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--color-red-500);
+      display: none;
+    }
+    .login-btn {
+      margin-top: 14px;
+      width: 100%;
+      background: var(--navy-primary);
+      color: #fff;
+      border: none;
+      padding: 10px;
+      border-radius: var(--radius-base);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .login-btn:hover { background: #253a6a; }
+
+    /* === ШАПКА === */
+    .page-header {
+      background: var(--navy-primary);
+      color: #fff;
+      padding: 20px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .header-left h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .header-left .subtitle {
+      font-size: 13px;
+      opacity: 0.8;
+      margin-top: 2px;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .back-btn {
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.4);
+      padding: 7px 16px;
+      border-radius: var(--radius-base);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+    .back-btn:hover { background: rgba(255,255,255,0.2); }
+    .logout-btn {
+      background: transparent;
+      color: #f9fafb;
+      border: 1px solid rgba(255,255,255,0.5);
+      padding: 7px 14px;
+      border-radius: var(--radius-base);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .logout-btn:hover { background: rgba(255,255,255,0.1); }
+    #lastUpdateTime {
+      font-size: 12px;
+      opacity: 0.7;
+    }
+
+    /* === КОНТЕЙНЕР === */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    /* === ИТОГОВЫЕ КАРТОЧКИ === */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 1024px) { .summary-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 600px)  { .summary-grid { grid-template-columns: 1fr; } }
+
+    .summary-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border-color);
+    }
+    .summary-card .label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    .summary-card .value {
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .summary-card .sub {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+    .value.total   { color: var(--navy-primary); }
+    .value.overdue { color: var(--warning-orange); }
+    .value.green   { color: var(--success-green); }
+    .value.normal  { color: var(--navy-primary); }
+
+    /* === ФИЛЬТРЫ === */
+    .filters-bar {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: 14px 20px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border-color);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .filter-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .filter-input {
+      flex: 1;
+      min-width: 200px;
+      padding: 7px 12px;
+      border-radius: var(--radius-base);
+      border: 1px solid var(--border-color);
+      font-size: 13px;
+      outline: none;
+    }
+    .filter-input:focus {
+      border-color: var(--success-green);
+      box-shadow: 0 0 0 2px rgba(32,178,170,0.15);
+    }
+    .filter-select {
+      padding: 7px 12px;
+      border-radius: var(--radius-base);
+      border: 1px solid var(--border-color);
+      font-size: 13px;
+      background: #fff;
+      cursor: pointer;
+      outline: none;
+    }
+    .filter-select:focus {
+      border-color: var(--success-green);
+    }
+    .results-count {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-left: auto;
+      white-space: nowrap;
+    }
+
+    /* === ТАБЛИЦА === */
+    .table-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+    .table-wrapper {
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    thead th {
+      background: var(--navy-primary);
+      color: #fff;
+      padding: 11px 14px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 12px;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+      position: sticky;
+      top: 0;
+    }
+    thead th:hover { background: #253a6a; }
+    thead th.num { text-align: right; }
+    thead th .sort-icon {
+      margin-left: 4px;
+      opacity: 0.5;
+      font-style: normal;
+    }
+    thead th.sorted .sort-icon { opacity: 1; }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border-color);
+      transition: background 0.1s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(26,42,74,0.03); }
+    tbody tr.has-overdue { background: rgba(232, 98, 43, 0.03); }
+    tbody tr.has-overdue:hover { background: rgba(232, 98, 43, 0.07); }
+
+    td {
+      padding: 10px 14px;
+      vertical-align: middle;
+    }
+    td.num { text-align: right; white-space: nowrap; }
+    td.client-name { font-weight: 600; color: var(--navy-primary); }
+    td.contract-name { color: var(--text-secondary); font-size: 12px; }
+
+    .overdue-badge {
+      display: inline-block;
+      background: rgba(232, 98, 43, 0.12);
+      color: var(--warning-orange);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .zero-overdue { color: var(--text-secondary); font-size: 12px; }
+
+    /* Строка итогов */
+    tfoot td {
+      padding: 11px 14px;
+      font-weight: 700;
+      font-size: 13px;
+      background: #f0f4f8;
+      border-top: 2px solid var(--navy-primary);
+    }
+    tfoot td.num { text-align: right; white-space: nowrap; }
+
+    /* === ЗАГРУЗКА / ОШИБКА === */
+    .state-msg {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+    .spinner {
+      display: inline-block;
+      width: 28px;
+      height: 28px;
+      border: 3px solid rgba(26,42,74,0.15);
+      border-top-color: var(--navy-primary);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-bottom: 10px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* === ДАТА СРЕЗА === */
+    .snapshot-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .snapshot-label strong { color: var(--text-primary); }
+
+    /* прогресс-бар доли просрочки */
+    .overdue-bar-wrap {
+      margin-top: 8px;
+      height: 4px;
+      background: var(--border-color);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .overdue-bar-fill {
+      height: 100%;
+      background: var(--warning-orange);
+      border-radius: 99px;
+      transition: width 0.5s ease;
+    }
+  </style>
+</head>
+<body>
+
+<!-- === ЛОГИН === -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <h2>ТК ВЕЛЕС</h2>
+    <p class="login-subtitle">Детализация задолженности</p>
+    <form id="loginForm" autocomplete="off">
+      <label class="login-label" for="loginLogin">Логин</label>
+      <input class="login-input" id="loginLogin" type="text" placeholder="Введите логин" autocomplete="username">
+      <label class="login-label" for="loginPassword">Пароль</label>
+      <input class="login-input" id="loginPassword" type="password" placeholder="Введите пароль" autocomplete="current-password">
+      <div class="login-error" id="loginError"></div>
+      <button class="login-btn" type="submit">Войти</button>
+    </form>
+  </div>
+</div>
+
+<!-- === ШАПКА === -->
+<div class="page-header">
+  <div class="header-left">
+    <h1>Задолженность клиентов</h1>
+    <div class="subtitle">ООО "ТК ВЕЛЕС" — детализация дебиторской задолженности</div>
+  </div>
+  <div class="header-right">
+    <span id="lastUpdateTime"></span>
+    <a href="index.html" class="back-btn">← Дашборд</a>
+    <button class="logout-btn" onclick="logout()">Выйти</button>
+  </div>
+</div>
+
+<!-- === ОСНОВНОЙ КОНТЕНТ === -->
+<div class="container">
+
+  <!-- Итоговые карточки -->
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="label">Общая задолженность</div>
+      <div class="value total" id="sumTotal">—</div>
+      <div class="sub" id="snapshotDateLabel"></div>
+    </div>
+    <div class="summary-card">
+      <div class="label">Просроченная</div>
+      <div class="value overdue" id="sumOverdue">—</div>
+      <div class="overdue-bar-wrap"><div class="overdue-bar-fill" id="overdueBarFill" style="width:0%"></div></div>
+      <div class="sub" id="overduePercLabel"></div>
+    </div>
+    <div class="summary-card">
+      <div class="label">Клиентов с просрочкой</div>
+      <div class="value overdue" id="countOverdue">—</div>
+      <div class="sub" id="countOverdueSub"></div>
+    </div>
+    <div class="summary-card">
+      <div class="label">Клиентов без просрочки</div>
+      <div class="value green" id="countOk">—</div>
+      <div class="sub" id="countOkSub"></div>
+    </div>
+  </div>
+
+  <!-- Фильтры -->
+  <div class="filters-bar">
+    <span class="filter-label">Поиск:</span>
+    <input class="filter-input" id="searchInput" type="text" placeholder="Клиент или договор...">
+    <span class="filter-label">Показать:</span>
+    <select class="filter-select" id="filterSelect">
+      <option value="all">Все</option>
+      <option value="overdue">Только с просрочкой</option>
+      <option value="ok">Без просрочки</option>
+    </select>
+    <span class="results-count" id="resultsCount"></span>
+  </div>
+
+  <!-- Таблица -->
+  <div class="table-card">
+    <div class="table-wrapper">
+      <div id="tableState" class="state-msg">
+        <div class="spinner"></div>
+        <div>Загрузка данных...</div>
+      </div>
+      <table id="debtTable" style="display:none">
+        <thead>
+          <tr>
+            <th data-col="client_name">Клиент <i class="sort-icon">↕</i></th>
+            <th data-col="contract_name">Договор <i class="sort-icon">↕</i></th>
+            <th data-col="total_balance" class="num">Общий баланс <i class="sort-icon">↕</i></th>
+            <th data-col="overdue_balance" class="num">Просрочка <i class="sort-icon">↕</i></th>
+            <th data-col="overdue_pct" class="num">Доля <i class="sort-icon">↕</i></th>
+          </tr>
+        </thead>
+        <tbody id="debtBody"></tbody>
+        <tfoot>
+          <tr id="totalRow">
+            <td colspan="2">Итого</td>
+            <td class="num" id="footTotal">—</td>
+            <td class="num" id="footOverdue">—</td>
+            <td class="num" id="footPct">—</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const DASHBOARD_API_URL = 'https://alekseipugleev.app.n8n.cloud/webhook/dashboard-data';
+  const LOGIN_API_URL     = 'https://alekseipugleev.app.n8n.cloud/webhook/dashboard-login';
+  const AUTH_STORAGE_KEY  = 'veles_dashboard_auth_v1';
+  const AUTH_TTL_MS       = 8 * 60 * 60 * 1000;
+
+  let allRows = [];      // все строки из CSV
+  let sortCol = 'overdue_balance';
+  let sortAsc = false;
+
+  // === Утилиты ===
+  function fmt(n) {
+    if (!n) return '—';
+    return (n / 1e6).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' млн ₽';
+  }
+  function fmtPct(n) { return n ? n.toFixed(1) + '%' : '0%'; }
+
+  function parseCSV(text) {
+    const lines = text.trim().split(/\r?\n/);
+    const header = splitCSVLine(lines[0]);
+    const rows = [];
+    for (let i = 1; i < lines.length; i++) {
+      const cells = splitCSVLine(lines[i]);
+      const obj = {};
+      header.forEach((h, idx) => { obj[h.trim()] = (cells[idx] || '').trim(); });
+      rows.push(obj);
+    }
+    return rows;
+  }
+
+  function splitCSVLine(line) {
+    const result = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') {
+        if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+        else inQ = !inQ;
+      } else if (c === ',' && !inQ) { result.push(cur); cur = ''; }
+      else cur += c;
+    }
+    result.push(cur);
+    return result;
+  }
+
+  function toNum(s) {
+    if (!s) return 0;
+    return parseFloat(String(s).replace(/\s/g, '').replace(',', '.')) || 0;
+  }
+
+  // === Авторизация ===
+  function saveAuthSession(login) {
+    try { localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ login, ts: Date.now() })); } catch(e) {}
+  }
+  function loadAuthSession() {
+    try {
+      const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+      if (!raw) return null;
+      const d = JSON.parse(raw);
+      if (!d || typeof d.ts !== 'number') return null;
+      if (Date.now() - d.ts > AUTH_TTL_MS) { localStorage.removeItem(AUTH_STORAGE_KEY); return null; }
+      return d;
+    } catch(e) { return null; }
+  }
+  function clearAuthSession() { try { localStorage.removeItem(AUTH_STORAGE_KEY); } catch(e) {} }
+  function logout() {
+    clearAuthSession();
+    document.getElementById('loginOverlay').style.display = 'flex';
+    document.getElementById('loginLogin').value = '';
+    document.getElementById('loginPassword').value = '';
+  }
+
+  async function tryLogin(login, password) {
+    const resp = await fetch(LOGIN_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ login, password })
+    });
+    if (!resp.ok) return false;
+    const data = await resp.json().catch(() => null);
+    return data && data.ok === true;
+  }
+
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const login    = document.getElementById('loginLogin').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const errorEl  = document.getElementById('loginError');
+    errorEl.style.display = 'none';
+    if (!login || !password) { errorEl.textContent = 'Введите логин и пароль'; errorEl.style.display = 'block'; return; }
+    try {
+      const ok = await tryLogin(login, password);
+      if (!ok) { errorEl.textContent = 'Неверный логин или пароль'; errorEl.style.display = 'block'; return; }
+      saveAuthSession(login);
+      document.getElementById('loginOverlay').style.display = 'none';
+      loadData();
+    } catch(err) {
+      errorEl.textContent = 'Ошибка подключения к серверу';
+      errorEl.style.display = 'block';
+    }
+  });
+
+  // === Загрузка данных ===
+  async function loadData() {
+    document.getElementById('tableState').innerHTML = '<div class="spinner"></div><div>Загрузка данных...</div>';
+    document.getElementById('debtTable').style.display = 'none';
+
+    try {
+      const url = DASHBOARD_API_URL + '?_ts=' + Date.now();
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const api = await res.json();
+      if (!api || api.ok !== true || !api.csv) throw new Error('Bad API response');
+
+      const csvText = api.csv.clients || '';
+      if (!csvText) throw new Error('Нет данных по клиентам');
+
+      const raw = parseCSV(csvText);
+
+      // Берём дату среза
+      const dates = raw.map(r => r.as_of_date).filter(Boolean).sort();
+      const snapshotDate = dates[dates.length - 1] || '';
+
+      // Фильтруем только строки за последнюю дату
+      const rows = raw.filter(r => !snapshotDate || r.as_of_date === snapshotDate);
+
+      allRows = rows.map(r => ({
+        client_name:      r.client_name   || '',
+        contract_name:    r.contract_name || '',
+        total_balance:    toNum(r.total_balance),
+        overdue_balance:  toNum(r.overdue_balance),
+        as_of_date:       r.as_of_date || ''
+      })).map(r => ({
+        ...r,
+        overdue_pct: r.total_balance ? r.overdue_balance / r.total_balance * 100 : 0
+      }));
+
+      // Итоги
+      const totalSum   = allRows.reduce((s, r) => s + r.total_balance,   0);
+      const overdueSum = allRows.reduce((s, r) => s + r.overdue_balance, 0);
+      const pct        = totalSum ? overdueSum / totalSum * 100 : 0;
+      const withOver   = new Set(allRows.filter(r => r.overdue_balance > 0).map(r => r.client_name)).size;
+      const withoutOver= new Set(allRows.filter(r => r.overdue_balance === 0).map(r => r.client_name)).size;
+
+      document.getElementById('sumTotal').textContent    = fmt(totalSum);
+      document.getElementById('sumOverdue').textContent  = fmt(overdueSum);
+      document.getElementById('overdueBarFill').style.width = Math.min(pct, 100) + '%';
+      document.getElementById('overduePercLabel').textContent = fmtPct(pct) + ' от общего';
+      document.getElementById('countOverdue').textContent = withOver;
+      document.getElementById('countOverdueSub').textContent = 'уникальных клиентов';
+      document.getElementById('countOk').textContent = withoutOver;
+      document.getElementById('countOkSub').textContent = 'уникальных клиентов';
+
+      if (snapshotDate) {
+        const [y, m, d] = snapshotDate.split('-');
+        document.getElementById('snapshotDateLabel').textContent = `Данные на ${d}.${m}.${y}`;
+      }
+
+      document.getElementById('lastUpdateTime').textContent =
+        'Обновлено: ' + new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+      document.getElementById('tableState').style.display = 'none';
+      document.getElementById('debtTable').style.display  = '';
+
+      renderTable();
+
+    } catch(err) {
+      document.getElementById('tableState').innerHTML =
+        `<div style="color:#c0152f">Ошибка загрузки: ${err.message}</div>
+         <button onclick="loadData()" style="margin-top:12px;padding:8px 20px;border-radius:8px;border:1px solid #ccc;cursor:pointer;font-size:13px;">Повторить</button>`;
+    }
+  }
+
+  // === Рендер таблицы ===
+  function getFiltered() {
+    const search  = document.getElementById('searchInput').value.toLowerCase().trim();
+    const filter  = document.getElementById('filterSelect').value;
+
+    return allRows.filter(r => {
+      if (search && !r.client_name.toLowerCase().includes(search) && !r.contract_name.toLowerCase().includes(search)) return false;
+      if (filter === 'overdue' && r.overdue_balance === 0) return false;
+      if (filter === 'ok'      && r.overdue_balance  > 0) return false;
+      return true;
+    });
+  }
+
+  function renderTable() {
+    const rows = getFiltered().slice().sort((a, b) => {
+      const va = a[sortCol], vb = b[sortCol];
+      if (typeof va === 'string') return sortAsc ? va.localeCompare(vb, 'ru') : vb.localeCompare(va, 'ru');
+      return sortAsc ? va - vb : vb - va;
+    });
+
+    // Обновляем иконки сортировки
+    document.querySelectorAll('thead th').forEach(th => {
+      th.classList.remove('sorted');
+      th.querySelector('.sort-icon').textContent = '↕';
+    });
+    const activeTh = document.querySelector(`thead th[data-col="${sortCol}"]`);
+    if (activeTh) {
+      activeTh.classList.add('sorted');
+      activeTh.querySelector('.sort-icon').textContent = sortAsc ? '↑' : '↓';
+    }
+
+    const tbody = document.getElementById('debtBody');
+    tbody.innerHTML = '';
+
+    rows.forEach(r => {
+      const tr = document.createElement('tr');
+      if (r.overdue_balance > 0) tr.classList.add('has-overdue');
+
+      const tdClient = document.createElement('td');
+      tdClient.className = 'client-name';
+      tdClient.textContent = r.client_name;
+      tr.appendChild(tdClient);
+
+      const tdContract = document.createElement('td');
+      tdContract.className = 'contract-name';
+      tdContract.textContent = r.contract_name;
+      tr.appendChild(tdContract);
+
+      const tdTotal = document.createElement('td');
+      tdTotal.className = 'num';
+      tdTotal.textContent = fmt(r.total_balance);
+      tr.appendChild(tdTotal);
+
+      const tdOver = document.createElement('td');
+      tdOver.className = 'num';
+      if (r.overdue_balance > 0) {
+        tdOver.innerHTML = `<span class="overdue-badge">${fmt(r.overdue_balance)}</span>`;
+      } else {
+        tdOver.innerHTML = `<span class="zero-overdue">—</span>`;
+      }
+      tr.appendChild(tdOver);
+
+      const tdPct = document.createElement('td');
+      tdPct.className = 'num';
+      tdPct.textContent = r.overdue_balance > 0 ? fmtPct(r.overdue_pct) : '—';
+      if (r.overdue_pct > 50) tdPct.style.color = 'var(--warning-orange)';
+      tr.appendChild(tdPct);
+
+      tbody.appendChild(tr);
+    });
+
+    // Итоги по отфильтрованным
+    const filtTotal   = rows.reduce((s, r) => s + r.total_balance, 0);
+    const filtOverdue = rows.reduce((s, r) => s + r.overdue_balance, 0);
+    const filtPct     = filtTotal ? filtOverdue / filtTotal * 100 : 0;
+    document.getElementById('footTotal').textContent   = fmt(filtTotal);
+    document.getElementById('footOverdue').textContent = fmt(filtOverdue);
+    document.getElementById('footPct').textContent     = fmtPct(filtPct);
+
+    document.getElementById('resultsCount').textContent =
+      `Показано: ${rows.length} строк из ${allRows.length}`;
+  }
+
+  // === Сортировка по клику на заголовок ===
+  document.querySelectorAll('thead th[data-col]').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.col;
+      if (sortCol === col) sortAsc = !sortAsc;
+      else { sortCol = col; sortAsc = col === 'client_name' || col === 'contract_name'; }
+      renderTable();
+    });
+  });
+
+  // === Фильтры ===
+  document.getElementById('searchInput').addEventListener('input', renderTable);
+  document.getElementById('filterSelect').addEventListener('change', renderTable);
+
+  // === Инициализация ===
+  document.addEventListener('DOMContentLoaded', () => {
+    const session = loadAuthSession();
+    if (session) {
+      document.getElementById('loginOverlay').style.display = 'none';
+      loadData();
+    }
+  });
+</script>
+</body>
+</html>
