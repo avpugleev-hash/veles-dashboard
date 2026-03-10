@@ -111,6 +111,15 @@
     @keyframes sp { to { transform:rotate(360deg); } }
 
     .hidden { display:none !important; }
+
+    /* АЛЕРТЫ */
+    .alert-dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:7px; flex-shrink:0; vertical-align:middle; }
+    .alert-dot.yellow { background:#f59e0b; box-shadow:0 0 0 3px rgba(245,158,11,.2); }
+    .alert-dot.red    { background:#dc2626; box-shadow:0 0 0 3px rgba(220,38,38,.2); }
+    .row-client.alert-yellow { border-left:4px solid #f59e0b; }
+    .row-client.alert-red    { border-left:4px solid #dc2626; }
+    .row-doc.alert-yellow td:first-child { border-left:3px solid #f59e0b; }
+    .row-doc.alert-red    td:first-child { border-left:3px solid #dc2626; }
   </style>
 </head>
 <body>
@@ -181,6 +190,8 @@
       <option value="all">Все</option>
       <option value="overdue">Только с просрочкой</option>
       <option value="ok">Без просрочки</option>
+      <option value="yellow">🟡 До 7 суток</option>
+      <option value="red">🔴 Более 7 суток</option>
     </select>
     <span class="f-count" id="fCount"></span>
   </div>
@@ -363,6 +374,12 @@ function hideState() {
 }
 
 // ── Рендер таблицы ──────────────────────────────────────────────
+function alertLevel(days) {
+  if (days > 7)  return 'red';
+  if (days > 0)  return 'yellow';
+  return '';
+}
+
 function getFiltered() {
   const q   = document.getElementById('fSearch').value.toLowerCase().trim();
   const fil = document.getElementById('fFilter').value;
@@ -372,6 +389,8 @@ function getFiltered() {
              !r.doc_num.toLowerCase().includes(q)) return false;
     if (fil === 'overdue' && !r.is_over) return false;
     if (fil === 'ok'      &&  r.is_over) return false;
+    if (fil === 'yellow'  && alertLevel(r.days_over) !== 'yellow') return false;
+    if (fil === 'red'     && alertLevel(r.days_over) !== 'red')    return false;
     return true;
   });
 }
@@ -408,16 +427,19 @@ function renderTable() {
 
   // Рендерим клиентов
   sortedClients.forEach(([clientName, docList]) => {
-    const cliBal  = docList.reduce((s,r)=>s+r.balance, 0);
-    const cliOver = docList.reduce((s,r)=>s+r.over_amt, 0);
-    const cliId   = 'c_' + Math.random().toString(36).slice(2);
+    const cliBal    = docList.reduce((s,r)=>s+r.balance, 0);
+    const cliOver   = docList.reduce((s,r)=>s+r.over_amt, 0);
+    const maxDays   = Math.max(0, ...docList.map(r=>r.days_over));
+    const cliAlert  = alertLevel(maxDays);
+    const cliId     = 'c_' + Math.random().toString(36).slice(2);
 
     // Строка клиента
     const trCli = document.createElement('tr');
-    trCli.className = 'row-client';
+    trCli.className = 'row-client' + (cliAlert ? ' alert-'+cliAlert : '');
     trCli.dataset.group = cliId;
+    const alertDot = cliAlert ? `<span class="alert-dot ${cliAlert}"></span>` : '';
     trCli.innerHTML = `
-      <td colspan="3"><i class="toggle-icon">▶</i>${clientName}</td>
+      <td colspan="3"><i class="toggle-icon">▶</i>${alertDot}${clientName}</td>
       <td class="r">${fmt(cliBal)}</td>
       <td class="r">${cliOver > 0 ? '<span class="badge-over">'+fmt(cliOver)+'</span>' : '<span class="badge-ok">нет</span>'}</td>
       <td class="r" style="font-size:11px;color:var(--text2)">${docList.length} УПД</td>`;
@@ -432,7 +454,8 @@ function renderTable() {
     // УПД — сортировка по возрастанию даты выставления
     docList.sort((a,b) => a.doc_date.localeCompare(b.doc_date)).forEach(doc => {
       const trDoc = document.createElement('tr');
-      trDoc.className = 'row-doc hidden';
+      const docAlert = alertLevel(doc.days_over);
+      trDoc.className = 'row-doc hidden' + (docAlert ? ' alert-'+docAlert : '');
       trDoc.dataset.parent = cliId;
 
       const daysBadge = doc.days_over > 0
