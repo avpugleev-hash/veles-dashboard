@@ -150,6 +150,18 @@
     .comment-placeholder { opacity:.38; font-style:italic; }
     .comment-input { width:100%; padding:4px 7px; border-radius:var(--r-md); border:1px solid var(--green); font-size:12px; font-family:inherit; outline:none; resize:none; box-shadow:0 0 0 2px rgba(32,178,170,.15); }
 
+    /* ИСТОРИЯ КОММЕНТАРИЕВ */
+    .history-link { font-size:11px; color:var(--green); cursor:pointer; display:block; margin-top:3px; text-decoration:none; background:none; border:none; padding:0; text-align:left; }
+    .history-link:hover { text-decoration:underline; }
+    .history-box { max-width:520px; }
+    .history-table { width:100%; border-collapse:collapse; font-size:12px; margin-top:6px; }
+    .history-table th { background:var(--navy); color:#fff; padding:6px 10px; text-align:left; font-size:11px; }
+    .history-table td { padding:7px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+    .history-table tr:last-child td { border-bottom:none; }
+    .history-table .h-date { white-space:nowrap; color:var(--text2); width:110px; }
+    .history-table .h-login { white-space:nowrap; color:var(--text2); width:80px; }
+    .history-empty { text-align:center; color:var(--text2); padding:20px; font-size:13px; }
+
     /* АЛЕРТЫ */
     .alert-dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:7px; flex-shrink:0; vertical-align:middle; }
     .alert-dot.yellow { background:#f59e0b; box-shadow:0 0 0 3px rgba(245,158,11,.2); }
@@ -268,6 +280,30 @@
 
 </div>
 
+<!-- МОДАЛЬНОЕ ОКНО: ИСТОРИЯ КОММЕНТАРИЕВ -->
+<div id="historyModal" class="modal-overlay hidden">
+  <div class="modal-box history-box">
+    <div class="modal-hdr">
+      <h3>История: <span id="historyModalTitle"></span></h3>
+      <button class="modal-close" onclick="closeHistoryModal()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px 22px;">
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>Дата</th>
+            <th>Менеджер</th>
+            <th>Комментарий</th>
+          </tr>
+        </thead>
+        <tbody id="historyTableBody">
+          <tr><td colspan="3" class="history-empty">Загрузка...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <!-- МОДАЛЬНОЕ ОКНО: ПИСЬМО КЛИЕНТУ -->
 <div id="emailModal" class="modal-overlay hidden">
   <div class="modal-box">
@@ -302,9 +338,10 @@
 
 <script>
 const LOGIN_API_URL    = 'https://alekseipugleev.app.n8n.cloud/webhook/dashboard-login';
-const COMMENTS_GET_URL    = 'https://alekseipugleev.app.n8n.cloud/webhook/get-comments';
-const COMMENTS_SAVE_URL   = 'https://alekseipugleev.app.n8n.cloud/webhook/save-comment';
-const GENERATE_EMAIL_URL  = 'https://alekseipugleev.app.n8n.cloud/webhook/generate-email';
+const COMMENTS_GET_URL      = 'https://alekseipugleev.app.n8n.cloud/webhook/get-comments';
+const COMMENTS_SAVE_URL     = 'https://alekseipugleev.app.n8n.cloud/webhook/save-comment';
+const COMMENT_HISTORY_URL   = 'https://alekseipugleev.app.n8n.cloud/webhook/get-comment-history';
+const GENERATE_EMAIL_URL    = 'https://alekseipugleev.app.n8n.cloud/webhook/generate-email';
 const AUTH_KEY         = 'veles_dashboard_auth_v1';
 const AUTH_TTL         = 8 * 3600 * 1000;
 const UPD_CSV_URL      = 'https://docs.google.com/spreadsheets/d/1D9-uViFll7h3SUT01lvlHKTF0VnQCx46h8569zSpaCQ/export?format=csv&gid=1164788937';
@@ -351,6 +388,14 @@ function splitLine(line) {
 function toNum(s) { return parseFloat(String(s||0).replace(/\s/g,'').replace(',','.')) || 0; }
 
 // ── Вычисление срока оплаты ───────────────────────────────────────
+function parseDdMmYyyy(s) {
+  if (!s) return new Date(0);
+  const parts = String(s).split('.');
+  if (parts.length !== 3) return new Date(0);
+  const [d, m, y] = parts.map(Number);
+  return new Date(y, m - 1, d);
+}
+
 function calcDueDate(docDateStr, creditDays) {
   if (!docDateStr || !creditDays) return '';
   const parts = String(docDateStr).split('.');
@@ -418,6 +463,7 @@ async function saveCommentRemote(clientName, text) {
 function renderCommentCell(td, clientName) {
   td.innerHTML = '';
   const saved = getComment(clientName);
+
   const span = document.createElement('span');
   span.className = 'comment-text' + (saved ? '' : ' comment-placeholder');
   span.textContent = saved || '+ добавить комментарий';
@@ -443,6 +489,45 @@ function renderCommentCell(td, clientName) {
     });
   });
   td.appendChild(span);
+
+  const histBtn = document.createElement('button');
+  histBtn.className = 'history-link';
+  histBtn.textContent = '↺ история';
+  histBtn.addEventListener('click', e => { e.stopPropagation(); openHistoryModal(clientName); });
+  td.appendChild(histBtn);
+}
+
+async function openHistoryModal(clientName) {
+  document.getElementById('historyModalTitle').textContent = clientName;
+  const tbody = document.getElementById('historyTableBody');
+  tbody.innerHTML = '<tr><td colspan="3" class="history-empty">Загрузка...</td></tr>';
+  document.getElementById('historyModal').classList.remove('hidden');
+
+  try {
+    const r = await fetch(`${COMMENT_HISTORY_URL}?client=${encodeURIComponent(clientName)}`, {cache:'no-store'});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    const rows = Array.isArray(data) ? data : [];
+    tbody.innerHTML = '';
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="3" class="history-empty">История пуста</td></tr>';
+    } else {
+      rows.slice().reverse().forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="h-date">${row.date || '—'}</td>
+          <td class="h-login">${row.login || '—'}</td>
+          <td>${row.comment || '—'}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="3" class="history-empty">Ошибка загрузки: ${e.message}</td></tr>`;
+  }
+}
+
+function closeHistoryModal() {
+  document.getElementById('historyModal').classList.add('hidden');
 }
 
 // ── Авторизация ─────────────────────────────────────────────────
@@ -647,7 +732,7 @@ function renderTable() {
     });
 
     // УПД — сортировка по возрастанию даты выставления
-    docList.sort((a,b) => a.doc_date.localeCompare(b.doc_date)).forEach(doc => {
+    docList.sort((a,b) => parseDdMmYyyy(a.doc_date) - parseDdMmYyyy(b.doc_date)).forEach(doc => {
       const trDoc = document.createElement('tr');
       const docAlert = alertLevel(doc.days_over, doc.over_amt);
       trDoc.className = 'row-doc hidden' + (docAlert ? ' alert-'+docAlert : '');
@@ -756,6 +841,9 @@ function copyEmail() {
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('emailModal').addEventListener('click', e => {
     if (e.target === document.getElementById('emailModal')) closeEmailModal();
+  });
+  document.getElementById('historyModal').addEventListener('click', e => {
+    if (e.target === document.getElementById('historyModal')) closeHistoryModal();
   });
 });
 
