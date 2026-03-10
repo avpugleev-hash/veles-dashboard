@@ -112,6 +112,37 @@
 
     .hidden { display:none !important; }
 
+    /* КНОПКА ПИСЬМА */
+    .email-btn { background:none; border:1px solid rgba(26,42,74,.25); border-radius:4px; padding:1px 7px; font-size:12px; cursor:pointer; margin-left:8px; color:var(--navy); vertical-align:middle; transition:background .15s,color .15s; }
+    .email-btn:hover { background:var(--navy); color:#fff; }
+
+    /* МОДАЛЬНОЕ ОКНО ПИСЬМА */
+    .modal-overlay { position:fixed; inset:0; background:rgba(15,23,42,.6); display:flex; align-items:center; justify-content:center; z-index:2000; padding:16px; }
+    .modal-box { background:var(--card); border-radius:var(--r-lg); width:100%; max-width:640px; max-height:90vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,.2); }
+    .modal-hdr { display:flex; align-items:center; justify-content:space-between; padding:18px 22px 14px; border-bottom:1px solid var(--border); flex-shrink:0; }
+    .modal-hdr h3 { font-size:16px; font-weight:700; color:var(--navy); margin:0; }
+    .modal-close { background:none; border:none; font-size:20px; cursor:pointer; color:var(--text2); line-height:1; padding:2px 6px; border-radius:4px; }
+    .modal-close:hover { background:var(--border); }
+    .modal-body { padding:18px 22px; overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:14px; }
+    .modal-debt-info { background:#f0f4f8; border-radius:var(--r-md); padding:12px 14px; font-size:13px; }
+    .modal-debt-info b { color:var(--navy); }
+    .modal-debt-info .di-row { display:flex; justify-content:space-between; margin-bottom:3px; }
+    .modal-debt-info .di-row:last-child { margin-bottom:0; }
+    .style-label { font-size:12px; font-weight:600; color:var(--text2); margin-bottom:6px; }
+    .style-options { display:flex; gap:10px; flex-wrap:wrap; }
+    .style-options label { display:flex; align-items:center; gap:5px; font-size:13px; cursor:pointer; padding:6px 12px; border:1px solid var(--border); border-radius:var(--r-md); transition:border-color .15s,background .15s; }
+    .style-options label:has(input:checked) { border-color:var(--navy); background:#eef1f8; font-weight:600; }
+    .style-options input { accent-color:var(--navy); }
+    .btn-generate { background:var(--navy); color:#fff; border:none; padding:10px 22px; border-radius:var(--r-md); font-size:14px; font-weight:600; cursor:pointer; align-self:flex-start; transition:background .15s; display:flex; align-items:center; gap:8px; }
+    .btn-generate:hover { background:#253a6a; }
+    .btn-generate:disabled { opacity:.55; cursor:not-allowed; }
+    .email-textarea { width:100%; border:1px solid var(--border); border-radius:var(--r-md); padding:12px 14px; font-size:13px; font-family:inherit; line-height:1.6; resize:vertical; outline:none; min-height:280px; }
+    .email-textarea:focus { border-color:var(--green); box-shadow:0 0 0 2px rgba(32,178,170,.15); }
+    .modal-ftr { display:flex; align-items:center; justify-content:space-between; padding:12px 22px 18px; flex-shrink:0; }
+    .btn-copy { background:var(--green); color:#fff; border:none; padding:9px 20px; border-radius:var(--r-md); font-size:13px; font-weight:600; cursor:pointer; transition:background .15s; }
+    .btn-copy:hover { background:#188f88; }
+    .copy-ok { font-size:12px; color:var(--green); font-weight:600; opacity:0; transition:opacity .3s; }
+
     /* КОММЕНТАРИЙ МЕНЕДЖЕРА */
     .comment-cell { min-width:180px; max-width:280px; }
     .comment-text { font-size:12px; color:var(--text2); cursor:pointer; padding:3px 7px; border-radius:4px; display:block; min-height:22px; white-space:pre-wrap; word-break:break-word; }
@@ -237,10 +268,43 @@
 
 </div>
 
+<!-- МОДАЛЬНОЕ ОКНО: ПИСЬМО КЛИЕНТУ -->
+<div id="emailModal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <h3 id="emailModalTitle"></h3>
+      <button class="modal-close" onclick="closeEmailModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="emailClientInfo" class="modal-debt-info"></div>
+
+      <div>
+        <div class="style-label">Стиль письма:</div>
+        <div class="style-options">
+          <label><input type="radio" name="emailStyle" value="мягкий" checked> Мягкий <span style="font-size:11px;opacity:.6">(первое напоминание)</span></label>
+          <label><input type="radio" name="emailStyle" value="официальный"> Официальный</label>
+          <label><input type="radio" name="emailStyle" value="строгий"> Строгий <span style="font-size:11px;opacity:.6">(длительная просрочка)</span></label>
+        </div>
+      </div>
+
+      <button class="btn-generate" id="generateBtn" onclick="generateEmail()">✦ Сгенерировать письмо</button>
+
+      <div id="emailResult" class="hidden">
+        <textarea class="email-textarea" id="emailText" placeholder="Текст письма появится здесь..."></textarea>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <span class="copy-ok" id="copyOk">✓ Скопировано</span>
+      <button class="btn-copy" id="copyBtn" onclick="copyEmail()">Скопировать</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const LOGIN_API_URL    = 'https://alekseipugleev.app.n8n.cloud/webhook/dashboard-login';
-const COMMENTS_GET_URL = 'https://alekseipugleev.app.n8n.cloud/webhook/get-comments';
-const COMMENTS_SAVE_URL= 'https://alekseipugleev.app.n8n.cloud/webhook/save-comment';
+const COMMENTS_GET_URL    = 'https://alekseipugleev.app.n8n.cloud/webhook/get-comments';
+const COMMENTS_SAVE_URL   = 'https://alekseipugleev.app.n8n.cloud/webhook/save-comment';
+const GENERATE_EMAIL_URL  = 'https://alekseipugleev.app.n8n.cloud/webhook/generate-email';
 const AUTH_KEY         = 'veles_dashboard_auth_v1';
 const AUTH_TTL         = 8 * 3600 * 1000;
 const UPD_CSV_URL      = 'https://docs.google.com/spreadsheets/d/1D9-uViFll7h3SUT01lvlHKTF0VnQCx46h8569zSpaCQ/export?format=csv&gid=1164788937';
@@ -568,6 +632,14 @@ function renderTable() {
     tbody.appendChild(trCli);
     renderCommentCell(trCli.querySelector('.comment-cell'), clientName);
 
+    // Кнопка письма
+    const emailBtn = document.createElement('button');
+    emailBtn.className = 'email-btn';
+    emailBtn.title = 'Написать письмо клиенту';
+    emailBtn.textContent = '✉ Письмо';
+    emailBtn.addEventListener('click', e => { e.stopPropagation(); openEmailModal(clientName, docList); });
+    trCli.querySelector('td').appendChild(emailBtn);
+
     trCli.addEventListener('click', () => {
       trCli.classList.toggle('open');
       const isOpen = trCli.classList.contains('open');
@@ -597,6 +669,94 @@ function renderTable() {
     });
   });
 }
+
+// ── Письмо клиенту ───────────────────────────────────────────────
+let emailModalDocs = [];
+let emailModalClient = '';
+
+function openEmailModal(clientName, docList) {
+  emailModalClient = clientName;
+  emailModalDocs   = docList;
+
+  document.getElementById('emailModalTitle').textContent = clientName;
+
+  // Итоги по клиенту
+  const totalBal  = docList.reduce((s,r) => s + r.balance, 0);
+  const totalOver = docList.reduce((s,r) => s + r.over_amt, 0);
+  const infoEl = document.getElementById('emailClientInfo');
+  const overDocs = docList.filter(r => r.over_amt > 0);
+  infoEl.innerHTML = `
+    <div class="di-row"><span>Общий баланс задолженности:</span><b>${fmt(totalBal)}</b></div>
+    <div class="di-row"><span>Просроченная задолженность:</span><b style="color:var(--orange)">${fmt(totalOver) || '—'}</b></div>
+    <div class="di-row"><span>УПД к письму:</span><b>${docList.length} шт. (${overDocs.length} просроченных)</b></div>`;
+
+  // Сброс
+  document.getElementById('emailText').value = '';
+  document.getElementById('emailResult').classList.add('hidden');
+  document.getElementById('copyOk').style.opacity = '0';
+  document.querySelector('input[name="emailStyle"][value="мягкий"]').checked = true;
+
+  document.getElementById('emailModal').classList.remove('hidden');
+}
+
+function closeEmailModal() {
+  document.getElementById('emailModal').classList.add('hidden');
+}
+
+async function generateEmail() {
+  const style = document.querySelector('input[name="emailStyle"]:checked')?.value || 'официальный';
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Генерирую...';
+
+  const docs = emailModalDocs.map(d => ({
+    doc_num:     d.doc_num,
+    doc_date:    d.doc_date,
+    due_date:    d.due_date,
+    amount:      d.balance,
+    over_amt:    d.over_amt,
+    days_overdue: d.days_total
+  }));
+
+  try {
+    const r = await fetch(GENERATE_EMAIL_URL, {
+      method:  'POST',
+      headers: {'Content-Type':'application/json'},
+      body:    JSON.stringify({
+        client_name:    emailModalClient,
+        style,
+        total_balance:  emailModalDocs.reduce((s,r) => s + r.balance, 0),
+        overdue_amount: emailModalDocs.reduce((s,r) => s + r.over_amt, 0),
+        docs
+      })
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    document.getElementById('emailText').value = data.text || data.email || '';
+    document.getElementById('emailResult').classList.remove('hidden');
+  } catch(e) {
+    alert('Ошибка генерации письма: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✦ Сгенерировать письмо';
+  }
+}
+
+function copyEmail() {
+  const ta = document.getElementById('emailText');
+  navigator.clipboard.writeText(ta.value).then(() => {
+    const ok = document.getElementById('copyOk');
+    ok.style.opacity = '1';
+    setTimeout(() => ok.style.opacity = '0', 2000);
+  });
+}
+
+// Закрыть по клику на оверлей
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('emailModal').addEventListener('click', e => {
+    if (e.target === document.getElementById('emailModal')) closeEmailModal();
+  });
+});
 
 // Фильтры
 document.getElementById('fSearch').addEventListener('input', renderTable);
