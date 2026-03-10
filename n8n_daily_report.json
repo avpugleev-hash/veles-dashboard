@@ -9,12 +9,7 @@
       "position": [240, 300],
       "parameters": {
         "rule": {
-          "interval": [
-            {
-              "field": "cronExpression",
-              "expression": "0 17 * * 1-5"
-            }
-          ]
+          "interval": [{ "field": "cronExpression", "expression": "0 17 * * 1-5" }]
         }
       }
     },
@@ -23,7 +18,7 @@
       "name": "Fetch Debt CSV",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [460, 200],
+      "position": [460, 300],
       "parameters": {
         "method": "GET",
         "url": "https://docs.google.com/spreadsheets/d/1D9-uViFll7h3SUT01lvlHKTF0VnQCx46h8569zSpaCQ/export?format=csv&gid=1164788937",
@@ -35,166 +30,160 @@
       "name": "Read Comments",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
-      "position": [460, 400],
+      "position": [680, 300],
       "parameters": {
         "operation": "getAll",
-        "documentId": {
-          "__rl": true,
-          "value": "1D9-uViFll7h3SUT01lvlHKTF0VnQCx46h8569zSpaCQ",
-          "mode": "id"
-        },
-        "sheetName": {
-          "__rl": true,
-          "value": "manager_comments",
-          "mode": "name"
-        },
+        "documentId": { "__rl": true, "value": "1D9-uViFll7h3SUT01lvlHKTF0VnQCx46h8569zSpaCQ", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "manager_comments", "mode": "name" },
         "options": {}
       },
       "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
-          "name": "Google Sheets account"
-        }
+        "googleSheetsOAuth2Api": { "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID", "name": "Google Sheets account" }
       }
     },
     {
       "id": "e5f6a7b8-0005-0005-0005-000000000004",
-      "name": "Build Report",
+      "name": "Build All",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [700, 300],
+      "position": [900, 300],
       "parameters": {
-        "jsCode": "// Получаем CSV текст\nconst csvText = $('Fetch Debt CSV').first().json.data || '';\n\n// Получаем комментарии\nconst comments = {};\n$('Read Comments').all().forEach(item => {\n  const r = item.json;\n  if (r.client_name) comments[r.client_name] = { comment: r.comment || '', login: r.login || '' };\n});\n\n// Парсим CSV\nfunction splitLine(line) {\n  const res = []; let cur = '', inQ = false;\n  for (let i = 0; i < line.length; i++) {\n    const c = line[i];\n    if (c === '\"') { if (inQ && line[i+1]==='\"') { cur+='\"'; i++; } else inQ=!inQ; }\n    else if (c === ',' && !inQ) { res.push(cur); cur=''; }\n    else cur += c;\n  }\n  res.push(cur);\n  return res;\n}\n\nconst lines = csvText.trim().split(/\\r?\\n/);\nif (lines.length < 2) return [];\n\nconst hdr = splitLine(lines[0]);\nconst idxDate    = hdr.indexOf('as_of_date');\nconst idxClient  = hdr.indexOf('client_name');\nconst idxOver    = hdr.indexOf('overdue_amount');\nconst idxDays    = hdr.indexOf('days_overdue');\nconst idxCredit  = hdr.indexOf('credit_days_from_registry');\nconst idxDocNum  = hdr.indexOf('doc_number');\nconst idxDocDate = hdr.indexOf('doc_date');\nconst idxBalance = hdr.indexOf('balance');\n\n// Берём последнюю дату\nconst allDates = lines.slice(1).map(l => splitLine(l)[idxDate]).filter(Boolean).sort();\nconst snap = allDates[allDates.length - 1] || '';\nconst today = new Date().toLocaleDateString('ru-RU', { day:'2-digit', month:'2-digit', year:'numeric' });\n\n// Группируем просроченные по клиентам\nconst clientMap = {};\nlines.slice(1).forEach(line => {\n  const cells = splitLine(line);\n  if (!cells.length || cells[idxDate] !== snap) return;\n  const overAmt = parseFloat((cells[idxOver]||'0').replace(',','.')) || 0;\n  if (overAmt <= 0) return;\n  const client = cells[idxClient] || '';\n  if (!client) return;\n  if (!clientMap[client]) clientMap[client] = { overdue: 0, maxDays: 0 };\n  clientMap[client].overdue += overAmt;\n  const days = parseFloat((cells[idxDays]||'0').replace(',','.')) || 0;\n  const credit = parseFloat((cells[idxCredit]||'0').replace(',','.')) || 0;\n  const actual = Math.max(0, days - credit);\n  if (actual > clientMap[client].maxDays) clientMap[client].maxDays = actual;\n});\n\n// Строим строки отчёта и истории\nconst reportRows = [];\nconst historyRows = [];\n\nObject.entries(clientMap).sort((a,b) => b[1].overdue - a[1].overdue).forEach(([client, info]) => {\n  const cm = comments[client] || { comment: '', login: '' };\n  reportRows.push({ json: {\n    report_date:    today,\n    client_name:    client,\n    overdue_amount: info.overdue.toFixed(2),\n    days_overdue:   info.maxDays,\n    comment:        cm.comment,\n    login:          cm.login\n  }});\n  if (cm.comment) {\n    historyRows.push({ json: {\n      date:        today,\n      client_name: client,\n      comment:     cm.comment,\n      login:       cm.login\n    }});\n  }\n});\n\n// Возвращаем всё в одном объекте\nreturn [{ json: { reportRows, historyRows, hasData: reportRows.length > 0 } }];"
+        "jsCode": "// CSV\nconst csvText = $('Fetch Debt CSV').first().json.data || '';\n\n// Комментарии\nconst comments = {};\n$('Read Comments').all().forEach(item => {\n  const r = item.json;\n  if (r.client_name) comments[r.client_name] = { comment: r.comment || '', login: r.login || '' };\n});\n\n// Парсер CSV\nfunction splitLine(line) {\n  const res = []; let cur = '', inQ = false;\n  for (let i = 0; i < line.length; i++) {\n    const c = line[i];\n    if (c === '\"') { if (inQ && line[i+1]==='\"') { cur+='\"'; i++; } else inQ=!inQ; }\n    else if (c === ',' && !inQ) { res.push(cur); cur=''; }\n    else cur += c;\n  }\n  res.push(cur); return res;\n}\n\nconst lines = csvText.trim().split(/\\r?\\n/);\nconst hdr = splitLine(lines[0] || '');\nconst idxDate   = hdr.indexOf('as_of_date');\nconst idxClient = hdr.indexOf('client_name');\nconst idxOver   = hdr.indexOf('overdue_amount');\nconst idxDays   = hdr.indexOf('days_overdue');\nconst idxCredit = hdr.indexOf('credit_days_from_registry');\n\nconst allDates = lines.slice(1).map(l => splitLine(l)[idxDate]).filter(Boolean).sort();\nconst snap = allDates[allDates.length - 1] || '';\n\nconst today = new Date().toLocaleDateString('ru-RU', { day:'2-digit', month:'2-digit', year:'numeric' });\n\n// Группировка просроченных\nconst clientMap = {};\nlines.slice(1).forEach(line => {\n  const cells = splitLine(line);\n  if (!cells.length || cells[idxDate] !== snap) return;\n  const overAmt = parseFloat((cells[idxOver]||'0').replace(',','.')) || 0;\n  if (overAmt <= 0) return;\n  const client = (cells[idxClient] || '').trim();\n  if (!client) return;\n  if (!clientMap[client]) clientMap[client] = { overdue: 0, maxDays: 0 };\n  clientMap[client].overdue += overAmt;\n  const days = parseFloat((cells[idxDays]||'0').replace(',','.')) || 0;\n  const credit = parseFloat((cells[idxCredit]||'0').replace(',','.')) || 0;\n  const actual = Math.max(0, days - credit);\n  if (actual > clientMap[client].maxDays) clientMap[client].maxDays = actual;\n});\n\n// Сортировка по убыванию просрочки\nconst reportRows = Object.entries(clientMap)\n  .sort((a, b) => b[1].overdue - a[1].overdue)\n  .map(([client, info]) => {\n    const cm = comments[client] || { comment: '', login: '' };\n    return {\n      report_date:    today,\n      client_name:    client,\n      overdue_amount: info.overdue,\n      overdue_fmt:    info.overdue.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₽',\n      days_overdue:   info.maxDays,\n      comment:        cm.comment,\n      login:          cm.login\n    };\n  });\n\nconst historyRows = reportRows.filter(r => r.comment).map(r => ({\n  date:        today,\n  client_name: r.client_name,\n  comment:     r.comment,\n  login:       r.login\n}));\n\n// HTML письмо\nconst rowsHtml = reportRows.map((r, i) => {\n  const bg = i % 2 === 0 ? '#ffffff' : '#f8f9fa';\n  const amtColor = '#c0152f';\n  const comment = r.comment\n    ? `<span style=\"color:#1a2a4a\">${r.comment}</span><br><span style=\"font-size:11px;color:#9ca3af\">${r.login}</span>`\n    : '<span style=\"color:#9ca3af;font-style:italic\">—</span>';\n  return `<tr style=\"background:${bg}\">\n    <td style=\"padding:10px 14px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#1a2a4a\">${r.client_name}</td>\n    <td style=\"padding:10px 14px;border-bottom:1px solid #e5e7eb;font-size:13px;font-weight:700;color:${amtColor};white-space:nowrap;text-align:right\">${r.overdue_fmt}</td>\n    <td style=\"padding:10px 14px;border-bottom:1px solid #e5e7eb;font-size:13px\">${comment}</td>\n  </tr>`;\n}).join('');\n\nconst emailHtml = `\n<!DOCTYPE html><html><body style=\"margin:0;padding:0;background:#f7f8fa;font-family:Inter,Arial,sans-serif\">\n<div style=\"max-width:800px;margin:24px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08)\">\n  <div style=\"background:#1a2a4a;padding:20px 28px\">\n    <div style=\"color:#fff;font-size:18px;font-weight:700\">Отчёт по просроченной задолженности</div>\n    <div style=\"color:rgba(255,255,255,.7);font-size:13px;margin-top:4px\">ООО «ТК «Велес» — ${today}</div>\n  </div>\n  <div style=\"padding:20px 28px\">\n    <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border-collapse:collapse;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden\">\n      <thead>\n        <tr style=\"background:#1a2a4a\">\n          <th style=\"padding:10px 14px;text-align:left;color:#fff;font-size:11px;font-weight:600;letter-spacing:.05em;white-space:nowrap\">КЛИЕНТ</th>\n          <th style=\"padding:10px 14px;text-align:right;color:#fff;font-size:11px;font-weight:600;letter-spacing:.05em;white-space:nowrap\">ПРОСРОЧЕННЫЙ ДОЛГ</th>\n          <th style=\"padding:10px 14px;text-align:left;color:#fff;font-size:11px;font-weight:600;letter-spacing:.05em\">КОММЕНТАРИЙ МЕНЕДЖЕРА</th>\n        </tr>\n      </thead>\n      <tbody>${rowsHtml}</tbody>\n    </table>\n    <div style=\"margin-top:16px;font-size:12px;color:#6b7280\">Клиентов с просрочкой: ${reportRows.length} &nbsp;|&nbsp; Данные на ${snap || today}</div>\n  </div>\n</div>\n</body></html>`;\n\nreturn [{ json: { today, snap, reportRows, historyRows, emailHtml, count: reportRows.length } }];"
       }
     },
     {
       "id": "e5f6a7b8-0005-0005-0005-000000000005",
-      "name": "Save to daily_report",
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4,
-      "position": [940, 200],
+      "name": "Send Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [1120, 160],
       "parameters": {
-        "operation": "append",
-        "documentId": {
-          "__rl": true,
-          "value": "1D9-uViFll7h3SUT01lvlHKTF0VnQCx46h8569zSpaCQ",
-          "mode": "id"
-        },
-        "sheetName": {
-          "__rl": true,
-          "value": "daily_report",
-          "mode": "name"
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "report_date":    "={{ $json.reportRows.map(r => r.json.report_date).join(',') }}",
-            "client_name":    "={{ $json.reportRows.map(r => r.json.client_name).join(',') }}",
-            "overdue_amount": "={{ $json.reportRows.map(r => r.json.overdue_amount).join(',') }}",
-            "days_overdue":   "={{ $json.reportRows.map(r => r.json.days_overdue).join(',') }}",
-            "comment":        "={{ $json.reportRows.map(r => r.json.comment).join(',') }}",
-            "login":          "={{ $json.reportRows.map(r => r.json.login).join(',') }}"
-          },
-          "schema": []
-        },
-        "options": {}
+        "resource": "message",
+        "operation": "send",
+        "toEmail": "a.pugleev@tkvls.ru",
+        "subject": "={{ 'Просроченная задолженность — ' + $json.today + ' (' + $json.count + ' клиентов)' }}",
+        "message": "={{ $json.emailHtml }}",
+        "options": { "appendAttributionToBody": false }
       },
       "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
-          "name": "Google Sheets account"
-        }
+        "gmailOAuth2": { "id": "REPLACE_WITH_YOUR_GMAIL_CREDENTIAL_ID", "name": "Gmail account" }
       }
     },
     {
       "id": "e5f6a7b8-0005-0005-0005-000000000006",
-      "name": "Save to History",
+      "name": "Expand Report Rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300],
+      "parameters": {
+        "jsCode": "const rows = $('Build All').first().json.reportRows || [];\nif (!rows.length) return [{ json: { _empty: true } }];\nreturn rows.map(r => ({ json: {\n  report_date:    r.report_date,\n  client_name:    r.client_name,\n  overdue_amount: r.overdue_amount.toFixed(2),\n  days_overdue:   r.days_overdue,\n  comment:        r.comment,\n  login:          r.login\n}}));"
+      }
+    },
+    {
+      "id": "e5f6a7b8-0005-0005-0005-000000000007",
+      "name": "Append daily_report",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
-      "position": [940, 400],
+      "position": [1340, 300],
       "parameters": {
         "operation": "append",
-        "documentId": {
-          "__rl": true,
-          "value": "1D9-uViFll7h3SUT01lvlHKTF0VnQCx46h8569zSpaCQ",
-          "mode": "id"
-        },
-        "sheetName": {
-          "__rl": true,
-          "value": "manager_comments_history",
-          "mode": "name"
-        },
+        "documentId": { "__rl": true, "value": "1D9-uViFll7h3SUT01lvlHKTF0VnQCx46h8569zSpaCQ", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "daily_report", "mode": "name" },
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "date":        "={{ $json.historyRows.map(r => r.json.date).join(',') }}",
-            "client_name": "={{ $json.historyRows.map(r => r.json.client_name).join(',') }}",
-            "comment":     "={{ $json.historyRows.map(r => r.json.comment).join(',') }}",
-            "login":       "={{ $json.historyRows.map(r => r.json.login).join(',') }}"
+            "report_date":    "={{ $json.report_date }}",
+            "client_name":    "={{ $json.client_name }}",
+            "overdue_amount": "={{ $json.overdue_amount }}",
+            "days_overdue":   "={{ $json.days_overdue }}",
+            "comment":        "={{ $json.comment }}",
+            "login":          "={{ $json.login }}"
           },
           "schema": []
         },
         "options": {}
       },
       "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
-          "name": "Google Sheets account"
-        }
+        "googleSheetsOAuth2Api": { "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID", "name": "Google Sheets account" }
       }
     },
     {
-      "id": "e5f6a7b8-0005-0005-0005-000000000007",
+      "id": "e5f6a7b8-0005-0005-0005-000000000008",
+      "name": "Expand History Rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 440],
+      "parameters": {
+        "jsCode": "const rows = $('Build All').first().json.historyRows || [];\nif (!rows.length) return [{ json: { _empty: true } }];\nreturn rows.map(r => ({ json: r }));"
+      }
+    },
+    {
+      "id": "e5f6a7b8-0005-0005-0005-000000000009",
+      "name": "Append History",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1340, 440],
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "1D9-uViFll7h3SUT01lvlHKTF0VnQCx46h8569zSpaCQ", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "manager_comments_history", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "date":        "={{ $json.date }}",
+            "client_name": "={{ $json.client_name }}",
+            "comment":     "={{ $json.comment }}",
+            "login":       "={{ $json.login }}"
+          },
+          "schema": []
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": { "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID", "name": "Google Sheets account" }
+      }
+    },
+    {
+      "id": "e5f6a7b8-0005-0005-0005-000000000010",
       "name": "Clear Comments",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
-      "position": [940, 560],
+      "position": [1120, 560],
       "parameters": {
         "operation": "clear",
-        "documentId": {
-          "__rl": true,
-          "value": "1D9-uViFll7h3SUT01lvlHKTF0VnQCx46h8569zSpaCQ",
-          "mode": "id"
-        },
-        "sheetName": {
-          "__rl": true,
-          "value": "manager_comments",
-          "mode": "name"
-        },
+        "documentId": { "__rl": true, "value": "1D9-uViFll7h3SUT01lvlHKTF0VnQCx46h8569zSpaCQ", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "manager_comments", "mode": "name" },
         "range": "A2:Z10000",
         "options": {}
       },
       "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
-          "name": "Google Sheets account"
-        }
+        "googleSheetsOAuth2Api": { "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID", "name": "Google Sheets account" }
       }
     }
   ],
   "connections": {
     "Schedule": {
-      "main": [
-        [
-          { "node": "Fetch Debt CSV",  "type": "main", "index": 0 },
-          { "node": "Read Comments",   "type": "main", "index": 0 }
-        ]
-      ]
+      "main": [[ { "node": "Fetch Debt CSV", "type": "main", "index": 0 } ]]
     },
     "Fetch Debt CSV": {
-      "main": [[ { "node": "Build Report", "type": "main", "index": 0 } ]]
+      "main": [[ { "node": "Read Comments", "type": "main", "index": 0 } ]]
     },
     "Read Comments": {
-      "main": [[ { "node": "Build Report", "type": "main", "index": 0 } ]]
+      "main": [[ { "node": "Build All", "type": "main", "index": 0 } ]]
     },
-    "Build Report": {
-      "main": [
-        [
-          { "node": "Save to daily_report", "type": "main", "index": 0 },
-          { "node": "Save to History",      "type": "main", "index": 0 },
-          { "node": "Clear Comments",       "type": "main", "index": 0 }
-        ]
-      ]
+    "Build All": {
+      "main": [[
+        { "node": "Send Email",          "type": "main", "index": 0 },
+        { "node": "Expand Report Rows",  "type": "main", "index": 0 },
+        { "node": "Expand History Rows", "type": "main", "index": 0 },
+        { "node": "Clear Comments",      "type": "main", "index": 0 }
+      ]]
+    },
+    "Expand Report Rows": {
+      "main": [[ { "node": "Append daily_report", "type": "main", "index": 0 } ]]
+    },
+    "Expand History Rows": {
+      "main": [[ { "node": "Append History", "type": "main", "index": 0 } ]]
     }
   },
   "settings": { "executionOrder": "v1" }
