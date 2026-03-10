@@ -321,18 +321,22 @@ async function loadData() {
     const snap  = dates[dates.length-1] || '';
 
     // Фильтруем по последней дате
-    const rows = (snap ? raw.filter(r => r.as_of_date === snap) : raw).map(r => ({
-      client:    r.client_name    || '',
-      contract:  r.contract_name  || '',
-      doc_num:   r.doc_number     || '',
-      doc_date:  r.doc_date       || '',
-      due_date:  r.due_date       || '',
-      doc_amt:   toNum(r.doc_amount),
-      balance:   toNum(r.balance),
-      is_over:   r.is_overdue === 'TRUE' || r.is_overdue === '1' || r.is_overdue === 'true',
-      days_over: toNum(r.days_overdue),
-      over_amt:  toNum(r.overdue_amount),
-    }));
+    const rows = (snap ? raw.filter(r => r.as_of_date === snap) : raw).map(r => {
+      const daysTotal  = toNum(r.days_overdue);
+      const creditDays = toNum(r.credit_days_from_registry);
+      const daysActual = Math.max(0, daysTotal - creditDays);
+      return {
+        client:      r.client_name    || '',
+        contract:    r.contract_name  || '',
+        doc_num:     r.doc_number     || '',
+        doc_date:    r.doc_date       || '',
+        due_date:    r.due_date       || '',
+        doc_amt:     toNum(r.doc_amount),
+        balance:     toNum(r.balance),
+        over_amt:    toNum(r.overdue_amount),
+        days_over:   daysActual,
+      };
+    });
 
     allDocs = rows;
 
