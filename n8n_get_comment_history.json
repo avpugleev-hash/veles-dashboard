@@ -16,39 +16,30 @@
     },
     {
       "id": "d4e5f6a7-0004-0004-0004-000000000002",
-      "name": "Read History",
-      "type": "n8n-nodes-base.googleSheets",
+      "name": "Fetch History CSV",
+      "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [460, 300],
       "parameters": {
-        "operation": "getAll",
-        "documentId": {
-          "__rl": true,
-          "value": "1D9-uViFll7h3SUT01lvlHKTF0VnQCx46h8569zSpaCQ",
-          "mode": "id"
-        },
-        "sheetName": {
-          "__rl": true,
-          "value": "manager_comments_history",
-          "mode": "name"
-        },
-        "options": {}
-      },
-      "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
-          "name": "Google Sheets account"
+        "method": "GET",
+        "url": "https://docs.google.com/spreadsheets/d/1D9-uViFll7h3SUT01lvlHKTF0VnQCx46h8569zSpaCQ/export?format=csv&sheet=manager_comments_history",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
         }
       }
     },
     {
       "id": "d4e5f6a7-0004-0004-0004-000000000003",
-      "name": "Filter by Client",
+      "name": "Parse and Filter",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [680, 300],
       "parameters": {
-        "jsCode": "const client = $('Webhook').first().json.query?.client || '';\nconst all = $input.all().map(i => i.json);\nconst filtered = client\n  ? all.filter(r => r.client_name === client)\n  : all;\n// Всегда возвращаем один элемент чтобы Respond to Webhook запустился\nreturn [{ json: { items: filtered } }];"
+        "jsCode": "const client = $('Webhook').first().json.query?.client || '';\nconst csvText = $json.data || '';\n\nfunction splitLine(line) {\n  const res = []; let cur = '', inQ = false;\n  for (let i = 0; i < line.length; i++) {\n    const c = line[i];\n    if (c === '\"') { if (inQ && line[i+1]==='\"') { cur+='\"'; i++; } else inQ=!inQ; }\n    else if (c === ',' && !inQ) { res.push(cur); cur=''; }\n    else cur += c;\n  }\n  res.push(cur);\n  return res;\n}\n\nconst lines = csvText.trim().split(/\\r?\\n/);\nif (lines.length < 2) return [{ json: { items: [] } }];\n\nconst hdr = splitLine(lines[0]).map(h => h.trim());\nconst rows = lines.slice(1).map(line => {\n  const cells = splitLine(line);\n  const obj = {};\n  hdr.forEach((h, i) => { obj[h] = (cells[i] || '').trim(); });\n  return obj;\n}).filter(r => Object.values(r).some(v => v));\n\nconst filtered = client ? rows.filter(r => r.client_name === client) : rows;\n\nreturn [{ json: { items: filtered } }];"
       }
     },
     {
@@ -65,12 +56,12 @@
   ],
   "connections": {
     "Webhook": {
-      "main": [[ { "node": "Read History",       "type": "main", "index": 0 } ]]
+      "main": [[ { "node": "Fetch History CSV",  "type": "main", "index": 0 } ]]
     },
-    "Read History": {
-      "main": [[ { "node": "Filter by Client",   "type": "main", "index": 0 } ]]
+    "Fetch History CSV": {
+      "main": [[ { "node": "Parse and Filter",   "type": "main", "index": 0 } ]]
     },
-    "Filter by Client": {
+    "Parse and Filter": {
       "main": [[ { "node": "Respond to Webhook", "type": "main", "index": 0 } ]]
     }
   },
