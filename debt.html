@@ -196,7 +196,6 @@
             <th>Дата УПД</th>
             <th>Срок оплаты</th>
             <th class="r">Сумма УПД</th>
-            <th class="r">Остаток</th>
             <th class="r">Просрочка</th>
             <th class="r">Дней просрочки</th>
           </tr>
@@ -206,7 +205,6 @@
           <tr>
             <td colspan="3">Итого (по фильтру)</td>
             <td class="r" id="fDocAmt">—</td>
-            <td class="r" id="fBal">—</td>
             <td class="r" id="fOver">—</td>
             <td class="r" id="fDays">—</td>
           </tr>
@@ -228,6 +226,9 @@ let allDocs = [];   // все строки УПД
 // ── Форматирование ──────────────────────────────────────────────
 function fmt(n) {
   if (!n) return '—';
+  if (Math.abs(n) < 1e6) {
+    return (n / 1e3).toLocaleString('ru-RU', {minimumFractionDigits:0, maximumFractionDigits:0}) + ' тыс ₽';
+  }
   return (n / 1e6).toLocaleString('ru-RU', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' млн ₽';
 }
 function fmtDate(s) {
@@ -394,7 +395,6 @@ function renderTable() {
   const totDays   = docs.filter(r=>r.days_over>0).length ? Math.round(docs.filter(r=>r.days_over>0).reduce((s,r)=>s+r.days_over,0)/docs.filter(r=>r.days_over>0).length) : 0;
 
   document.getElementById('fDocAmt').textContent = fmt(totDocAmt);
-  document.getElementById('fBal').textContent    = fmt(totBal);
   document.getElementById('fOver').textContent   = fmt(totOver);
   document.getElementById('fDays').textContent   = totDays ? totDays + ' д. (ср.)' : '—';
   document.getElementById('fCount').textContent  = `Клиентов: ${clientMap.size} / УПД: ${docs.length}`;
@@ -418,7 +418,6 @@ function renderTable() {
     trCli.dataset.group = cliId;
     trCli.innerHTML = `
       <td colspan="3"><i class="toggle-icon">▶</i>${clientName}</td>
-      <td class="r">${fmt(cliBal)}</td>
       <td class="r">${fmt(cliBal)}</td>
       <td class="r">${cliOver > 0 ? '<span class="badge-over">'+fmt(cliOver)+'</span>' : '<span class="badge-ok">нет</span>'}</td>
       <td class="r" style="font-size:11px;color:var(--text2)">${docList.length} УПД</td>`;
@@ -444,7 +443,6 @@ function renderTable() {
         <td>${fmtDate(doc.doc_date)}</td>
         <td style="${doc.is_over ? 'color:var(--orange);font-weight:600' : ''}">${fmtDate(doc.due_date)}</td>
         <td class="r">${fmt(doc.doc_amt)}</td>
-        <td class="r">${fmt(doc.balance)}</td>
         <td class="r">${doc.over_amt > 0 ? '<span class="badge-over">'+fmt(doc.over_amt)+'</span>' : '—'}</td>
         <td class="r">${doc.days_over > 0 ? daysBadge : '—'}</td>`;
       tbody.appendChild(trDoc);
