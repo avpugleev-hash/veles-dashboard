@@ -72,7 +72,7 @@
       "typeVersion": 2,
       "position": [1120, 300],
       "parameters": {
-        "jsCode": "const rows = $('Build All').first().json.reportRows || [];\nif (!rows.length) return [{ json: { _empty: true } }];\nreturn rows.map(r => ({ json: {\n  report_date:    r.report_date,\n  client_name:    r.client_name,\n  overdue_amount: r.overdue_amount.toFixed(2),\n  days_overdue:   r.days_overdue,\n  comment:        r.comment,\n  login:          r.login\n}}));"
+        "jsCode": "const rows = $('Build All').first().json.reportRows || [];\nreturn rows.map(r => ({ json: {\n  report_date:    r.report_date,\n  client_name:    r.client_name,\n  overdue_amount: r.overdue_amount.toFixed(2),\n  days_overdue:   r.days_overdue,\n  comment:        r.comment,\n  login:          r.login\n}}));"
       }
     },
     {
@@ -86,15 +86,8 @@
         "documentId": { "__rl": true, "value": "1D9-uViFll7h3SUT01lvlHKTF0VnQCx46h8569zSpaCQ", "mode": "id" },
         "sheetName": { "__rl": true, "value": "daily_report", "mode": "name" },
         "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "report_date":    "={{ $json.report_date }}",
-            "client_name":    "={{ $json.client_name }}",
-            "overdue_amount": "={{ $json.overdue_amount }}",
-            "days_overdue":   "={{ $json.days_overdue }}",
-            "comment":        "={{ $json.comment }}",
-            "login":          "={{ $json.login }}"
-          },
+          "mappingMode": "autoMapInputData",
+          "value": {},
           "schema": []
         },
         "options": {}
@@ -110,7 +103,7 @@
       "typeVersion": 2,
       "position": [1120, 440],
       "parameters": {
-        "jsCode": "const rows = $('Build All').first().json.historyRows || [];\nif (!rows.length) return [{ json: { _empty: true } }];\nreturn rows.map(r => ({ json: r }));"
+        "jsCode": "const rows = $('Build All').first().json.historyRows || [];\nreturn rows.map(r => ({ json: r }));"
       }
     },
     {
@@ -124,13 +117,8 @@
         "documentId": { "__rl": true, "value": "1D9-uViFll7h3SUT01lvlHKTF0VnQCx46h8569zSpaCQ", "mode": "id" },
         "sheetName": { "__rl": true, "value": "manager_comments_history", "mode": "name" },
         "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "date":        "={{ $json.date }}",
-            "client_name": "={{ $json.client_name }}",
-            "comment":     "={{ $json.comment }}",
-            "login":       "={{ $json.login }}"
-          },
+          "mappingMode": "autoMapInputData",
+          "value": {},
           "schema": []
         },
         "options": {}
