@@ -691,8 +691,6 @@ async function loadData() {
     document.getElementById('sBar').style.width     = Math.min(pct,100)+'%';
     document.getElementById('sPct').textContent     = pct.toFixed(1)+'% от общего';
     document.getElementById('sCntOver').textContent = cliOver;
-    document.getElementById('sCntDocs').textContent = docsOver;
-    document.getElementById('sCntDocsSub').textContent = 'из ' + rows.length + ' всего';
     if (snap) document.getElementById('sDate').textContent = 'Данные на ' + fmtDate(snap);
     document.getElementById('updTime').textContent  =
       'Обновлено: ' + new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
