@@ -229,27 +229,22 @@
       <div class="val c-orange" id="sCntOver">—</div>
       <div class="hint">уникальных клиентов</div>
     </div>
-    <div class="s-card">
-      <div class="lbl">УПД с просрочкой</div>
-      <div class="val c-orange" id="sCntDocs">—</div>
-      <div class="hint" id="sCntDocsSub"></div>
-    </div>
   </div>
 
   <!-- ЕЛС балансы -->
   <div class="els-row">
     <div class="s-card">
-      <div class="els-label">Остаток ЕЛС 22% <span id="sEls22Date" style="font-weight:400;color:var(--text2);font-size:10px"></span></div>
-      <div class="val c-green" id="sEls22">—</div>
-    </div>
-    <div class="s-card">
-      <div class="els-label">Остаток ЕЛС 0% <span id="sEls0Date" style="font-weight:400;color:var(--text2);font-size:10px"></span></div>
-      <div class="val c-navy" id="sEls0">—</div>
-    </div>
-    <div class="s-card">
       <div class="els-label">Данные ЕЛС на</div>
       <div class="val" id="sElsUpdated" style="font-size:20px;color:var(--navy)">—</div>
       <div class="hint" id="sElsHint"></div>
+    </div>
+    <div class="s-card">
+      <div class="els-label">Остаток ЕЛС 22%</div>
+      <div class="val c-green" id="sEls22">—</div>
+    </div>
+    <div class="s-card">
+      <div class="els-label">Остаток ЕЛС 0%</div>
+      <div class="val c-navy" id="sEls0">—</div>
     </div>
   </div>
 
@@ -634,8 +629,6 @@ async function loadElsData() {
       const dp = rawDate.split('/');
       if (dp.length === 3) displayDate = dp[1] + '.' + dp[0] + '.' + dp[2];
 
-      document.getElementById('sEls22Date').textContent  = '· ' + displayDate;
-      document.getElementById('sEls0Date').textContent   = '· ' + displayDate;
       document.getElementById('sElsUpdated').textContent = displayDate;
       document.getElementById('sElsHint').textContent    = 'последнее обновление';
     }
