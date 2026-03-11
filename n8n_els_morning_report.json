@@ -3,18 +3,15 @@
   "nodes": [
     {
       "id": "a1b2c3d4-0001-0001-0001-000000000001",
-      "name": "Google Sheets Trigger",
-      "type": "n8n-nodes-base.googleSheetsTrigger",
-      "typeVersion": 4,
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
       "position": [240, 300],
       "parameters": {
-        "documentId": { "__rl": true, "value": "1GDf8iz2Ryh-0i79ktw7_Ms43uW1Jcs_X", "mode": "id" },
-        "sheetName":  { "__rl": true, "value": "1639673932", "mode": "id" },
-        "event": "rowAdded",
+        "httpMethod": "POST",
+        "path": "els-data-updated",
+        "responseMode": "lastNode",
         "options": {}
-      },
-      "credentials": {
-        "googleSheetsOAuth2Api": { "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID", "name": "Google Sheets account" }
       }
     },
     {
@@ -98,7 +95,7 @@
     }
   ],
   "connections": {
-    "Google Sheets Trigger": {
+    "Webhook": {
       "main": [[ { "node": "Filter weekdays only", "type": "main", "index": 0 } ]]
     },
     "Filter weekdays only": {
