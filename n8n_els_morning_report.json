@@ -1,0 +1,124 @@
+{
+  "name": "els-morning-report",
+  "nodes": [
+    {
+      "id": "a1b2c3d4-0001-0001-0001-000000000001",
+      "name": "Google Sheets Trigger",
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 4,
+      "position": [240, 300],
+      "parameters": {
+        "documentId": { "__rl": true, "value": "1GDf8iz2Ryh-0i79ktw7_Ms43uW1Jcs_X", "mode": "id" },
+        "sheetName":  { "__rl": true, "value": "1639673932", "mode": "id" },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": { "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID", "name": "Google Sheets account" }
+      }
+    },
+    {
+      "id": "a1b2c3d4-0001-0001-0001-000000000007",
+      "name": "Filter weekdays only",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [460, 300],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "cond1",
+              "leftValue": "={{ new Date().getDay() }}",
+              "rightValue": 6,
+              "operator": { "type": "number", "operation": "notEquals" }
+            },
+            {
+              "id": "cond2",
+              "leftValue": "={{ new Date().getDay() }}",
+              "rightValue": 0,
+              "operator": { "type": "number", "operation": "notEquals" }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "a1b2c3d4-0001-0001-0001-000000000002",
+      "name": "Fetch ELS CSV",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [700, 220],
+      "parameters": {
+        "method": "GET",
+        "url": "https://docs.google.com/spreadsheets/d/1GDf8iz2Ryh-0i79ktw7_Ms43uW1Jcs_X/export?format=csv&gid=1639673932",
+        "options": { "response": { "response": { "responseFormat": "text" } } }
+      }
+    },
+    {
+      "id": "a1b2c3d4-0001-0001-0001-000000000003",
+      "name": "Fetch Debt CSV",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [700, 380],
+      "parameters": {
+        "method": "GET",
+        "url": "https://docs.google.com/spreadsheets/d/1D9-uViFll7h3SUT01lvlHKTF0VnQCx46h8569zSpaCQ/export?format=csv&gid=1164788937",
+        "options": { "response": { "response": { "responseFormat": "text" } } }
+      }
+    },
+    {
+      "id": "a1b2c3d4-0001-0001-0001-000000000004",
+      "name": "Build ELS Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [940, 300],
+      "parameters": {
+        "jsCode": "// CSV парсер\nfunction splitLine(line) {\n  const res = []; let cur = '', inQ = false;\n  for (let i = 0; i < line.length; i++) {\n    const c = line[i];\n    if (c === '\"') { if (inQ && line[i+1]==='\"') { cur+='\"'; i++; } else inQ=!inQ; }\n    else if (c === ',' && !inQ) { res.push(cur); cur=''; }\n    else cur += c;\n  }\n  res.push(cur); return res;\n}\nfunction toNum(s) { return parseFloat(String(s||0).replace(/[\\s\\u00a0]/g,'').replace(',','.')) || 0; }\nfunction fmtNum(n) {\n  if (!n) return '—';\n  if (Math.abs(n) < 1e6) return (n/1e3).toLocaleString('ru-RU',{minimumFractionDigits:0,maximumFractionDigits:0}) + ' тыс ₽';\n  return (n/1e6).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' млн ₽';\n}\n\nconst today = new Date().toLocaleDateString('ru-RU', {day:'2-digit',month:'2-digit',year:'numeric'});\n\n// --- ЕЛС данные (col B=дата, C=Остаток 22%, D=Остаток 0%) ---\nconst elsText  = $('Fetch ELS CSV').first().json.data || '';\nconst elsLines = elsText.trim().split(/\\r?\\n/).filter(l => l.trim());\nlet els0 = '—', els22 = '—', elsDate = today;\nfor (let i = elsLines.length - 1; i >= 1; i--) {\n  const c = splitLine(elsLines[i]);\n  if ((c[2]||'').trim() || (c[3]||'').trim()) {\n    const rawDate = (c[1]||'').trim();\n    if (rawDate) {\n      const dp = rawDate.split('/');\n      elsDate = dp.length===3 ? dp[1]+'.'+dp[0]+'.'+dp[2] : rawDate;\n    }\n    const n22 = toNum(c[2]);\n    const n0  = toNum(c[3]);\n    els22 = n22 ? fmtNum(n22) : ((c[2]||'').trim() || '—');\n    els0  = n0  ? fmtNum(n0)  : ((c[3]||'').trim() || '—');\n    break;\n  }\n}\n\n// --- Задолженность ---\nconst debtText = $('Fetch Debt CSV').first().json.data || '';\nconst debtLines = debtText.trim().split(/\\r?\\n/);\nconst hdr = splitLine(debtLines[0] || '');\nconst idxDate   = hdr.indexOf('as_of_date');\nconst idxClient = hdr.indexOf('client_name');\nconst idxOver   = hdr.indexOf('overdue_amount');\nconst idxDays   = hdr.indexOf('days_overdue');\nconst idxCredit = hdr.indexOf('credit_days_from_registry');\n\nconst allDates = debtLines.slice(1).map(l => splitLine(l)[idxDate]).filter(Boolean).sort();\nconst snap = allDates[allDates.length - 1] || '';\n\nconst clientMap = {};\ndebtLines.slice(1).forEach(line => {\n  const cells = splitLine(line);\n  if (!cells.length || cells[idxDate] !== snap) return;\n  const overAmt = toNum(cells[idxOver]);\n  if (overAmt <= 0) return;\n  const client = (cells[idxClient] || '').trim();\n  if (!client) return;\n  if (!clientMap[client]) clientMap[client] = { overdue: 0, maxDays: 0 };\n  clientMap[client].overdue += overAmt;\n  const actual = Math.max(0, toNum(cells[idxDays]) - toNum(cells[idxCredit]));\n  if (actual > clientMap[client].maxDays) clientMap[client].maxDays = actual;\n});\n\nconst topDebt = Object.entries(clientMap)\n  .sort((a,b) => b[1].overdue - a[1].overdue)\n  .slice(0, 10)\n  .map(([client, info]) => ({ client, fmt: fmtNum(info.overdue) }));\n\n// --- HTML письмо ---\nconst TH  = 'padding:8px 12px;font-size:11px;font-weight:600;letter-spacing:.05em;color:#fff;white-space:nowrap';\nconst TD1 = 'padding:8px 12px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#1a2a4a';\nconst TD2 = 'padding:8px 12px;border-bottom:1px solid #e5e7eb;font-size:13px;font-weight:700;color:#c0152f;text-align:right';\n\nconst debtRows = topDebt.map((r,i) => {\n  const bg = i%2===0 ? '#fff' : '#f8f9fa';\n  return '<tr style=\"background:'+bg+'\"><td style=\"'+TD1+'\">'+r.client+'</td><td style=\"'+TD2+'\">'+r.fmt+'</td></tr>';\n}).join('');\n\nconst emailHtml = '<!DOCTYPE html><html><body style=\"margin:0;padding:0;background:#f7f8fa;font-family:Arial,sans-serif\">' +\n'<table width=\"620\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"margin:24px auto\">' +\n'<tr><td style=\"background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08)\">' +\n'<table width=\"620\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">' +\n\n'<tr><td style=\"background:#1a2a4a;padding:18px 24px;border-radius:12px 12px 0 0\">' +\n'<div style=\"color:#fff;font-size:17px;font-weight:700\">Остатки на ЕЛС — ' + elsDate + '</div>' +\n'<div style=\"color:rgba(255,255,255,.7);font-size:12px;margin-top:3px\">ООО \u00abТК ВЕЛЕС\u00bb &nbsp;|&nbsp; сформировано ' + today + '</div>' +\n'</td></tr>' +\n\n'<tr><td style=\"padding:16px 24px 8px\">' +\n'<table width=\"572\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"border-collapse:collapse;border:1px solid #e5e7eb;border-radius:6px\">' +\n'<tr style=\"background:#1a2a4a\">' +\n'<th align=\"left\" width=\"286\" style=\"'+TH+'\">СЧЁТ ЕЛС</th>' +\n'<th align=\"right\" width=\"286\" style=\"'+TH+'\">ОСТАТОК НА ' + elsDate + '</th>' +\n'</tr>' +\n'<tr style=\"background:#fff\">' +\n'<td style=\"'+TD1+'\">ЕЛС 22%</td>' +\n'<td style=\"padding:8px 12px;border-bottom:1px solid #e5e7eb;font-size:18px;font-weight:700;color:#20b2aa;text-align:right\">'+els22+'</td>' +\n'</tr>' +\n'<tr style=\"background:#f8f9fa\">' +\n'<td style=\"'+TD1+'\">ЕЛС 0%</td>' +\n'<td style=\"padding:8px 12px;font-size:18px;font-weight:700;color:#1a2a4a;text-align:right\">'+els0+'</td>' +\n'</tr>' +\n'</table>' +\n'</td></tr>' +\n\n'<tr><td style=\"padding:8px 24px 16px\">' +\n'<div style=\"font-size:13px;font-weight:700;color:#1a2a4a;margin-bottom:10px\">Топ-10 должников (просрочка)</div>' +\n(topDebt.length ? (\n'<table width=\"572\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"border-collapse:collapse;border:1px solid #e5e7eb;border-radius:6px\">' +\n'<tr style=\"background:#1a2a4a\">' +\n'<th align=\"left\" width=\"400\" style=\"'+TH+'\">КЛИЕНТ</th>' +\n'<th align=\"right\" width=\"172\" style=\"'+TH+'\">ПРОСРОЧКА</th>' +\n'</tr>' +\ndebtRows +\n'</table>'\n) : '<div style=\"font-size:13px;color:#6b7280;padding:12px 0\">Просроченных долгов нет</div>') +\n'<div style=\"margin-top:8px;font-size:11px;color:#9ca3af\">Всего клиентов с просрочкой: ' + Object.keys(clientMap).length + '</div>' +\n'</td></tr>' +\n\n'</table></td></tr></table>' +\n'</body></html>';\n\nreturn [{ json: { today, els0, els22, elsDate, emailHtml, debtCount: Object.keys(clientMap).length } }];"
+      }
+    },
+    {
+      "id": "a1b2c3d4-0001-0001-0001-000000000005",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [1180, 300],
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "toEmail": "a.pugleev@tkvls.ru",
+        "subject": "={{ 'Остатки ЕЛС на ' + $json.elsDate + ' — ЕЛС 22%: ' + $json.els22 + ' / ЕЛС 0%: ' + $json.els0 }}",
+        "message": "={{ $json.emailHtml }}",
+        "options": { "appendAttributionToBody": false }
+      },
+      "credentials": {
+        "gmailOAuth2": { "id": "REPLACE_WITH_YOUR_GMAIL_CREDENTIAL_ID", "name": "Gmail account" }
+      }
+    }
+  ],
+  "connections": {
+    "Google Sheets Trigger": {
+      "main": [[ { "node": "Filter weekdays only", "type": "main", "index": 0 } ]]
+    },
+    "Filter weekdays only": {
+      "main": [
+        [
+          { "node": "Fetch ELS CSV",  "type": "main", "index": 0 },
+          { "node": "Fetch Debt CSV", "type": "main", "index": 0 }
+        ],
+        []
+      ]
+    },
+    "Fetch ELS CSV": {
+      "main": [[ { "node": "Build ELS Email", "type": "main", "index": 0 } ]]
+    },
+    "Fetch Debt CSV": {
+      "main": [[ { "node": "Build ELS Email", "type": "main", "index": 0 } ]]
+    },
+    "Build ELS Email": {
+      "main": [[ { "node": "Send Email", "type": "main", "index": 0 } ]]
+    }
+  },
+  "settings": { "executionOrder": "v1" }
+}
