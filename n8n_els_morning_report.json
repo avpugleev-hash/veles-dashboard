@@ -76,18 +76,42 @@
       }
     },
     {
+      "id": "a1b2c3d4-0001-0001-0001-000000000006",
+      "name": "Download Excel",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1420, 300],
+      "parameters": {
+        "method": "GET",
+        "url": "https://docs.google.com/spreadsheets/d/17lGV4E7-MFkak3iYHoajViH8fJk20HvGN4SJw0Et7yg/export?format=xlsx",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      }
+    },
+    {
       "id": "a1b2c3d4-0001-0001-0001-000000000005",
       "name": "Send Email",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2,
-      "position": [1420, 300],
+      "position": [1660, 300],
       "parameters": {
         "resource": "message",
         "operation": "send",
-        "toEmail": "a.pugleev@tkvls.ru",
-        "subject": "={{ 'Остатки ЕЛС на ' + $json.elsDate + ' — ЕЛС 22%: ' + $json.els22 + ' / ЕЛС 0%: ' + $json.els0 }}",
-        "message": "={{ $json.emailHtml }}",
-        "options": { "appendAttributionToBody": false }
+        "toEmail": "a.pugleev@tkvls.ru, АДРЕС2@tkvls.ru, АДРЕС3@tkvls.ru",
+        "subject": "={{ 'Остатки ЕЛС на ' + $('Build ELS Email').first().json.elsDate + ' — ЕЛС 22%: ' + $('Build ELS Email').first().json.els22 + ' / ЕЛС 0%: ' + $('Build ELS Email').first().json.els0 }}",
+        "message": "={{ $('Build ELS Email').first().json.emailHtml }}",
+        "options": {
+          "appendAttributionToBody": false,
+          "attachmentsUi": {
+            "attachmentsBinary": [{ "property": "data" }]
+          }
+        }
       },
       "credentials": {
         "gmailOAuth2": { "id": "REPLACE_WITH_YOUR_GMAIL_CREDENTIAL_ID", "name": "Gmail account" }
@@ -111,6 +135,9 @@
       "main": [[ { "node": "Build ELS Email", "type": "main", "index": 0 } ]]
     },
     "Build ELS Email": {
+      "main": [[ { "node": "Download Excel", "type": "main", "index": 0 } ]]
+    },
+    "Download Excel": {
       "main": [[ { "node": "Send Email", "type": "main", "index": 0 } ]]
     }
   },
