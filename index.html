@@ -3888,6 +3888,16 @@ document.getElementById('fullMonthPlan').textContent =
 const ELS_CSV_URL = 'https://docs.google.com/spreadsheets/d/17lGV4E7-MFkak3iYHoajViH8fJk20HvGN4SJw0Et7yg/export?format=csv&gid=1639673932';
 
 async function loadElsData() {
+  function splitCsvLine(line) {
+    const res = []; let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { if (inQ && line[i+1]==='"') { cur+='"'; i++; } else inQ=!inQ; }
+      else if (c === ',' && !inQ) { res.push(cur); cur=''; }
+      else cur += c;
+    }
+    res.push(cur); return res;
+  }
   try {
     const res = await fetch(ELS_CSV_URL, {cache:'no-store'});
     if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -3896,7 +3906,7 @@ async function loadElsData() {
     if (lines.length < 2) return;
     let lastCells = null;
     for (let i = lines.length - 1; i >= 1; i--) {
-      const cells = lines[i].split(',');
+      const cells = splitCsvLine(lines[i]);
       if ((cells[2] || '').trim() || (cells[3] || '').trim()) { lastCells = cells; break; }
     }
     if (!lastCells) return;
