@@ -270,6 +270,24 @@ function toNum(s) {
   const str = String(s||0).replace(/[^\d.,\-]/g,'').replace(',','.');
   return parseFloat(str) || 0;
 }
+function addDays(ddmmyyyy, days) {
+  if (!ddmmyyyy || !days) return '';
+  const parts = String(ddmmyyyy).split('.');
+  if (parts.length !== 3) return '';
+  const [d, m, y] = parts.map(Number);
+  const dt = new Date(y, m - 1, d);
+  if (isNaN(dt.getTime())) return '';
+  dt.setDate(dt.getDate() + days);
+  return `${String(dt.getDate()).padStart(2,'0')}.${String(dt.getMonth()+1).padStart(2,'0')}.${dt.getFullYear()}`;
+}
+function parseDdMmYyyy(s) {
+  if (!s) return null;
+  const parts = String(s).split('.');
+  if (parts.length !== 3) return null;
+  const [d, m, y] = parts.map(Number);
+  const dt = new Date(y, m - 1, d);
+  return isNaN(dt.getTime()) ? null : dt;
+}
 
 // ── Авторизация ─────────────────────────────────────────────────
 function saveSession(login) { try { localStorage.setItem(AUTH_KEY, JSON.stringify({login, ts:Date.now()})); } catch(e){} }
@@ -334,19 +352,34 @@ async function loadData() {
     const rows = (snap ? raw.filter(r => r.as_of_date === snap) : raw).map(r => {
       const balance     = toNum(r.balance);
       const docAmt      = toNum(r.doc_amount);
-      const isOver      = r.is_overdue === '1' && balance > 0;
-      const daysOver    = isOver ? toNum(r.days_overdue) : 0;
-      const overAmt     = isOver ? balance : 0;
       const supplier    = (r.supplier_name || '').trim();
       const contract    = (r.contract_name || '').trim();
       const credit_days = creditDaysMap.get(supplier + '|' + contract) || null;
+      const doc_date    = r.doc_date || '';
+      // Срок оплаты: считаем из doc_date + credit_days (due_date из CSV всегда пустой)
+      const due_date    = credit_days ? addDays(doc_date, credit_days) : (r.due_date || '');
+      // Пересчитываем просрочку на основе due_date
+      let isOver = false, daysOver = 0;
+      if (balance > 0 && due_date) {
+        const duedt = parseDdMmYyyy(due_date);
+        const today = new Date(); today.setHours(0,0,0,0);
+        if (duedt && today > duedt) {
+          isOver = true;
+          daysOver = Math.floor((today - duedt) / 86400000);
+        }
+      } else if (balance > 0 && r.is_overdue === '1') {
+        // нет due_date и нет credit_days — доверяем источнику
+        isOver = true;
+        daysOver = toNum(r.days_overdue);
+      }
+      const overAmt = isOver ? balance : 0;
       return {
         supplier,
         contract,
         doc_num:      r.doc_number || '',
         doc_full:     r.doc_full   || '',
-        doc_date:     r.doc_date   || '',
-        due_date:     r.due_date   || '',
+        doc_date,
+        due_date,
         doc_amt:      docAmt,
         balance,
         over_amt:     overAmt,
