@@ -1135,6 +1135,8 @@ body {
   <div class="card-icon">💳</div>
   <div class="card-header-text">
     <h2 class="card-title">ЗАДОЛЖЕННОСТЬ</h2>
+    <!-- Остатки ДС сразу под заголовком -->
+   <div id="cashSummary" class="card-subtitle"></div>
   </div>
 </div>
 
@@ -1531,6 +1533,44 @@ let yesterdayLoadingStations = []; // [{ station, count }]
 let yesterdayLoadingDate = null;
 let budgetProduction = null; // бюджет производственной службы
 let budgetCommercial = null;  // бюджет коммерческой службы
+
+function buildCashFromRows(rows) {
+  if (!rows || rows.length < 2) return null;
+
+  const header = rows[0];
+  const idxDate  = header.indexOf('as_of_date');
+  const idxTotal = header.indexOf('cash_total');
+
+  if (idxDate === -1 || idxTotal === -1) {
+    console.warn('cash_balances: нет колонок as_of_date / cash_total');
+    return null;
+  }
+
+  let maxDate = null;
+  let lastRow = null;
+
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || !row.length) continue;
+
+    const d = parseDate(row[idxDate]);
+    if (!d) continue;
+
+    if (!maxDate || d > maxDate) {
+      maxDate = d;
+      lastRow = row;
+    }
+  }
+
+  if (!lastRow || !maxDate) return null;
+
+  const total = toNumber(lastRow[idxTotal]);
+
+  return {
+    date: maxDate,
+    total: total
+  };
+}
 
 // ==========================
 // 2. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
@@ -2833,6 +2873,20 @@ async function loadDataFromSheet() {
     }
   }
 
+  // 6) Остатки денежных средств
+  if (csvMap.cash) {
+    try {
+      const rowsCash = parseCSV(csvMap.cash);
+      const cash = buildCashFromRows(rowsCash);
+      if (cash) {
+        if (!dashboardData) dashboardData = {};
+        dashboardData.cash = cash;
+      }
+    } catch (e) {
+      console.error('Ошибка обработки cash_balances:', e);
+    }
+  }
+
   // 7) budget_production (бюджет производственной службы)
   budgetProduction = null;
   budgetCommercial = null; // 👈 обнуляем коммерческий бюджет перед загрузкой
@@ -3714,13 +3768,27 @@ function populateDashboard() {
         `${dashboardData.loading.progress_percent}%`;
     document.getElementById('progressFill').style.width =
         `${dashboardData.loading.progress_percent}%`;
-    document.getElementById('planMonth').textContent =
-        formatNumber(dashboardData.loading.plan_month);
-    document.getElementById('fullMonthPlan').textContent =
-        formatNumber(dashboardData.loading.month_total_plan || 0);
+document.getElementById('planMonth').textContent =
+    formatNumber(Math.round(dashboardData.loading.plan_month));
+
+document.getElementById('fullMonthPlan').textContent =
+    formatNumber(Math.round(dashboardData.loading.month_total_plan || 0));
+
     document.getElementById('loadedYesterday').textContent =
         formatNumber(dashboardData.loading.loaded_wagons_yesterday);
     renderYesterdayLoadingList();
+
+    // --- Остатки денежных средств в шапке карточки ---
+    const cashEl = document.getElementById('cashSummary');
+    if (cashEl && dashboardData.cash) {
+      const textAmount = formatCurrency(dashboardData.cash.total);
+      const textDate = dashboardData.cash.date
+        ? formatDateRuShort(dashboardData.cash.date)
+        : '';
+      cashEl.textContent = textDate
+        ? `Остатки ДС: ${textAmount} на ${textDate}`
+        : `Остатки ДС: ${textAmount}`;
+    }
 
     // --- Задолженность ---
     document.getElementById('totalDebt').textContent =
