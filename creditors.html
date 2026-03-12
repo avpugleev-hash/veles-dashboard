@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Кредиторская задолженность | ООО "ТК ВЕЛЕС"</title>
+  <style>
+    :root {
+      --navy: #1a2a4a;
+      --navy-dark: #0f1a2e;
+      --gold: #d4a574;
+      --bg: #f7f8fa;
+      --card: #ffffff;
+      --text: #1a2a4a;
+      --text2: #6b7280;
+      --border: #e5e7eb;
+      --green: #20b2aa;
+      --orange: #e8622b;
+      --red: rgba(192,21,47,1);
+      --purple: #7c3aed;
+      --r-lg: 12px;
+      --r-md: 8px;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:"Geist","Inter",-apple-system,sans-serif; background:var(--bg); color:var(--text); line-height:1.5; min-height:100vh; }
+
+    /* ЛОГИН */
+    .login-overlay { position:fixed; inset:0; background:rgba(15,23,42,.8); display:flex; align-items:center; justify-content:center; z-index:1000; }
+    .login-box { background:var(--card); border-radius:var(--r-lg); padding:28px 32px; max-width:380px; width:100%; box-shadow:0 10px 30px rgba(0,0,0,.15); }
+    .login-box h2 { font-size:20px; font-weight:700; color:var(--navy); margin-bottom:4px; }
+    .login-sub { font-size:12px; color:var(--text2); margin-bottom:16px; }
+    .login-label { display:block; font-size:11px; color:var(--text2); margin:10px 0 3px; }
+    .login-input { width:100%; padding:8px 10px; border-radius:var(--r-md); border:1px solid var(--border); font-size:13px; }
+    .login-input:focus { outline:none; border-color:var(--green); box-shadow:0 0 0 3px rgba(32,178,170,.2); }
+    .login-err { font-size:12px; color:var(--red); margin-top:8px; display:none; }
+    .login-btn { margin-top:14px; width:100%; background:var(--navy); color:#fff; border:none; padding:10px; border-radius:var(--r-md); font-size:14px; font-weight:600; cursor:pointer; }
+    .login-btn:hover { background:#253a6a; }
+
+    /* ШАПКА */
+    .hdr { background:var(--navy); color:#fff; padding:18px 28px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+    .hdr h1 { font-size:20px; font-weight:700; }
+    .hdr .sub { font-size:12px; opacity:.75; margin-top:2px; }
+    .hdr-right { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .btn-ghost { background:rgba(255,255,255,.1); color:#fff; border:1px solid rgba(255,255,255,.4); padding:6px 14px; border-radius:var(--r-md); font-size:12px; font-weight:600; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:5px; transition:background .2s; }
+    .btn-ghost:hover { background:rgba(255,255,255,.2); }
+    #updTime { font-size:11px; opacity:.65; }
+
+    /* КОНТЕЙНЕР */
+    .wrap { max-width:1440px; margin:0 auto; padding:22px; }
+
+    /* ИТОГИ */
+    .summary { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:14px; }
+    @media(max-width:900px){ .summary{ grid-template-columns:repeat(2,1fr); } }
+    @media(max-width:500px){ .summary{ grid-template-columns:1fr; } }
+    .s-card { background:var(--card); border-radius:var(--r-lg); padding:16px 18px; border:1px solid var(--border); box-shadow:0 1px 4px rgba(0,0,0,.05); }
+    .s-card .lbl { font-size:11px; color:var(--text2); font-weight:500; margin-bottom:5px; }
+    .s-card .val { font-size:24px; font-weight:700; line-height:1; }
+    .s-card .hint { font-size:11px; color:var(--text2); margin-top:4px; }
+    .c-navy { color:var(--navy); }
+    .c-orange { color:var(--orange); }
+    .c-purple { color:var(--purple); }
+    .bar-wrap { margin-top:7px; height:4px; background:var(--border); border-radius:99px; overflow:hidden; }
+    .bar-fill { height:100%; background:var(--purple); border-radius:99px; transition:width .5s; }
+
+    /* ФИЛЬТРЫ */
+    .filters { background:var(--card); border-radius:var(--r-lg); padding:12px 18px; border:1px solid var(--border); margin-bottom:16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .f-lbl { font-size:12px; color:var(--text2); font-weight:500; white-space:nowrap; }
+    .f-input { flex:1; min-width:180px; padding:6px 11px; border-radius:var(--r-md); border:1px solid var(--border); font-size:13px; outline:none; }
+    .f-input:focus { border-color:var(--green); box-shadow:0 0 0 2px rgba(32,178,170,.12); }
+    .f-select { padding:6px 11px; border-radius:var(--r-md); border:1px solid var(--border); font-size:13px; background:#fff; cursor:pointer; outline:none; }
+    .f-count { font-size:12px; color:var(--text2); margin-left:auto; white-space:nowrap; }
+
+    /* ТАБЛИЦА */
+    .tcard { background:var(--card); border-radius:var(--r-lg); border:1px solid var(--border); overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.05); }
+    .tscroll { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+
+    thead th { background:var(--navy); color:#fff; padding:10px 14px; text-align:left; font-size:11px; font-weight:600; letter-spacing:.04em; white-space:nowrap; cursor:pointer; user-select:none; }
+    thead th:hover { background:#253a6a; }
+    thead th.r { text-align:right; }
+    .si { margin-left:3px; opacity:.5; }
+    thead th.sorted .si { opacity:1; }
+
+    .row-supplier { background:#f0f4f8; cursor:pointer; border-bottom:2px solid #d1dae8; }
+    .row-supplier:hover { background:#e4ecf5; }
+    .row-supplier td { padding:10px 14px; font-weight:700; color:var(--navy); font-size:13px; }
+    .row-supplier td.r { text-align:right; white-space:nowrap; }
+    .toggle-icon { display:inline-block; width:16px; text-align:center; font-style:normal; margin-right:6px; transition:transform .2s; color:var(--text2); }
+    .row-supplier.open .toggle-icon { transform:rotate(90deg); }
+
+    .row-doc { background:#fff; border-bottom:1px solid #f0f0f0; }
+    .row-doc:hover { background:#faf8ff; }
+    .row-doc td { padding:7px 14px 7px 50px; font-size:12px; color:var(--text2); }
+    .row-doc td.r { text-align:right; white-space:nowrap; }
+    .row-doc td.doc-num { color:var(--navy); font-weight:500; font-family:monospace; font-size:11px; }
+
+    .badge-over { display:inline-block; background:rgba(124,58,237,.12); color:var(--purple); border-radius:4px; padding:2px 6px; font-size:11px; font-weight:600; white-space:nowrap; }
+    .badge-ok { display:inline-block; background:rgba(32,178,170,.1); color:var(--green); border-radius:4px; padding:2px 6px; font-size:11px; font-weight:600; }
+    .days-badge { display:inline-block; background:rgba(124,58,237,.1); color:var(--purple); border-radius:4px; padding:1px 5px; font-size:10px; font-weight:600; margin-left:4px; }
+
+    tfoot td { padding:10px 14px; font-weight:700; font-size:13px; background:#eef1f6; border-top:2px solid var(--navy); }
+    tfoot td.r { text-align:right; white-space:nowrap; }
+
+    .state { text-align:center; padding:60px 20px; color:var(--text2); font-size:14px; }
+    .spin { display:inline-block; width:26px; height:26px; border:3px solid rgba(26,42,74,.12); border-top-color:var(--navy); border-radius:50%; animation:sp .7s linear infinite; margin-bottom:10px; }
+    @keyframes sp { to { transform:rotate(360deg); } }
+
+    .hidden { display:none !important; }
+
+    .row-supplier.alert-yellow { border-left:4px solid #f59e0b; }
+    .row-supplier.alert-red    { border-left:4px solid #dc2626; }
+    .alert-dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:7px; flex-shrink:0; vertical-align:middle; }
+    .alert-dot.yellow { background:#f59e0b; box-shadow:0 0 0 3px rgba(245,158,11,.2); }
+    .alert-dot.red    { background:#dc2626; box-shadow:0 0 0 3px rgba(220,38,38,.2); }
+  </style>
+</head>
+<body>
+
+<!-- ЛОГИН -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <h2>ТК ВЕЛЕС</h2>
+    <p class="login-sub">Кредиторская задолженность</p>
+    <form id="loginForm">
+      <label class="login-label">Логин</label>
+      <input class="login-input" id="fLogin" type="text" placeholder="Введите логин">
+      <label class="login-label">Пароль</label>
+      <input class="login-input" id="fPwd" type="password" placeholder="Введите пароль">
+      <div class="login-err" id="fErr"></div>
+      <button class="login-btn" type="submit">Войти</button>
+    </form>
+  </div>
+</div>
+
+<!-- ШАПКА -->
+<div class="hdr">
+  <div>
+    <h1>Кредиторская задолженность</h1>
+    <div class="sub">ООО "ТК ВЕЛЕС" — задолженность перед поставщиками по документам</div>
+  </div>
+  <div class="hdr-right">
+    <span id="updTime"></span>
+    <a href="index.html" class="btn-ghost">← Дашборд</a>
+    <button class="btn-ghost" onclick="logout()">Выйти</button>
+  </div>
+</div>
+
+<!-- КОНТЕНТ -->
+<div class="wrap">
+
+  <!-- Итоги -->
+  <div class="summary">
+    <div class="s-card">
+      <div class="lbl">Общая задолженность</div>
+      <div class="val c-navy" id="sTotal">—</div>
+      <div class="hint" id="sDate"></div>
+    </div>
+    <div class="s-card">
+      <div class="lbl">Просроченная</div>
+      <div class="val c-purple" id="sOverdue">—</div>
+      <div class="bar-wrap"><div class="bar-fill" id="sBar" style="width:0%"></div></div>
+      <div class="hint" id="sPct"></div>
+    </div>
+    <div class="s-card">
+      <div class="lbl">Поставщиков с просрочкой</div>
+      <div class="val c-purple" id="sCntOver">—</div>
+      <div class="hint">уникальных поставщиков</div>
+    </div>
+  </div>
+
+  <!-- Фильтры -->
+  <div class="filters">
+    <span class="f-lbl">Поиск:</span>
+    <input class="f-input" id="fSearch" type="text" placeholder="Поставщик, договор или номер документа...">
+    <span class="f-lbl">Показать:</span>
+    <select class="f-select" id="fFilter">
+      <option value="all">Все</option>
+      <option value="overdue">Только с просрочкой</option>
+      <option value="ok">Без просрочки</option>
+      <option value="yellow">🟡 До 7 суток</option>
+      <option value="red">🔴 Более 7 суток</option>
+    </select>
+    <span class="f-count" id="fCount"></span>
+  </div>
+
+  <!-- Таблица -->
+  <div class="tcard">
+    <div class="tscroll">
+      <div id="stateMsg" class="state"><div class="spin"></div><div>Загрузка данных...</div></div>
+      <table id="mainTable" class="hidden">
+        <thead>
+          <tr>
+            <th style="min-width:280px">Поставщик / Договор / Документ</th>
+            <th>Дата документа</th>
+            <th>Срок оплаты</th>
+            <th class="r">Сумма документа</th>
+            <th class="r">Остаток</th>
+            <th class="r">Просрочка</th>
+            <th class="r">Дней просрочки</th>
+          </tr>
+        </thead>
+        <tbody id="mainBody"></tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3">Итого (по фильтру)</td>
+            <td class="r" id="fDocAmt">—</td>
+            <td class="r" id="fBalance">—</td>
+            <td class="r" id="fOver">—</td>
+            <td class="r" id="fDays">—</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const LOGIN_API_URL = 'https://alekseipugleev.app.n8n.cloud/webhook/dashboard-login';
+const AUTH_KEY      = 'veles_dashboard_auth_v1';
+const AUTH_TTL      = 8 * 3600 * 1000;
+const CSV_URL       = 'https://docs.google.com/spreadsheets/d/1LWplKTlBOJB-5TycHmsReHX-jLDik1TnerdByVCxiUo/export?format=csv&gid=0';
+
+let allDocs = [];
+
+// ── Форматирование ──────────────────────────────────────────────
+function fmt(n) {
+  if (!n) return '—';
+  if (Math.abs(n) < 1e6)
+    return (n / 1e3).toLocaleString('ru-RU', {minimumFractionDigits:0, maximumFractionDigits:0}) + ' тыс ₽';
+  return (n / 1e6).toLocaleString('ru-RU', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' млн ₽';
+}
+function fmtDate(s) {
+  if (!s) return '—';
+  // YYYY-MM-DD → DD.MM.YYYY
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const [y,m,d] = s.split('-');
+    return `${d}.${m}.${y}`;
+  }
+  return s;
+}
+
+// ── CSV парсер ──────────────────────────────────────────────────
+function splitLine(line) {
+  const res = []; let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { if (inQ && line[i+1]==='"') { cur+='"'; i++; } else inQ=!inQ; }
+    else if (c === ',' && !inQ) { res.push(cur); cur=''; }
+    else cur += c;
+  }
+  res.push(cur);
+  return res;
+}
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  const header = splitLine(lines[0]);
+  return lines.slice(1).map(l => {
+    const cells = splitLine(l);
+    const obj = {};
+    header.forEach((h,i) => { obj[h.trim()] = (cells[i]||'').trim(); });
+    return obj;
+  }).filter(r => Object.values(r).some(v => v));
+}
+function toNum(s) {
+  const str = String(s||0).replace(/[^\d.,\-]/g,'').replace(',','.');
+  return parseFloat(str) || 0;
+}
+
+// ── Авторизация ─────────────────────────────────────────────────
+function saveSession(login) { try { localStorage.setItem(AUTH_KEY, JSON.stringify({login, ts:Date.now()})); } catch(e){} }
+function loadSession() {
+  try {
+    const d = JSON.parse(localStorage.getItem(AUTH_KEY)||'null');
+    if (!d || Date.now()-d.ts > AUTH_TTL) { localStorage.removeItem(AUTH_KEY); return null; }
+    return d;
+  } catch(e) { return null; }
+}
+function clearSession() { try { localStorage.removeItem(AUTH_KEY); } catch(e){} }
+function logout() {
+  clearSession();
+  document.getElementById('loginOverlay').style.display = 'flex';
+  document.getElementById('fLogin').value = '';
+  document.getElementById('fPwd').value   = '';
+}
+
+document.getElementById('loginForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const login = document.getElementById('fLogin').value.trim();
+  const pwd   = document.getElementById('fPwd').value;
+  const err   = document.getElementById('fErr');
+  err.style.display = 'none';
+  if (!login || !pwd) { err.textContent='Введите логин и пароль'; err.style.display='block'; return; }
+  try {
+    const r = await fetch(LOGIN_API_URL, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({login, password:pwd})});
+    const d = await r.json().catch(()=>null);
+    if (!d || d.ok !== true) { err.textContent='Неверный логин или пароль'; err.style.display='block'; return; }
+    saveSession(login);
+    document.getElementById('loginOverlay').style.display = 'none';
+    loadData();
+  } catch(ex) { err.textContent='Ошибка подключения к серверу'; err.style.display='block'; }
+});
+
+// ── Загрузка данных ─────────────────────────────────────────────
+async function loadData() {
+  showState('<div class="spin"></div><div>Загрузка данных...</div>');
+  try {
+    const res = await fetch(CSV_URL, {cache:'no-store'});
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    const raw  = parseCSV(text);
+
+    const dates = raw.map(r => r.as_of_date).filter(Boolean).sort();
+    const snap  = dates[dates.length-1] || '';
+
+    const rows = (snap ? raw.filter(r => r.as_of_date === snap) : raw).map(r => {
+      const balance  = toNum(r.balance);
+      const docAmt   = toNum(r.doc_amount);
+      const isOver   = r.is_overdue === '1' && balance > 0;
+      const daysOver = isOver ? toNum(r.days_overdue) : 0;
+      const overAmt  = isOver ? balance : 0;
+      return {
+        supplier:  r.supplier_name  || '',
+        contract:  r.contract_name  || '',
+        doc_num:   r.doc_number     || '',
+        doc_full:  r.doc_full       || '',
+        doc_date:  r.doc_date       || '',
+        due_date:  r.due_date       || '',
+        doc_amt:   docAmt,
+        balance,
+        over_amt:  overAmt,
+        is_over:   isOver,
+        days_over: daysOver,
+      };
+    }).filter(r => r.balance > 0 || r.doc_amt > 0);
+
+    allDocs = rows;
+
+    const totalBal  = rows.reduce((s,r) => s + r.balance, 0);
+    const totalOver = rows.reduce((s,r) => s + r.over_amt, 0);
+    const pct       = totalBal ? totalOver/totalBal*100 : 0;
+    const supOver   = new Set(rows.filter(r=>r.over_amt>0).map(r=>r.supplier)).size;
+
+    document.getElementById('sTotal').textContent   = fmt(totalBal);
+    document.getElementById('sOverdue').textContent = fmt(totalOver);
+    document.getElementById('sBar').style.width     = Math.min(pct,100)+'%';
+    document.getElementById('sPct').textContent     = pct.toFixed(1)+'% от общего';
+    document.getElementById('sCntOver').textContent = supOver;
+    if (snap) document.getElementById('sDate').textContent = 'Данные на ' + fmtDate(snap);
+    document.getElementById('updTime').textContent  =
+      'Обновлено: ' + new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+
+    hideState();
+    renderTable();
+  } catch(e) {
+    showState(`<div style="color:#c0152f">Ошибка: ${e.message}</div>
+      <button onclick="loadData()" style="margin-top:12px;padding:7px 18px;border-radius:8px;border:1px solid #ccc;cursor:pointer;font-size:13px;">Повторить</button>`);
+  }
+}
+
+function showState(html) {
+  document.getElementById('stateMsg').innerHTML = html;
+  document.getElementById('stateMsg').style.display = '';
+  document.getElementById('mainTable').classList.add('hidden');
+}
+function hideState() {
+  document.getElementById('stateMsg').style.display = 'none';
+  document.getElementById('mainTable').classList.remove('hidden');
+}
+
+// ── Рендер ──────────────────────────────────────────────────────
+function alertLevel(days, overAmt) {
+  if (!overAmt) return '';
+  if (days > 7) return 'red';
+  return 'yellow';
+}
+
+function getFiltered() {
+  const q   = document.getElementById('fSearch').value.toLowerCase().trim();
+  const fil = document.getElementById('fFilter').value;
+  return allDocs.filter(r => {
+    if (q && !r.supplier.toLowerCase().includes(q) &&
+             !r.contract.toLowerCase().includes(q) &&
+             !r.doc_num.toLowerCase().includes(q)) return false;
+    if (fil === 'overdue' && !r.is_over) return false;
+    if (fil === 'ok'      &&  r.is_over) return false;
+    if (fil === 'yellow'  && alertLevel(r.days_over, r.over_amt) !== 'yellow') return false;
+    if (fil === 'red'     && alertLevel(r.days_over, r.over_amt) !== 'red')    return false;
+    return true;
+  });
+}
+
+function renderTable() {
+  const docs = getFiltered();
+  const tbody = document.getElementById('mainBody');
+  tbody.innerHTML = '';
+
+  const supplierMap = new Map();
+  docs.forEach(d => {
+    if (!supplierMap.has(d.supplier)) supplierMap.set(d.supplier, []);
+    supplierMap.get(d.supplier).push(d);
+  });
+
+  const totDocAmt = docs.reduce((s,r)=>s+r.doc_amt, 0);
+  const totBal    = docs.reduce((s,r)=>s+r.balance, 0);
+  const totOver   = docs.reduce((s,r)=>s+r.over_amt, 0);
+  const overDocs  = docs.filter(r=>r.days_over>0);
+  const totDays   = overDocs.length ? Math.round(overDocs.reduce((s,r)=>s+r.days_over,0)/overDocs.length) : 0;
+
+  document.getElementById('fDocAmt').textContent  = fmt(totDocAmt);
+  document.getElementById('fBalance').textContent = fmt(totBal);
+  document.getElementById('fOver').textContent    = fmt(totOver);
+  document.getElementById('fDays').textContent    = totDays ? totDays + ' д. (ср.)' : '—';
+  document.getElementById('fCount').textContent   = `Поставщиков: ${supplierMap.size} / Документов: ${docs.length}`;
+
+  const sorted = [...supplierMap.entries()].sort((a,b) => {
+    const overA = a[1].reduce((s,r)=>s+r.over_amt, 0);
+    const overB = b[1].reduce((s,r)=>s+r.over_amt, 0);
+    return overB - overA;
+  });
+
+  sorted.forEach(([supName, docList]) => {
+    const supBal   = docList.reduce((s,r)=>s+r.balance, 0);
+    const supOver  = docList.reduce((s,r)=>s+r.over_amt, 0);
+    const maxDays  = Math.max(0, ...docList.filter(r=>r.over_amt>0).map(r=>r.days_over));
+    const alert    = alertLevel(maxDays, supOver);
+    const gId      = 'g_' + Math.random().toString(36).slice(2);
+
+    const trSup = document.createElement('tr');
+    trSup.className = 'row-supplier' + (alert ? ' alert-'+alert : '');
+    trSup.dataset.group = gId;
+    const dot = alert ? `<span class="alert-dot ${alert}"></span>` : '';
+    trSup.innerHTML = `
+      <td colspan="3"><i class="toggle-icon">▶</i>${dot}${supName}</td>
+      <td class="r">—</td>
+      <td class="r">${fmt(supBal)}</td>
+      <td class="r">${supOver > 0 ? '<span class="badge-over">'+fmt(supOver)+'</span>' : '<span class="badge-ok">нет</span>'}</td>
+      <td class="r" style="font-size:11px;color:var(--text2)">${docList.length} док.</td>`;
+    tbody.appendChild(trSup);
+
+    trSup.addEventListener('click', () => {
+      trSup.classList.toggle('open');
+      const isOpen = trSup.classList.contains('open');
+      tbody.querySelectorAll(`[data-parent="${gId}"]`).forEach(el => el.classList.toggle('hidden', !isOpen));
+    });
+
+    docList.sort((a,b) => {
+      const pa = a.doc_date.split('.').reverse().join('');
+      const pb = b.doc_date.split('.').reverse().join('');
+      return pa.localeCompare(pb);
+    }).forEach(doc => {
+      const trDoc = document.createElement('tr');
+      const docAlert = alertLevel(doc.days_over, doc.over_amt);
+      trDoc.className = 'row-doc hidden' + (docAlert ? ' alert-'+docAlert : '');
+      trDoc.dataset.parent = gId;
+
+      const daysBadge = doc.days_over > 0
+        ? `<span class="days-badge">${Math.round(doc.days_over)} дн.</span>` : '';
+      const dueStyle = doc.is_over ? 'color:var(--purple);font-weight:600' : '';
+
+      trDoc.innerHTML = `
+        <td class="doc-num" style="padding-left:32px">${doc.doc_num || doc.doc_full || '—'}</td>
+        <td>${fmtDate(doc.doc_date)}</td>
+        <td style="${dueStyle}">${fmtDate(doc.due_date)}</td>
+        <td class="r">${fmt(doc.doc_amt)}</td>
+        <td class="r">${fmt(doc.balance)}</td>
+        <td class="r">${doc.over_amt > 0 ? '<span class="badge-over">'+fmt(doc.over_amt)+'</span>' : '—'}</td>
+        <td class="r">${doc.days_over > 0 ? daysBadge : '—'}</td>`;
+      tbody.appendChild(trDoc);
+    });
+  });
+}
+
+// Фильтры
+document.getElementById('fSearch').addEventListener('input', renderTable);
+document.getElementById('fFilter').addEventListener('change', renderTable);
+
+// Инициализация
+document.addEventListener('DOMContentLoaded', () => {
+  if (loadSession()) {
+    document.getElementById('loginOverlay').style.display = 'none';
+    loadData();
+  }
+});
+</script>
+</body>
+</html>
