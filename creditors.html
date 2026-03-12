@@ -593,14 +593,18 @@ function renderTable() {
 
       trGroup.addEventListener('click', () => {
         const nowOpen = trGroup.classList.toggle('open');
-        tbody.querySelectorAll(`[data-grp="${groupGId}"]`).forEach(trSup => {
+        tbody.querySelectorAll(`[data-grp="${groupGId}"]`).forEach(el => {
           if (!nowOpen) {
-            trSup.classList.add('hidden');
-            const supGId = trSup.dataset.group;
-            if (supGId) tbody.querySelectorAll(`[data-parent="${supGId}"]`).forEach(el => el.classList.add('hidden'));
-            trSup.classList.remove('open');
+            // Свернуть группу: скрыть всё
+            el.classList.add('hidden');
+            if (el.classList.contains('row-supplier')) el.classList.remove('open');
           } else {
-            trSup.classList.remove('hidden');
+            // Развернуть группу: показать только поставщиков, документы остаются скрытыми
+            if (el.classList.contains('row-supplier')) {
+              el.classList.remove('hidden');
+              el.classList.remove('open'); // сбросить состояние — документы свёрнуты
+            }
+            // row-doc остаётся hidden
           }
         });
       });
