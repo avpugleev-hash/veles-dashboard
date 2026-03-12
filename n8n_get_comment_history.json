@@ -22,7 +22,7 @@
       "position": [460, 300],
       "parameters": {
         "method": "GET",
-        "url": "https://docs.google.com/spreadsheets/d/1D9-uViFll7h3SUT01lvlHKTF0VnQCx46h8569zSpaCQ/export?format=csv&sheet=manager_comments_history",
+        "url": "https://docs.google.com/spreadsheets/d/1D9-uViFll7h3SUT01lvlHKTF0VnQCx46h8569zSpaCQ/export?format=csv&gid=196280710",
         "options": {
           "response": {
             "response": {
@@ -39,7 +39,7 @@
       "typeVersion": 2,
       "position": [680, 300],
       "parameters": {
-        "jsCode": "const client = $('Webhook').first().json.query?.client || '';\nconst csvText = $json.data || '';\n\nfunction splitLine(line) {\n  const res = []; let cur = '', inQ = false;\n  for (let i = 0; i < line.length; i++) {\n    const c = line[i];\n    if (c === '\"') { if (inQ && line[i+1]==='\"') { cur+='\"'; i++; } else inQ=!inQ; }\n    else if (c === ',' && !inQ) { res.push(cur); cur=''; }\n    else cur += c;\n  }\n  res.push(cur);\n  return res;\n}\n\nconst lines = csvText.trim().split(/\\r?\\n/);\nif (lines.length < 2) return [{ json: { items: [] } }];\n\nconst hdr = splitLine(lines[0]).map(h => h.trim());\nconst rows = lines.slice(1).map(line => {\n  const cells = splitLine(line);\n  const obj = {};\n  hdr.forEach((h, i) => { obj[h] = (cells[i] || '').trim(); });\n  return obj;\n}).filter(r => Object.values(r).some(v => v));\n\nconst filtered = client ? rows.filter(r => r.client_name === client) : rows;\n\nreturn [{ json: { items: filtered } }];"
+        "jsCode": "const client = $('Webhook').first().json.query?.client || '';\nconst csvText = $json.data || '';\n\nfunction splitLine(line) {\n  const res = []; let cur = '', inQ = false;\n  for (let i = 0; i < line.length; i++) {\n    const c = line[i];\n    if (c === '\"') { if (inQ && line[i+1]==='\"') { cur+='\"'; i++; } else inQ=!inQ; }\n    else if (c === ',' && !inQ) { res.push(cur); cur=''; }\n    else cur += c;\n  }\n  res.push(cur);\n  return res;\n}\n\nconst lines = csvText.trim().split(/\\r?\\n/);\nif (lines.length < 2) return [{ json: { items: [] } }];\n\nconst hdr = splitLine(lines[0]).map(h => h.trim());\nconst rows = lines.slice(1).map(line => {\n  const cells = splitLine(line);\n  const obj = {};\n  hdr.forEach((h, i) => { obj[h] = (cells[i] || '').trim(); });\n  // Если в таблице дублирующиеся client_name (client_name.1 и т.п.) — берём первое непустое\n  if (!obj.client_name) {\n    const fallback = Object.keys(obj).find(k => k.startsWith('client_name') && obj[k]);\n    if (fallback) obj.client_name = obj[fallback];\n  }\n  return obj;\n}).filter(r => Object.values(r).some(v => v));\n\nconst filtered = client ? rows.filter(r => r.client_name === client) : rows;\n\nreturn [{ json: { items: filtered } }];"
       }
     },
     {
@@ -49,7 +49,8 @@
       "typeVersion": 1,
       "position": [900, 300],
       "parameters": {
-        "respondWith": "allIncomingItems",
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.items) }}",
         "options": {}
       }
     }
