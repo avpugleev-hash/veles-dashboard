@@ -49,7 +49,7 @@
       "position": [700, 300],
       "parameters": {
         "method": "GET",
-        "url": "https://docs.google.com/spreadsheets/d/1GDf8iz2Ryh-0i79ktw7_Ms43uW1Jcs_X/export?format=csv&gid=1639673932",
+        "url": "https://docs.google.com/spreadsheets/d/17lGV4E7-MFkak3iYHoajViH8fJk20HvGN4SJw0Et7yg/export?format=csv&gid=1639673932",
         "options": { "response": { "response": { "responseFormat": "text" } } }
       }
     },
