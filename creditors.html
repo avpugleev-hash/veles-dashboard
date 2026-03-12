@@ -124,6 +124,29 @@
     .row-supplier.in-group:hover { background:#e4ecf5; }
     .row-supplier.in-group.first-in-group { border-top:2px solid #7a9cbf; }
     .row-supplier.in-group.last-in-group  { border-bottom:2px solid #7a9cbf; }
+
+    /* РЕЕСТР ПЛАТЕЖЕЙ */
+    .reg-chk { cursor:pointer; width:14px; height:14px; accent-color:var(--navy); vertical-align:middle; }
+    .registry-bar { position:fixed; bottom:0; left:0; right:0; background:var(--navy); color:#fff; padding:14px 28px; display:flex; align-items:center; gap:16px; z-index:500; box-shadow:0 -4px 20px rgba(0,0,0,.25); transform:translateY(100%); transition:transform .3s; }
+    .registry-bar.visible { transform:translateY(0); }
+    .rb-info { flex:1; }
+    .rb-sum { font-size:20px; font-weight:700; color:var(--gold); }
+    .rb-count { font-size:12px; opacity:.75; margin-top:2px; }
+    .btn-reg { background:var(--gold); color:var(--navy); border:none; padding:9px 20px; border-radius:var(--r-md); font-size:13px; font-weight:700; cursor:pointer; }
+    .btn-reg:hover { background:#e8b98a; }
+    .btn-reg-cancel { background:rgba(255,255,255,.12); color:#fff; border:1px solid rgba(255,255,255,.35); padding:9px 16px; border-radius:var(--r-md); font-size:13px; font-weight:600; cursor:pointer; }
+    .btn-reg-cancel:hover { background:rgba(255,255,255,.22); }
+
+    /* МОДАЛКА РЕЕСТРА */
+    .reg-modal { position:fixed; inset:0; background:rgba(15,23,42,.75); display:flex; align-items:center; justify-content:center; z-index:900; }
+    .reg-modal-box { background:#fff; border-radius:var(--r-lg); padding:28px 32px; max-width:580px; width:100%; max-height:80vh; overflow-y:auto; box-shadow:0 10px 40px rgba(0,0,0,.2); }
+    .reg-modal-box h3 { font-size:16px; font-weight:700; color:var(--navy); margin-bottom:16px; }
+    .reg-text { font-family:monospace; font-size:13px; white-space:pre; background:#f7f8fa; border:1px solid var(--border); border-radius:8px; padding:14px 16px; overflow-x:auto; line-height:1.7; color:var(--text); }
+    .reg-modal-actions { display:flex; gap:10px; margin-top:16px; justify-content:flex-end; }
+    .btn-copy { background:var(--navy); color:#fff; border:none; padding:8px 20px; border-radius:var(--r-md); font-size:13px; font-weight:600; cursor:pointer; }
+    .btn-copy:hover { background:#253a6a; }
+    .btn-close-modal { background:#fff; color:var(--text); border:1px solid var(--border); padding:8px 16px; border-radius:var(--r-md); font-size:13px; cursor:pointer; }
+    .btn-close-modal:hover { background:#f3f4f6; }
   </style>
 </head>
 <body>
@@ -152,6 +175,7 @@
   </div>
   <div class="hdr-right">
     <span id="updTime"></span>
+    <button class="btn-ghost" id="btnRegistryToggle" onclick="toggleRegistryMode()">☑ Реестр платежей</button>
     <a href="index.html" class="btn-ghost">← Дашборд</a>
     <button class="btn-ghost" onclick="logout()">Выйти</button>
   </div>
@@ -229,6 +253,28 @@
     </div>
   </div>
 
+</div>
+
+<!-- ПАНЕЛЬ РЕЕСТРА (фиксированная снизу) -->
+<div class="registry-bar" id="registryBar">
+  <div class="rb-info">
+    <div class="rb-sum" id="rbSum">0 ₽</div>
+    <div class="rb-count" id="rbCount">Документов не выбрано</div>
+  </div>
+  <button class="btn-reg" onclick="buildAndShowRegistry()">Сформировать</button>
+  <button class="btn-reg-cancel" onclick="toggleRegistryMode()">Отмена</button>
+</div>
+
+<!-- МОДАЛКА С РЕЕСТРОМ -->
+<div class="reg-modal hidden" id="regModal">
+  <div class="reg-modal-box">
+    <h3>Реестр платежей</h3>
+    <div class="reg-text" id="regText"></div>
+    <div class="reg-modal-actions">
+      <button class="btn-close-modal" onclick="closeRegistryModal()">Закрыть</button>
+      <button class="btn-copy" id="btnCopy" onclick="copyRegistry()">📋 Скопировать</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -516,11 +562,19 @@ function renderSupplierRows(tbody, supName, docList, groupGId, isFirst, isLast) 
     const docAlert = alertLevel(doc.days_over, doc.over_amt);
     trDoc.className = 'row-doc hidden' + (docAlert ? ' alert-'+docAlert : '');
     trDoc.dataset.parent = gId;
+    trDoc.dataset.supplier = doc.supplier || '';
     if (groupGId) trDoc.dataset.grp = groupGId;
     const daysBadge = doc.days_over > 0 ? `<span class="days-badge">${Math.round(doc.days_over)} дн.</span>` : '';
     const dueStyle  = doc.is_over ? 'color:var(--purple);font-weight:600' : '';
+    const escSup = (doc.supplier||'').replace(/"/g,'&quot;');
+    const escNum = (doc.doc_num||'').replace(/"/g,'&quot;');
+    const chkDisplay = registryMode ? 'inline-block' : 'none';
     trDoc.innerHTML = `
-      <td class="doc-num" style="padding-left:32px">${doc.doc_num || doc.doc_full || '—'}</td>
+      <td class="doc-num" style="padding-left:32px">
+        <input type="checkbox" class="reg-chk" style="display:${chkDisplay};margin-right:6px;vertical-align:middle"
+          data-supplier="${escSup}" data-docnum="${escNum}"
+          data-docdate="${doc.doc_date||''}" data-balance="${doc.balance}">
+        ${doc.doc_num || doc.doc_full || '—'}</td>
       <td>${fmtDate(doc.doc_date)}</td>
       <td style="${dueStyle}">${fmtDate(doc.due_date)}</td>
       <td class="r" style="color:var(--text2);font-size:12px">${doc.credit_days ? doc.credit_days+' дн.' : '—'}</td>
@@ -529,6 +583,8 @@ function renderSupplierRows(tbody, supName, docList, groupGId, isFirst, isLast) 
       <td class="r">${doc.over_amt > 0 ? '<span class="badge-over">'+fmt(doc.over_amt)+'</span>' : '—'}</td>
       <td class="r">${doc.days_over > 0 ? daysBadge : '—'}</td>`;
     tbody.appendChild(trDoc);
+    const chk = trDoc.querySelector('.reg-chk');
+    if (chk) chk.addEventListener('change', e => { e.stopPropagation(); updateRegistryPanel(); });
   });
 }
 
@@ -624,6 +680,100 @@ function renderTable() {
     } else {
       renderSupplierRows(tbody, item.supName, item.docList, null);
     }
+  });
+}
+
+// ── Реестр платежей ─────────────────────────────────────────────
+let registryMode = false;
+
+function toggleRegistryMode() {
+  registryMode = !registryMode;
+  const bar = document.getElementById('registryBar');
+  const btn = document.getElementById('btnRegistryToggle');
+  if (registryMode) {
+    bar.classList.add('visible');
+    btn.textContent = '✕ Выйти';
+  } else {
+    bar.classList.remove('visible');
+    btn.textContent = '☑ Реестр платежей';
+    closeRegistryModal();
+  }
+  document.querySelectorAll('.reg-chk').forEach(chk => {
+    chk.style.display = registryMode ? 'inline-block' : 'none';
+    chk.checked = false;
+  });
+  updateRegistryPanel();
+}
+
+function updateRegistryPanel() {
+  const checked = document.querySelectorAll('.reg-chk:checked');
+  const sum = [...checked].reduce((s, chk) => s + parseFloat(chk.dataset.balance || 0), 0);
+  const count = checked.length;
+  document.getElementById('rbSum').textContent =
+    sum.toLocaleString('ru-RU', {minimumFractionDigits:0, maximumFractionDigits:0}) + ' ₽';
+  const word = count === 0 ? 'Документов не выбрано'
+    : `Выбрано: ${count} ${count===1?'документ':count<5?'документа':'документов'}`;
+  document.getElementById('rbCount').textContent = word;
+}
+
+function buildAndShowRegistry() {
+  const checked = [...document.querySelectorAll('.reg-chk:checked')];
+  if (!checked.length) { alert('Выберите хотя бы один документ'); return; }
+
+  const bySupplier = new Map();
+  checked.forEach(chk => {
+    const sup = chk.dataset.supplier;
+    if (!bySupplier.has(sup)) bySupplier.set(sup, []);
+    bySupplier.get(sup).push({
+      docNum:   chk.dataset.docnum,
+      docDate:  chk.dataset.docdate,
+      balance:  parseFloat(chk.dataset.balance || 0),
+    });
+  });
+
+  const today = new Date().toLocaleDateString('ru-RU');
+  let text = `РЕЕСТР ПЛАТЕЖЕЙ — ${today}\n\n`;
+  let grandTotal = 0;
+
+  bySupplier.forEach((docs, supplier) => {
+    text += `${supplier}\n`;
+    let supTotal = 0;
+    docs.forEach(d => {
+      const amt = d.balance.toLocaleString('ru-RU', {minimumFractionDigits:0, maximumFractionDigits:0});
+      text += `  УПД ${d.docNum || '—'} от ${d.docDate || '—'} — ${amt} ₽\n`;
+      supTotal += d.balance;
+    });
+    const supAmt = supTotal.toLocaleString('ru-RU', {minimumFractionDigits:0, maximumFractionDigits:0});
+    text += `  Итого: ${supAmt} ₽\n\n`;
+    grandTotal += supTotal;
+  });
+
+  text += `${'─'.repeat(42)}\n`;
+  text += `ИТОГО К ОПЛАТЕ: ${grandTotal.toLocaleString('ru-RU', {minimumFractionDigits:0, maximumFractionDigits:0})} ₽`;
+
+  document.getElementById('regText').textContent = text;
+  document.getElementById('regModal').classList.remove('hidden');
+}
+
+function closeRegistryModal() {
+  document.getElementById('regModal').classList.add('hidden');
+}
+
+function copyRegistry() {
+  const text = document.getElementById('regText').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('btnCopy');
+    btn.textContent = '✓ Скопировано!';
+    setTimeout(() => { btn.textContent = '📋 Скопировать'; }, 2000);
+  }).catch(() => {
+    // fallback
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    const btn = document.getElementById('btnCopy');
+    btn.textContent = '✓ Скопировано!';
+    setTimeout(() => { btn.textContent = '📋 Скопировать'; }, 2000);
   });
 }
 
