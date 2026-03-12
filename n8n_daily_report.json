@@ -151,6 +151,26 @@
       "credentials": {
         "googleSheetsOAuth2Api": { "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID", "name": "Google Sheets account" }
       }
+    },
+    {
+      "id": "e5f6a7b8-0005-0005-0005-000000000011",
+      "name": "Write Headers",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 560],
+      "parameters": {
+        "method": "PUT",
+        "url": "https://sheets.googleapis.com/v4/spreadsheets/1D9-uViFll7h3SUT01lvlHKTF0VnQCx46h8569zSpaCQ/values/manager_comments!A1:E1?valueInputOption=RAW",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"values\":[[\"client_name\",\"comment\",\"login\",\"date\",\"updated_at\"]]}",
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": { "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID", "name": "Google Sheets account" }
+      }
     }
   ],
   "connections": {
@@ -176,6 +196,9 @@
     },
     "Expand History Rows": {
       "main": [[ { "node": "Append History", "type": "main", "index": 0 } ]]
+    },
+    "Clear Comments": {
+      "main": [[ { "node": "Write Headers", "type": "main", "index": 0 } ]]
     }
   },
   "settings": { "executionOrder": "v1" }
