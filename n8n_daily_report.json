@@ -135,14 +135,17 @@
     {
       "id": "e5f6a7b8-0005-0005-0005-000000000010",
       "name": "Clear Comments",
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [1120, 560],
       "parameters": {
-        "operation": "clear",
-        "documentId": { "__rl": true, "value": "1D9-uViFll7h3SUT01lvlHKTF0VnQCx46h8569zSpaCQ", "mode": "id" },
-        "sheetName": { "__rl": true, "value": "manager_comments", "mode": "name" },
-        "range": "A2:Z10000",
+        "method": "POST",
+        "url": "https://sheets.googleapis.com/v4/spreadsheets/1D9-uViFll7h3SUT01lvlHKTF0VnQCx46h8569zSpaCQ/values:batchClear",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"ranges\":[\"manager_comments!A2:E10000\"]}",
         "options": {}
       },
       "credentials": {
