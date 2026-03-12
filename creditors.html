@@ -732,24 +732,32 @@ function buildAndShowRegistry() {
   });
 
   const today = new Date().toLocaleDateString('ru-RU');
-  let text = `РЕЕСТР ПЛАТЕЖЕЙ — ${today}\n\n`;
   let grandTotal = 0;
 
+  // Считаем суммы по поставщикам и ширину колонки
+  const rows = [];
   bySupplier.forEach((docs, supplier) => {
-    text += `${supplier}\n`;
-    let supTotal = 0;
-    docs.forEach(d => {
-      const amt = d.balance.toLocaleString('ru-RU', {minimumFractionDigits:0, maximumFractionDigits:0});
-      text += `  УПД ${d.docNum || '—'} от ${d.docDate || '—'} — ${amt} ₽\n`;
-      supTotal += d.balance;
-    });
-    const supAmt = supTotal.toLocaleString('ru-RU', {minimumFractionDigits:0, maximumFractionDigits:0});
-    text += `  Итого: ${supAmt} ₽\n\n`;
+    const supTotal = docs.reduce((s, d) => s + d.balance, 0);
+    rows.push({ supplier, supTotal });
     grandTotal += supTotal;
   });
 
-  text += `${'─'.repeat(42)}\n`;
-  text += `ИТОГО К ОПЛАТЕ: ${grandTotal.toLocaleString('ru-RU', {minimumFractionDigits:0, maximumFractionDigits:0})} ₽`;
+  const colW = Math.max(30, ...rows.map(r => r.supplier.length)) + 2;
+  const numW = 16;
+  const line = '─'.repeat(colW + numW + 3);
+
+  function padR(s, w) { return String(s).padEnd(w); }
+  function padL(s, w) { return String(s).padStart(w); }
+  function fmtAmt(n) { return n.toLocaleString('ru-RU', {minimumFractionDigits:0, maximumFractionDigits:0}) + ' ₽'; }
+
+  let text = `РЕЕСТР ПЛАТЕЖЕЙ — ${today}\n\n`;
+  text += `${padR('Поставщик', colW)} ${padL('Сумма', numW)}\n`;
+  text += line + '\n';
+  rows.forEach(r => {
+    text += `${padR(r.supplier, colW)} ${padL(fmtAmt(r.supTotal), numW)}\n`;
+  });
+  text += line + '\n';
+  text += `${padR('ИТОГО', colW)} ${padL(fmtAmt(grandTotal), numW)}`;
 
   document.getElementById('regText').textContent = text;
   document.getElementById('regModal').classList.remove('hidden');
