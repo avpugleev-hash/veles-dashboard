@@ -276,6 +276,9 @@ function parseCSV(text) {
     return obj;
   }).filter(r => Object.values(r).some(v => v));
 }
+function normName(s) {
+  return String(s||'').replace(/["""«»]/g,'').replace(/\s+/g,' ').trim();
+}
 function toNum(s) {
   const str = String(s||0).replace(/[^\d.,\-]/g,'').replace(',','.');
   return parseFloat(str) || 0;
@@ -344,11 +347,11 @@ async function loadRegistry() {
     rows.forEach(r => {
       if (!r.supplier_name) return;
       const supName = r.supplier_name.trim();
-      const key = supName + '|' + (r.contract_name || '').trim();
+      const key = normName(supName) + '|' + normName(r.contract_name || '');
       const days = parseInt(r.credit_days || '', 10);
       if (!isNaN(days) && days > 0) creditDaysMap.set(key, days);
       const grp = (r.group || '').trim();
-      if (grp) supplierGroupMap.set(supName, grp);
+      if (grp) supplierGroupMap.set(normName(supName), grp);
     });
   } catch(e) { console.warn('Справочник отсрочек не загружен:', e.message); }
 }
@@ -369,8 +372,8 @@ async function loadData() {
       const docAmt      = toNum(r.doc_amount);
       const supplier    = (r.supplier_name || '').trim();
       const contract    = (r.contract_name || '').trim();
-      const credit_days = creditDaysMap.get(supplier + '|' + contract) || null;
-      const group       = supplierGroupMap.get(supplier) || '';
+      const credit_days = creditDaysMap.get(normName(supplier) + '|' + normName(contract)) || null;
+      const group       = supplierGroupMap.get(normName(supplier)) || '';
       const doc_date    = r.doc_date || '';
       // Срок оплаты: считаем из doc_date + credit_days (due_date из CSV всегда пустой)
       const due_date    = credit_days ? addDays(doc_date, credit_days) : (r.due_date || '');
@@ -470,8 +473,61 @@ function getFiltered() {
   });
 }
 
+function renderSupplierRows(tbody, supName, docList, groupGId) {
+  const supBal  = docList.reduce((s,r)=>s+r.balance, 0);
+  const supOver = docList.reduce((s,r)=>s+r.over_amt, 0);
+  const maxDays = Math.max(0, ...docList.filter(r=>r.over_amt>0).map(r=>r.days_over));
+  const alert   = alertLevel(maxDays, supOver);
+  const gId     = 'g_' + Math.random().toString(36).slice(2);
+
+  const trSup = document.createElement('tr');
+  trSup.className = 'row-supplier' + (alert ? ' alert-'+alert : '') + (groupGId ? ' hidden' : '');
+  trSup.dataset.group = gId;
+  if (groupGId) trSup.dataset.grp = groupGId;
+  const dot = alert ? `<span class="alert-dot ${alert}"></span>` : '';
+  const supCreditDays = creditDaysMap.get(normName(supName) + '|' + normName(docList[0]?.contract || '')) || null;
+  trSup.innerHTML = `
+    <td colspan="3"><i class="toggle-icon">▶</i>${dot}${supName}</td>
+    <td class="r" style="font-size:11px;color:var(--text2)">${supCreditDays ? supCreditDays+' дн.' : '—'}</td>
+    <td class="r">—</td>
+    <td class="r">${fmt(supBal)}</td>
+    <td class="r">${supOver > 0 ? '<span class="badge-over">'+fmt(supOver)+'</span>' : '<span class="badge-ok">нет</span>'}</td>
+    <td class="r" style="font-size:11px;color:var(--text2)">${docList.length} док.</td>`;
+  tbody.appendChild(trSup);
+
+  trSup.addEventListener('click', () => {
+    trSup.classList.toggle('open');
+    const isOpen = trSup.classList.contains('open');
+    tbody.querySelectorAll(`[data-parent="${gId}"]`).forEach(el => el.classList.toggle('hidden', !isOpen));
+  });
+
+  docList.sort((a,b) => {
+    const pa = a.doc_date.split('.').reverse().join('');
+    const pb = b.doc_date.split('.').reverse().join('');
+    return pa.localeCompare(pb);
+  }).forEach(doc => {
+    const trDoc = document.createElement('tr');
+    const docAlert = alertLevel(doc.days_over, doc.over_amt);
+    trDoc.className = 'row-doc hidden' + (docAlert ? ' alert-'+docAlert : '');
+    trDoc.dataset.parent = gId;
+    if (groupGId) trDoc.dataset.grp = groupGId;
+    const daysBadge = doc.days_over > 0 ? `<span class="days-badge">${Math.round(doc.days_over)} дн.</span>` : '';
+    const dueStyle  = doc.is_over ? 'color:var(--purple);font-weight:600' : '';
+    trDoc.innerHTML = `
+      <td class="doc-num" style="padding-left:32px">${doc.doc_num || doc.doc_full || '—'}</td>
+      <td>${fmtDate(doc.doc_date)}</td>
+      <td style="${dueStyle}">${fmtDate(doc.due_date)}</td>
+      <td class="r" style="color:var(--text2);font-size:12px">${doc.credit_days ? doc.credit_days+' дн.' : '—'}</td>
+      <td class="r">${fmt(doc.doc_amt)}</td>
+      <td class="r">${fmt(doc.balance)}</td>
+      <td class="r">${doc.over_amt > 0 ? '<span class="badge-over">'+fmt(doc.over_amt)+'</span>' : '—'}</td>
+      <td class="r">${doc.days_over > 0 ? daysBadge : '—'}</td>`;
+    tbody.appendChild(trDoc);
+  });
+}
+
 function renderTable() {
-  const docs = getFiltered();
+  const docs  = getFiltered();
   const tbody = document.getElementById('mainBody');
   tbody.innerHTML = '';
 
@@ -493,44 +549,50 @@ function renderTable() {
   document.getElementById('fDays').textContent    = totDays ? totDays + ' д. (ср.)' : '—';
   document.getElementById('fCount').textContent   = `Поставщиков: ${supplierMap.size} / Документов: ${docs.length}`;
 
-  // Группируем поставщиков по группам
-  const groupMap2 = new Map(); // group → Map(supplier → docs[])
+  // Разбиваем на группы и одиночных поставщиков
+  const groupMap2 = new Map(); // groupName → Map(supplier → docs[])
   supplierMap.forEach((docList, supName) => {
     const grp = docList[0]?.group || '';
-    if (!groupMap2.has(grp)) groupMap2.set(grp, new Map());
-    groupMap2.get(grp).set(supName, docList);
-  });
-  // Сортируем группы: именованные по убыванию просрочки, безымянная последней
-  const sortedGroups = [...groupMap2.entries()].sort((a, b) => {
-    if (!a[0] && b[0]) return 1;
-    if (a[0] && !b[0]) return -1;
-    const balA = [...a[1].values()].flat().reduce((s,r)=>s+r.balance,0);
-    const balB = [...b[1].values()].flat().reduce((s,r)=>s+r.balance,0);
-    return balB - balA;
+    if (grp) {
+      if (!groupMap2.has(grp)) groupMap2.set(grp, new Map());
+      groupMap2.get(grp).set(supName, docList);
+    }
   });
 
-  sortedGroups.forEach(([groupName, supMap]) => {
-    let groupRowEl = null;
-    let groupGId = null;
+  // Единый список: группы + одиночные поставщики, сортировка по общему долгу
+  const items = [];
+  groupMap2.forEach((supMap, groupName) => {
+    const bal = [...supMap.values()].flat().reduce((s,r)=>s+r.balance, 0);
+    items.push({ type:'group', groupName, supMap, bal });
+  });
+  supplierMap.forEach((docList, supName) => {
+    if (docList[0]?.group) return; // уже в группе
+    const bal = docList.reduce((s,r)=>s+r.balance, 0);
+    items.push({ type:'supplier', supName, docList, bal });
+  });
+  items.sort((a,b) => b.bal - a.bal);
 
-    if (groupName) {
-      const groupDocs = [...supMap.values()].flat();
-      const grpBal  = groupDocs.reduce((s,r)=>s+r.balance,0);
-      const grpOver = groupDocs.reduce((s,r)=>s+r.over_amt,0);
-      groupGId = 'grp_' + Math.random().toString(36).slice(2);
-      groupRowEl = document.createElement('tr');
-      groupRowEl.className = 'row-group open';
-      groupRowEl.dataset.groupId = groupGId;
-      groupRowEl.innerHTML = `
-        <td colspan="3"><i class="group-icon">▶</i>${groupName}</td>
-        <td class="r" style="color:var(--text2);font-size:12px">${supMap.size} пост.</td>
+  items.forEach(item => {
+    if (item.type === 'group') {
+      const groupDocs = [...item.supMap.values()].flat();
+      const grpBal  = groupDocs.reduce((s,r)=>s+r.balance, 0);
+      const grpOver = groupDocs.reduce((s,r)=>s+r.over_amt, 0);
+      const groupGId = 'grp_' + Math.random().toString(36).slice(2);
+
+      const trGroup = document.createElement('tr'); // свёрнуто — нет класса 'open'
+      trGroup.className = 'row-group';
+      trGroup.dataset.groupId = groupGId;
+      trGroup.innerHTML = `
+        <td colspan="3"><i class="group-icon">▶</i>${item.groupName}</td>
+        <td class="r" style="color:var(--text2);font-size:12px">${item.supMap.size} пост.</td>
         <td class="r">—</td>
         <td class="r">${fmt(grpBal)}</td>
         <td class="r">${grpOver > 0 ? '<span class="badge-over">'+fmt(grpOver)+'</span>' : '<span class="badge-ok">нет</span>'}</td>
         <td class="r" style="color:var(--text2);font-size:11px">${groupDocs.length} док.</td>`;
-      tbody.appendChild(groupRowEl);
-      groupRowEl.addEventListener('click', () => {
-        const nowOpen = groupRowEl.classList.toggle('open');
+      tbody.appendChild(trGroup);
+
+      trGroup.addEventListener('click', () => {
+        const nowOpen = trGroup.classList.toggle('open');
         tbody.querySelectorAll(`[data-grp="${groupGId}"]`).forEach(trSup => {
           if (!nowOpen) {
             trSup.classList.add('hidden');
@@ -542,69 +604,16 @@ function renderTable() {
           }
         });
       });
+
+      // Поставщики внутри группы — по убыванию долга, изначально скрыты
+      [...item.supMap.entries()]
+        .sort((a,b) => b[1].reduce((s,r)=>s+r.balance,0) - a[1].reduce((s,r)=>s+r.balance,0))
+        .forEach(([supName, docList]) => renderSupplierRows(tbody, supName, docList, groupGId));
+
+    } else {
+      renderSupplierRows(tbody, item.supName, item.docList, null);
     }
-
-    const sorted = [...supMap.entries()].sort((a,b) => {
-      const balA = a[1].reduce((s,r)=>s+r.balance, 0);
-      const balB = b[1].reduce((s,r)=>s+r.balance, 0);
-      return balB - balA;
-    });
-
-  sorted.forEach(([supName, docList]) => {
-    const supBal   = docList.reduce((s,r)=>s+r.balance, 0);
-    const supOver  = docList.reduce((s,r)=>s+r.over_amt, 0);
-    const maxDays  = Math.max(0, ...docList.filter(r=>r.over_amt>0).map(r=>r.days_over));
-    const alert    = alertLevel(maxDays, supOver);
-    const gId      = 'g_' + Math.random().toString(36).slice(2);
-
-    const trSup = document.createElement('tr');
-    trSup.className = 'row-supplier' + (alert ? ' alert-'+alert : '');
-    trSup.dataset.group = gId;
-    if (groupGId) trSup.dataset.grp = groupGId;
-    const dot = alert ? `<span class="alert-dot ${alert}"></span>` : '';
-    const supCreditDays = creditDaysMap.get(supName + '|' + (docList[0]?.contract || '')) || null;
-    trSup.innerHTML = `
-      <td colspan="3"><i class="toggle-icon">▶</i>${dot}${supName}</td>
-      <td class="r" style="font-size:11px;color:var(--text2)">${supCreditDays ? supCreditDays+' дн.' : '—'}</td>
-      <td class="r">—</td>
-      <td class="r">${fmt(supBal)}</td>
-      <td class="r">${supOver > 0 ? '<span class="badge-over">'+fmt(supOver)+'</span>' : '<span class="badge-ok">нет</span>'}</td>
-      <td class="r" style="font-size:11px;color:var(--text2)">${docList.length} док.</td>`;
-    tbody.appendChild(trSup);
-
-    trSup.addEventListener('click', () => {
-      trSup.classList.toggle('open');
-      const isOpen = trSup.classList.contains('open');
-      tbody.querySelectorAll(`[data-parent="${gId}"]`).forEach(el => el.classList.toggle('hidden', !isOpen));
-    });
-
-    docList.sort((a,b) => {
-      const pa = a.doc_date.split('.').reverse().join('');
-      const pb = b.doc_date.split('.').reverse().join('');
-      return pa.localeCompare(pb);
-    }).forEach(doc => {
-      const trDoc = document.createElement('tr');
-      const docAlert = alertLevel(doc.days_over, doc.over_amt);
-      trDoc.className = 'row-doc hidden' + (docAlert ? ' alert-'+docAlert : '');
-      trDoc.dataset.parent = gId;
-
-      const daysBadge = doc.days_over > 0
-        ? `<span class="days-badge">${Math.round(doc.days_over)} дн.</span>` : '';
-      const dueStyle = doc.is_over ? 'color:var(--purple);font-weight:600' : '';
-
-      trDoc.innerHTML = `
-        <td class="doc-num" style="padding-left:32px">${doc.doc_num || doc.doc_full || '—'}</td>
-        <td>${fmtDate(doc.doc_date)}</td>
-        <td style="${dueStyle}">${fmtDate(doc.due_date)}</td>
-        <td class="r" style="color:var(--text2);font-size:12px">${doc.credit_days ? doc.credit_days+' дн.' : '—'}</td>
-        <td class="r">${fmt(doc.doc_amt)}</td>
-        <td class="r">${fmt(doc.balance)}</td>
-        <td class="r">${doc.over_amt > 0 ? '<span class="badge-over">'+fmt(doc.over_amt)+'</span>' : '—'}</td>
-        <td class="r">${doc.days_over > 0 ? daysBadge : '—'}</td>`;
-      tbody.appendChild(trDoc);
-    });
-  }); // end sorted.forEach
-  }); // end sortedGroups.forEach
+  });
 }
 
 // Фильтры
