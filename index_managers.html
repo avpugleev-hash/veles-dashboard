@@ -1135,8 +1135,6 @@ body {
   <div class="card-icon">💳</div>
   <div class="card-header-text">
     <h2 class="card-title">ЗАДОЛЖЕННОСТЬ</h2>
-    <!-- Остатки ДС сразу под заголовком -->
-   <div id="cashSummary" class="card-subtitle"></div>
   </div>
 </div>
 
@@ -3793,18 +3791,6 @@ document.getElementById('fullMonthPlan').textContent =
     document.getElementById('loadedYesterday').textContent =
         formatNumber(dashboardData.loading.loaded_wagons_yesterday);
     renderYesterdayLoadingList();
-
-    // --- Остатки денежных средств в шапке карточки ---
-    const cashEl = document.getElementById('cashSummary');
-    if (cashEl && dashboardData.cash) {
-      const textAmount = formatCurrency(dashboardData.cash.total);
-      const textDate = dashboardData.cash.date
-        ? formatDateRuShort(dashboardData.cash.date)
-        : '';
-      cashEl.textContent = textDate
-        ? `Остатки ДС: ${textAmount} на ${textDate}`
-        : `Остатки ДС: ${textAmount}`;
-    }
 
     // --- Задолженность ---
     document.getElementById('totalDebt').textContent =
