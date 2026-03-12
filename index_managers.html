@@ -1135,6 +1135,11 @@ body {
   <div class="card-icon">💳</div>
   <div class="card-header-text">
     <h2 class="card-title">ЗАДОЛЖЕННОСТЬ</h2>
+    <div class="card-subtitle" style="display:flex;gap:16px;flex-wrap:wrap;">
+      <span>ЕЛС 22%: <strong id="elsVal22">—</strong></span>
+      <span>ЕЛС 0%: <strong id="elsVal0">—</strong></span>
+      <span id="elsDate" style="color:var(--text-secondary)"></span>
+    </div>
   </div>
 </div>
 
@@ -1258,21 +1263,6 @@ body {
       </div>
     </div>
 
-    <!-- == БЛОК 3: ОСТАТКИ ЕЛС == -->
-    <div class="mt-4" style="border-top: 1px dashed rgba(148, 163, 184, 0.6); padding-top: var(--space-16);">
-      <div class="subsection-header">
-        <span class="metric-label"><strong>Остатки ЕЛС</strong></span>
-        <span id="elsDate" class="metric-label"></span>
-      </div>
-      <div class="metric-row">
-        <span class="metric-label">ЕЛС 22%:</span>
-        <span id="elsVal22" class="metric-value">—</span>
-      </div>
-      <div class="metric-row">
-        <span class="metric-label">ЕЛС 0%:</span>
-        <span id="elsVal0" class="metric-value">—</span>
-      </div>
-    </div>
   </div>
 </div>
 
