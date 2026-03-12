@@ -504,9 +504,9 @@ function renderTable() {
   const sortedGroups = [...groupMap2.entries()].sort((a, b) => {
     if (!a[0] && b[0]) return 1;
     if (a[0] && !b[0]) return -1;
-    const overA = [...a[1].values()].flat().reduce((s,r)=>s+r.over_amt,0);
-    const overB = [...b[1].values()].flat().reduce((s,r)=>s+r.over_amt,0);
-    return overB - overA;
+    const balA = [...a[1].values()].flat().reduce((s,r)=>s+r.balance,0);
+    const balB = [...b[1].values()].flat().reduce((s,r)=>s+r.balance,0);
+    return balB - balA;
   });
 
   sortedGroups.forEach(([groupName, supMap]) => {
@@ -545,9 +545,9 @@ function renderTable() {
     }
 
     const sorted = [...supMap.entries()].sort((a,b) => {
-      const overA = a[1].reduce((s,r)=>s+r.over_amt, 0);
-      const overB = b[1].reduce((s,r)=>s+r.over_amt, 0);
-      return overB - overA;
+      const balA = a[1].reduce((s,r)=>s+r.balance, 0);
+      const balB = b[1].reduce((s,r)=>s+r.balance, 0);
+      return balB - balA;
     });
 
   sorted.forEach(([supName, docList]) => {
