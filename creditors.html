@@ -193,6 +193,7 @@
             <th style="min-width:280px">Поставщик / Договор / Документ</th>
             <th>Дата документа</th>
             <th>Срок оплаты</th>
+            <th class="r">Отсрочка</th>
             <th class="r">Сумма документа</th>
             <th class="r">Остаток</th>
             <th class="r">Просрочка</th>
@@ -203,6 +204,7 @@
         <tfoot>
           <tr>
             <td colspan="3">Итого (по фильтру)</td>
+            <td class="r">—</td>
             <td class="r" id="fDocAmt">—</td>
             <td class="r" id="fBalance">—</td>
             <td class="r" id="fOver">—</td>
@@ -220,8 +222,10 @@ const LOGIN_API_URL = 'https://alekseipugleev.app.n8n.cloud/webhook/dashboard-lo
 const AUTH_KEY      = 'veles_dashboard_auth_v1';
 const AUTH_TTL      = 8 * 3600 * 1000;
 const CSV_URL       = 'https://docs.google.com/spreadsheets/d/1LWplKTlBOJB-5TycHmsReHX-jLDik1TnerdByVCxiUo/export?format=csv&gid=0';
+const REGISTRY_URL  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQGmHCtGV63YTyIyH-st7Rs43FQq47sz466WxHjNmqM7FXgj422K5qHY2rK4SCalmqDPR6aTiTts-A4/pub?gid=1024607257&single=true&output=csv';
 
 let allDocs = [];
+let creditDaysMap = new Map(); // "supplier|contract" → credit_days
 
 // ── Форматирование ──────────────────────────────────────────────
 function fmt(n) {
@@ -302,10 +306,24 @@ document.getElementById('loginForm').addEventListener('submit', async e => {
 });
 
 // ── Загрузка данных ─────────────────────────────────────────────
+async function loadRegistry() {
+  try {
+    const res = await fetch(REGISTRY_URL, {cache:'no-store'});
+    if (!res.ok) return;
+    const rows = parseCSV(await res.text());
+    creditDaysMap.clear();
+    rows.forEach(r => {
+      const days = parseInt(r.credit_days || '', 10);
+      if (r.supplier_name && !isNaN(days) && days > 0)
+        creditDaysMap.set(r.supplier_name.trim() + '|' + (r.contract_name || '').trim(), days);
+    });
+  } catch(e) { console.warn('Справочник отсрочек не загружен:', e.message); }
+}
+
 async function loadData() {
   showState('<div class="spin"></div><div>Загрузка данных...</div>');
   try {
-    const res = await fetch(CSV_URL, {cache:'no-store'});
+    const [res] = await Promise.all([fetch(CSV_URL, {cache:'no-store'}), loadRegistry()]);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const text = await res.text();
     const raw  = parseCSV(text);
@@ -314,23 +332,27 @@ async function loadData() {
     const snap  = dates[dates.length-1] || '';
 
     const rows = (snap ? raw.filter(r => r.as_of_date === snap) : raw).map(r => {
-      const balance  = toNum(r.balance);
-      const docAmt   = toNum(r.doc_amount);
-      const isOver   = r.is_overdue === '1' && balance > 0;
-      const daysOver = isOver ? toNum(r.days_overdue) : 0;
-      const overAmt  = isOver ? balance : 0;
+      const balance     = toNum(r.balance);
+      const docAmt      = toNum(r.doc_amount);
+      const isOver      = r.is_overdue === '1' && balance > 0;
+      const daysOver    = isOver ? toNum(r.days_overdue) : 0;
+      const overAmt     = isOver ? balance : 0;
+      const supplier    = (r.supplier_name || '').trim();
+      const contract    = (r.contract_name || '').trim();
+      const credit_days = creditDaysMap.get(supplier + '|' + contract) || null;
       return {
-        supplier:  r.supplier_name  || '',
-        contract:  r.contract_name  || '',
-        doc_num:   r.doc_number     || '',
-        doc_full:  r.doc_full       || '',
-        doc_date:  r.doc_date       || '',
-        due_date:  r.due_date       || '',
-        doc_amt:   docAmt,
+        supplier,
+        contract,
+        doc_num:      r.doc_number || '',
+        doc_full:     r.doc_full   || '',
+        doc_date:     r.doc_date   || '',
+        due_date:     r.due_date   || '',
+        doc_amt:      docAmt,
         balance,
-        over_amt:  overAmt,
-        is_over:   isOver,
-        days_over: daysOver,
+        over_amt:     overAmt,
+        is_over:      isOver,
+        days_over:    daysOver,
+        credit_days,
       };
     }).filter(r => r.balance > 0 || r.doc_amt > 0);
 
@@ -430,8 +452,10 @@ function renderTable() {
     trSup.className = 'row-supplier' + (alert ? ' alert-'+alert : '');
     trSup.dataset.group = gId;
     const dot = alert ? `<span class="alert-dot ${alert}"></span>` : '';
+    const supCreditDays = creditDaysMap.get(supName + '|' + (docList[0]?.contract || '')) || null;
     trSup.innerHTML = `
       <td colspan="3"><i class="toggle-icon">▶</i>${dot}${supName}</td>
+      <td class="r" style="font-size:11px;color:var(--text2)">${supCreditDays ? supCreditDays+' дн.' : '—'}</td>
       <td class="r">—</td>
       <td class="r">${fmt(supBal)}</td>
       <td class="r">${supOver > 0 ? '<span class="badge-over">'+fmt(supOver)+'</span>' : '<span class="badge-ok">нет</span>'}</td>
@@ -462,6 +486,7 @@ function renderTable() {
         <td class="doc-num" style="padding-left:32px">${doc.doc_num || doc.doc_full || '—'}</td>
         <td>${fmtDate(doc.doc_date)}</td>
         <td style="${dueStyle}">${fmtDate(doc.due_date)}</td>
+        <td class="r" style="color:var(--text2);font-size:12px">${doc.credit_days ? doc.credit_days+' дн.' : '—'}</td>
         <td class="r">${fmt(doc.doc_amt)}</td>
         <td class="r">${fmt(doc.balance)}</td>
         <td class="r">${doc.over_amt > 0 ? '<span class="badge-over">'+fmt(doc.over_amt)+'</span>' : '—'}</td>
