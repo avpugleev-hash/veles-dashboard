@@ -51,10 +51,6 @@
     .summary { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:14px; }
     @media(max-width:900px){ .summary{ grid-template-columns:repeat(2,1fr); } }
     @media(max-width:500px){ .summary{ grid-template-columns:1fr; } }
-    .els-row { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px; }
-    @media(max-width:900px){ .els-row{ grid-template-columns:repeat(2,1fr); } }
-    @media(max-width:500px){ .els-row{ grid-template-columns:1fr; } }
-    .els-label { font-size:10px; font-weight:700; letter-spacing:.06em; color:var(--text2); text-transform:uppercase; margin-bottom:2px; }
     .els-badge { display:inline-block; background:rgba(32,178,170,.1); color:var(--green); border-radius:4px; padding:2px 7px; font-size:11px; font-weight:600; margin-left:6px; vertical-align:middle; }
     .s-card { background:var(--card); border-radius:var(--r-lg); padding:16px 18px; border:1px solid var(--border); box-shadow:0 1px 4px rgba(0,0,0,.05); }
     .s-card .lbl { font-size:11px; color:var(--text2); font-weight:500; margin-bottom:5px; }
@@ -231,22 +227,6 @@
     </div>
   </div>
 
-  <!-- ЕЛС балансы -->
-  <div class="els-row">
-    <div class="s-card">
-      <div class="els-label">Данные ЕЛС на</div>
-      <div class="val" id="sElsUpdated" style="font-size:20px;color:var(--navy)">—</div>
-      <div class="hint" id="sElsHint"></div>
-    </div>
-    <div class="s-card">
-      <div class="els-label">Остаток ЕЛС 22%</div>
-      <div class="val c-green" id="sEls22">—</div>
-    </div>
-    <div class="s-card">
-      <div class="els-label">Остаток ЕЛС 0%</div>
-      <div class="val c-navy" id="sEls0">—</div>
-    </div>
-  </div>
 
   <!-- Фильтры -->
   <div class="filters">
@@ -362,7 +342,6 @@ const GENERATE_EMAIL_URL    = 'https://alekseipugleev.app.n8n.cloud/webhook/gene
 const AUTH_KEY         = 'veles_dashboard_auth_v1';
 const AUTH_TTL         = 8 * 3600 * 1000;
 const UPD_CSV_URL      = 'https://docs.google.com/spreadsheets/d/1D9-uViFll7h3SUT01lvlHKTF0VnQCx46h8569zSpaCQ/export?format=csv&gid=1164788937';
-const ELS_CSV_URL      = 'https://docs.google.com/spreadsheets/d/17lGV4E7-MFkak3iYHoajViH8fJk20HvGN4SJw0Et7yg/export?format=csv&gid=1639673932';
 
 let allDocs = [];        // все строки УПД
 let commentsMap = new Map(); // client_name → comment
@@ -593,51 +572,6 @@ document.getElementById('loginForm').addEventListener('submit', async e => {
   } catch(ex) { err.textContent='Ошибка подключения к серверу'; err.style.display='block'; }
 });
 
-// ── Загрузка остатков ЕЛС ───────────────────────────────────────
-async function loadElsData() {
-  try {
-    const res = await fetch(ELS_CSV_URL, {cache:'no-store'});
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const text = await res.text();
-    const lines = text.trim().split(/\r?\n/).filter(l => l.trim());
-    if (lines.length < 2) return;
-
-    // Ищем последнюю строку где колонка C или D не пустая
-    let lastCells = null;
-    for (let i = lines.length - 1; i >= 1; i--) {
-      const cells = splitLine(lines[i]);
-      if ((cells[2] || '').trim() || (cells[3] || '').trim()) {
-        lastCells = cells;
-        break;
-      }
-    }
-    if (!lastCells) return;
-
-    // B (индекс 1) — дата, C (индекс 2) — Остаток 20%, D (индекс 3) — Остаток 0%
-    const rawDate = (lastCells[1] || '').trim();
-    const raw20   = (lastCells[2] || '').trim();
-    const raw0    = (lastCells[3] || '').trim();
-    const n20     = toNum(raw20);
-    const n0      = toNum(raw0);
-
-    document.getElementById('sEls22').textContent = n20 ? fmt(n20) : (raw20 || '—');
-    document.getElementById('sEls0').textContent  = n0  ? fmt(n0)  : (raw0  || '—');
-
-    if (rawDate) {
-      // Форматируем дату из M/D/YYYY
-      let displayDate = rawDate;
-      const dp = rawDate.split('/');
-      if (dp.length === 3) displayDate = dp[1] + '.' + dp[0] + '.' + dp[2];
-
-      document.getElementById('sElsUpdated').textContent = displayDate;
-      document.getElementById('sElsHint').textContent    = 'последнее обновление';
-    }
-  } catch(e) {
-    console.warn('ЕЛС данные не загружены:', e.message);
-    document.getElementById('sEls22').textContent = 'Нет данных';
-    document.getElementById('sEls0').textContent  = 'Нет данных';
-  }
-}
 
 // ── Загрузка данных ─────────────────────────────────────────────
 async function loadData() {
@@ -696,7 +630,7 @@ async function loadData() {
       'Обновлено: ' + new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
 
     hideState();
-    await Promise.all([loadComments(), loadElsData()]);
+    await loadComments();
     renderTable();
 
   } catch(e) {

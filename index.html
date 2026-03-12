@@ -1262,6 +1262,22 @@ body {
         </table>
       </div>
     </div>
+
+    <!-- == БЛОК 3: ОСТАТКИ ЕЛС == -->
+    <div class="mt-4" style="border-top: 1px dashed rgba(148, 163, 184, 0.6); padding-top: var(--space-16);">
+      <div class="subsection-header">
+        <span class="metric-label"><strong>Остатки ЕЛС</strong></span>
+        <span id="elsDate" class="metric-label"></span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">ЕЛС 22%:</span>
+        <span id="elsVal22" class="metric-value">—</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">ЕЛС 0%:</span>
+        <span id="elsVal0" class="metric-value">—</span>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -3879,6 +3895,41 @@ document.getElementById('fullMonthPlan').textContent =
 // 7. ОБНОВЛЕНИЕ ПО КНОПКЕ
 // ==========================
 
+const ELS_CSV_URL = 'https://docs.google.com/spreadsheets/d/17lGV4E7-MFkak3iYHoajViH8fJk20HvGN4SJw0Et7yg/export?format=csv&gid=1639673932';
+
+async function loadElsData() {
+  try {
+    const res = await fetch(ELS_CSV_URL, {cache:'no-store'});
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    const lines = text.trim().split(/\r?\n/).filter(l => l.trim());
+    if (lines.length < 2) return;
+    let lastCells = null;
+    for (let i = lines.length - 1; i >= 1; i--) {
+      const cells = lines[i].split(',');
+      if ((cells[2] || '').trim() || (cells[3] || '').trim()) { lastCells = cells; break; }
+    }
+    if (!lastCells) return;
+    const rawDate = (lastCells[1] || '').replace(/"/g, '').trim();
+    const raw22 = (lastCells[2] || '').replace(/"/g, '').trim();
+    const raw0  = (lastCells[3] || '').replace(/"/g, '').trim();
+    const n22 = parseFloat(raw22.replace(/\s/g,'').replace(',','.')) || 0;
+    const n0  = parseFloat(raw0.replace(/\s/g,'').replace(',','.')) || 0;
+    const fmt = n => n >= 1e6
+      ? (n/1e6).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' млн ₽'
+      : (n/1e3).toLocaleString('ru-RU',{minimumFractionDigits:0,maximumFractionDigits:0}) + ' тыс ₽';
+    const el22 = document.getElementById('elsVal22');
+    const el0  = document.getElementById('elsVal0');
+    const elDt = document.getElementById('elsDate');
+    if (el22) el22.textContent = n22 ? fmt(n22) : (raw22 || '—');
+    if (el0)  el0.textContent  = n0  ? fmt(n0)  : (raw0  || '—');
+    if (elDt && rawDate) {
+      const dp = rawDate.split('/');
+      elDt.textContent = dp.length === 3 ? `на ${dp[1]}.${dp[0]}.${dp[2]}` : rawDate;
+    }
+  } catch(e) { console.warn('ЕЛС не загружен:', e.message); }
+}
+
 async function refreshData() {
         if (!isAuthenticated) {
         console.warn('Попытка обновить данные без авторизации');
@@ -3888,7 +3939,7 @@ async function refreshData() {
     if (btn) btn.disabled = true;
 
     try {
-        await loadDataFromSheet();
+        await Promise.all([loadDataFromSheet(), loadElsData()]);
         populateDashboard();
 
         // ставим время последнего успешного обновления
