@@ -119,6 +119,11 @@
     .row-group td.r { text-align:right; white-space:nowrap; }
     .group-icon { display:inline-block; width:16px; text-align:center; font-style:normal; margin-right:6px; transition:transform .2s; }
     .row-group.open .group-icon { transform:rotate(90deg); }
+
+    .row-supplier.in-group { box-shadow: inset 4px 0 0 #7a9cbf, inset -4px 0 0 #7a9cbf; background:#eef2f8; }
+    .row-supplier.in-group:hover { background:#e4ecf5; }
+    .row-supplier.in-group.first-in-group { border-top:2px solid #7a9cbf; }
+    .row-supplier.in-group.last-in-group  { border-bottom:2px solid #7a9cbf; }
   </style>
 </head>
 <body>
@@ -473,7 +478,7 @@ function getFiltered() {
   });
 }
 
-function renderSupplierRows(tbody, supName, docList, groupGId) {
+function renderSupplierRows(tbody, supName, docList, groupGId, isFirst, isLast) {
   const supBal  = docList.reduce((s,r)=>s+r.balance, 0);
   const supOver = docList.reduce((s,r)=>s+r.over_amt, 0);
   const maxDays = Math.max(0, ...docList.filter(r=>r.over_amt>0).map(r=>r.days_over));
@@ -481,7 +486,8 @@ function renderSupplierRows(tbody, supName, docList, groupGId) {
   const gId     = 'g_' + Math.random().toString(36).slice(2);
 
   const trSup = document.createElement('tr');
-  trSup.className = 'row-supplier' + (alert ? ' alert-'+alert : '') + (groupGId ? ' hidden' : '');
+  const groupClasses = groupGId ? ' hidden in-group' + (isFirst ? ' first-in-group' : '') + (isLast ? ' last-in-group' : '') : '';
+  trSup.className = 'row-supplier' + (alert ? ' alert-'+alert : '') + groupClasses;
   trSup.dataset.group = gId;
   if (groupGId) trSup.dataset.grp = groupGId;
   const dot = alert ? `<span class="alert-dot ${alert}"></span>` : '';
@@ -610,9 +616,10 @@ function renderTable() {
       });
 
       // Поставщики внутри группы — по убыванию долга, изначально скрыты
-      [...item.supMap.entries()]
-        .sort((a,b) => b[1].reduce((s,r)=>s+r.balance,0) - a[1].reduce((s,r)=>s+r.balance,0))
-        .forEach(([supName, docList]) => renderSupplierRows(tbody, supName, docList, groupGId));
+      const sortedSups = [...item.supMap.entries()]
+        .sort((a,b) => b[1].reduce((s,r)=>s+r.balance,0) - a[1].reduce((s,r)=>s+r.balance,0));
+      sortedSups.forEach(([supName, docList], idx) =>
+        renderSupplierRows(tbody, supName, docList, groupGId, idx === 0, idx === sortedSups.length - 1));
 
     } else {
       renderSupplierRows(tbody, item.supName, item.docList, null);
