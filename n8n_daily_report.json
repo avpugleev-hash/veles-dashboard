@@ -36,7 +36,8 @@
         "documentId": { "__rl": true, "value": "1D9-uViFll7h3SUT01lvlHKTF0VnQCx46h8569zSpaCQ", "mode": "id" },
         "sheetName": { "__rl": true, "value": "manager_comments", "mode": "name" },
         "filters": {},
-        "options": { "returnAll": true }
+        "options": { "returnAll": true },
+        "alwaysOutputData": true
       },
       "credentials": {
         "googleSheetsOAuth2Api": { "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID", "name": "Google Sheets account" }
@@ -178,6 +179,9 @@
       "main": [[ { "node": "Fetch Debt CSV", "type": "main", "index": 0 } ]]
     },
     "Fetch Debt CSV": {
+      "main": [[ { "node": "Write Headers", "type": "main", "index": 0 } ]]
+    },
+    "Write Headers": {
       "main": [[ { "node": "Fetch Comments", "type": "main", "index": 0 } ]]
     },
     "Fetch Comments": {
@@ -196,9 +200,6 @@
     },
     "Expand History Rows": {
       "main": [[ { "node": "Append History", "type": "main", "index": 0 } ]]
-    },
-    "Clear Comments": {
-      "main": [[ { "node": "Write Headers", "type": "main", "index": 0 } ]]
     }
   },
   "settings": { "executionOrder": "v1" }
