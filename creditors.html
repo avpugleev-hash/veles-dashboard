@@ -112,6 +112,13 @@
     .alert-dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:7px; flex-shrink:0; vertical-align:middle; }
     .alert-dot.yellow { background:#f59e0b; box-shadow:0 0 0 3px rgba(245,158,11,.2); }
     .alert-dot.red    { background:#dc2626; box-shadow:0 0 0 3px rgba(220,38,38,.2); }
+
+    .row-group { background:#dce4f3; cursor:pointer; border-bottom:2px solid #b3c5dc; border-top:2px solid #b3c5dc; }
+    .row-group:hover { background:#cdd9ed; }
+    .row-group td { padding:11px 14px; font-weight:800; color:var(--navy); font-size:13px; }
+    .row-group td.r { text-align:right; white-space:nowrap; }
+    .group-icon { display:inline-block; width:16px; text-align:center; font-style:normal; margin-right:6px; transition:transform .2s; }
+    .row-group.open .group-icon { transform:rotate(90deg); }
   </style>
 </head>
 <body>
@@ -180,6 +187,8 @@
       <option value="yellow">🟡 До 7 суток</option>
       <option value="red">🔴 Более 7 суток</option>
     </select>
+    <span class="f-lbl">Группа:</span>
+    <select class="f-select" id="fGroup"><option value="">Все группы</option></select>
     <span class="f-count" id="fCount"></span>
   </div>
 
@@ -225,7 +234,8 @@ const CSV_URL       = 'https://docs.google.com/spreadsheets/d/1LWplKTlBOJB-5TycH
 const REGISTRY_URL  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQGmHCtGV63YTyIyH-st7Rs43FQq47sz466WxHjNmqM7FXgj422K5qHY2rK4SCalmqDPR6aTiTts-A4/pub?gid=1024607257&single=true&output=csv';
 
 let allDocs = [];
-let creditDaysMap = new Map(); // "supplier|contract" → credit_days
+let creditDaysMap = new Map();   // "supplier|contract" → credit_days
+let supplierGroupMap = new Map(); // supplier_name → group
 
 // ── Форматирование ──────────────────────────────────────────────
 function fmt(n) {
@@ -330,10 +340,15 @@ async function loadRegistry() {
     if (!res.ok) return;
     const rows = parseCSV(await res.text());
     creditDaysMap.clear();
+    supplierGroupMap.clear();
     rows.forEach(r => {
+      if (!r.supplier_name) return;
+      const supName = r.supplier_name.trim();
+      const key = supName + '|' + (r.contract_name || '').trim();
       const days = parseInt(r.credit_days || '', 10);
-      if (r.supplier_name && !isNaN(days) && days > 0)
-        creditDaysMap.set(r.supplier_name.trim() + '|' + (r.contract_name || '').trim(), days);
+      if (!isNaN(days) && days > 0) creditDaysMap.set(key, days);
+      const grp = (r.group || '').trim();
+      if (grp) supplierGroupMap.set(supName, grp);
     });
   } catch(e) { console.warn('Справочник отсрочек не загружен:', e.message); }
 }
@@ -355,6 +370,7 @@ async function loadData() {
       const supplier    = (r.supplier_name || '').trim();
       const contract    = (r.contract_name || '').trim();
       const credit_days = creditDaysMap.get(supplier + '|' + contract) || null;
+      const group       = supplierGroupMap.get(supplier) || '';
       const doc_date    = r.doc_date || '';
       // Срок оплаты: считаем из doc_date + credit_days (due_date из CSV всегда пустой)
       const due_date    = credit_days ? addDays(doc_date, credit_days) : (r.due_date || '');
@@ -386,10 +402,17 @@ async function loadData() {
         is_over:      isOver,
         days_over:    daysOver,
         credit_days,
+        group,
       };
     }).filter(r => r.balance > 0 || r.doc_amt > 0);
 
     allDocs = rows;
+
+    // Заполняем фильтр групп
+    const groups = [...new Set(rows.map(r => r.group).filter(Boolean))].sort();
+    const fGroup = document.getElementById('fGroup');
+    fGroup.innerHTML = '<option value="">Все группы</option>';
+    groups.forEach(g => { const o = document.createElement('option'); o.value = g; o.textContent = g; fGroup.appendChild(o); });
 
     const totalBal  = rows.reduce((s,r) => s + r.balance, 0);
     const totalOver = rows.reduce((s,r) => s + r.over_amt, 0);
@@ -433,6 +456,7 @@ function alertLevel(days, overAmt) {
 function getFiltered() {
   const q   = document.getElementById('fSearch').value.toLowerCase().trim();
   const fil = document.getElementById('fFilter').value;
+  const grp = document.getElementById('fGroup').value;
   return allDocs.filter(r => {
     if (q && !r.supplier.toLowerCase().includes(q) &&
              !r.contract.toLowerCase().includes(q) &&
@@ -441,6 +465,7 @@ function getFiltered() {
     if (fil === 'ok'      &&  r.is_over) return false;
     if (fil === 'yellow'  && alertLevel(r.days_over, r.over_amt) !== 'yellow') return false;
     if (fil === 'red'     && alertLevel(r.days_over, r.over_amt) !== 'red')    return false;
+    if (grp && r.group !== grp) return false;
     return true;
   });
 }
@@ -468,11 +493,62 @@ function renderTable() {
   document.getElementById('fDays').textContent    = totDays ? totDays + ' д. (ср.)' : '—';
   document.getElementById('fCount').textContent   = `Поставщиков: ${supplierMap.size} / Документов: ${docs.length}`;
 
-  const sorted = [...supplierMap.entries()].sort((a,b) => {
-    const overA = a[1].reduce((s,r)=>s+r.over_amt, 0);
-    const overB = b[1].reduce((s,r)=>s+r.over_amt, 0);
+  // Группируем поставщиков по группам
+  const groupMap2 = new Map(); // group → Map(supplier → docs[])
+  supplierMap.forEach((docList, supName) => {
+    const grp = docList[0]?.group || '';
+    if (!groupMap2.has(grp)) groupMap2.set(grp, new Map());
+    groupMap2.get(grp).set(supName, docList);
+  });
+  // Сортируем группы: именованные по убыванию просрочки, безымянная последней
+  const sortedGroups = [...groupMap2.entries()].sort((a, b) => {
+    if (!a[0] && b[0]) return 1;
+    if (a[0] && !b[0]) return -1;
+    const overA = [...a[1].values()].flat().reduce((s,r)=>s+r.over_amt,0);
+    const overB = [...b[1].values()].flat().reduce((s,r)=>s+r.over_amt,0);
     return overB - overA;
   });
+
+  sortedGroups.forEach(([groupName, supMap]) => {
+    let groupRowEl = null;
+    let groupGId = null;
+
+    if (groupName) {
+      const groupDocs = [...supMap.values()].flat();
+      const grpBal  = groupDocs.reduce((s,r)=>s+r.balance,0);
+      const grpOver = groupDocs.reduce((s,r)=>s+r.over_amt,0);
+      groupGId = 'grp_' + Math.random().toString(36).slice(2);
+      groupRowEl = document.createElement('tr');
+      groupRowEl.className = 'row-group open';
+      groupRowEl.dataset.groupId = groupGId;
+      groupRowEl.innerHTML = `
+        <td colspan="3"><i class="group-icon">▶</i>${groupName}</td>
+        <td class="r" style="color:var(--text2);font-size:12px">${supMap.size} пост.</td>
+        <td class="r">—</td>
+        <td class="r">${fmt(grpBal)}</td>
+        <td class="r">${grpOver > 0 ? '<span class="badge-over">'+fmt(grpOver)+'</span>' : '<span class="badge-ok">нет</span>'}</td>
+        <td class="r" style="color:var(--text2);font-size:11px">${groupDocs.length} док.</td>`;
+      tbody.appendChild(groupRowEl);
+      groupRowEl.addEventListener('click', () => {
+        const nowOpen = groupRowEl.classList.toggle('open');
+        tbody.querySelectorAll(`[data-grp="${groupGId}"]`).forEach(trSup => {
+          if (!nowOpen) {
+            trSup.classList.add('hidden');
+            const supGId = trSup.dataset.group;
+            if (supGId) tbody.querySelectorAll(`[data-parent="${supGId}"]`).forEach(el => el.classList.add('hidden'));
+            trSup.classList.remove('open');
+          } else {
+            trSup.classList.remove('hidden');
+          }
+        });
+      });
+    }
+
+    const sorted = [...supMap.entries()].sort((a,b) => {
+      const overA = a[1].reduce((s,r)=>s+r.over_amt, 0);
+      const overB = b[1].reduce((s,r)=>s+r.over_amt, 0);
+      return overB - overA;
+    });
 
   sorted.forEach(([supName, docList]) => {
     const supBal   = docList.reduce((s,r)=>s+r.balance, 0);
@@ -484,6 +560,7 @@ function renderTable() {
     const trSup = document.createElement('tr');
     trSup.className = 'row-supplier' + (alert ? ' alert-'+alert : '');
     trSup.dataset.group = gId;
+    if (groupGId) trSup.dataset.grp = groupGId;
     const dot = alert ? `<span class="alert-dot ${alert}"></span>` : '';
     const supCreditDays = creditDaysMap.get(supName + '|' + (docList[0]?.contract || '')) || null;
     trSup.innerHTML = `
@@ -526,12 +603,14 @@ function renderTable() {
         <td class="r">${doc.days_over > 0 ? daysBadge : '—'}</td>`;
       tbody.appendChild(trDoc);
     });
-  });
+  }); // end sorted.forEach
+  }); // end sortedGroups.forEach
 }
 
 // Фильтры
 document.getElementById('fSearch').addEventListener('input', renderTable);
 document.getElementById('fFilter').addEventListener('change', renderTable);
+document.getElementById('fGroup').addEventListener('change', renderTable);
 
 // Инициализация
 document.addEventListener('DOMContentLoaded', () => {
