@@ -725,39 +725,51 @@ function buildAndShowRegistry() {
     const sup = chk.dataset.supplier;
     if (!bySupplier.has(sup)) bySupplier.set(sup, []);
     bySupplier.get(sup).push({
-      docNum:   chk.dataset.docnum,
-      docDate:  chk.dataset.docdate,
-      balance:  parseFloat(chk.dataset.balance || 0),
+      docNum:  chk.dataset.docnum  || '',
+      docDate: chk.dataset.docdate || '',
+      balance: parseFloat(chk.dataset.balance || 0),
     });
   });
 
   const today = new Date().toLocaleDateString('ru-RU');
   let grandTotal = 0;
 
-  // Считаем суммы по поставщикам и ширину колонки
-  const rows = [];
-  bySupplier.forEach((docs, supplier) => {
-    const supTotal = docs.reduce((s, d) => s + d.balance, 0);
-    rows.push({ supplier, supTotal });
-    grandTotal += supTotal;
-  });
-
-  const colW = Math.max(30, ...rows.map(r => r.supplier.length)) + 2;
-  const numW = 16;
-  const line = '─'.repeat(colW + numW + 3);
-
-  function padR(s, w) { return String(s).padEnd(w); }
-  function padL(s, w) { return String(s).padStart(w); }
   function fmtAmt(n) { return n.toLocaleString('ru-RU', {minimumFractionDigits:0, maximumFractionDigits:0}) + ' ₽'; }
+  function padL(s, w) { return String(s).padStart(w); }
+
+  // Ширина левой колонки — по самой длинной строке документа
+  const numW = 16;
+  const docLineW = Math.max(
+    40,
+    ...[...bySupplier.values()].flat().map(d => {
+      const label = d.docNum ? `УПД №${d.docNum}` : '(без номера)';
+      const date  = d.docDate ? ` от ${d.docDate}` : '';
+      return 2 + label.length + date.length;
+    })
+  ) + 2;
+  const line = '─'.repeat(docLineW + numW + 1);
 
   let text = `РЕЕСТР ПЛАТЕЖЕЙ — ${today}\n\n`;
-  text += `${padR('Поставщик', colW)} ${padL('Сумма', numW)}\n`;
-  text += line + '\n';
-  rows.forEach(r => {
-    text += `${padR(r.supplier, colW)} ${padL(fmtAmt(r.supTotal), numW)}\n`;
+
+  bySupplier.forEach((docs, supplier) => {
+    const supTotal = docs.reduce((s, d) => s + d.balance, 0);
+    grandTotal += supTotal;
+
+    text += `${supplier}:\n`;
+    docs.forEach(d => {
+      const label = d.docNum ? `УПД №${d.docNum}` : '(без номера)';
+      const date  = d.docDate ? ` от ${d.docDate}` : '';
+      const left  = `  ${label}${date}`;
+      text += `${left.padEnd(docLineW)} ${padL(fmtAmt(d.balance), numW)}\n`;
+    });
+    if (docs.length > 1) {
+      text += `${'  Итого:'.padEnd(docLineW)} ${padL(fmtAmt(supTotal), numW)}\n`;
+    }
+    text += '\n';
   });
+
   text += line + '\n';
-  text += `${padR('ИТОГО', colW)} ${padL(fmtAmt(grandTotal), numW)}`;
+  text += `${'ИТОГО К ОПЛАТЕ:'.padEnd(docLineW)} ${padL(fmtAmt(grandTotal), numW)}`;
 
   document.getElementById('regText').textContent = text;
   document.getElementById('regModal').classList.remove('hidden');
