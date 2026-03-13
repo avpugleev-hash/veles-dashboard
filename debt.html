@@ -694,11 +694,14 @@ function renderTable() {
   document.getElementById('fDays').textContent   = totDays ? totDays + ' д. (ср.)' : '—';
   document.getElementById('fCount').textContent  = `Клиентов: ${clientMap.size} / УПД: ${docs.length}`;
 
-  // Сортируем клиентов по убыванию просроченной задолженности
+  // Сортируем: сначала с просрочкой (по убыванию over_amt), затем без просрочки (по убыванию balance)
   const sortedClients = [...clientMap.entries()].sort((a, b) => {
     const overA = a[1].reduce((s,r)=>s+r.over_amt, 0);
     const overB = b[1].reduce((s,r)=>s+r.over_amt, 0);
-    return overB - overA;
+    if (overA > 0 || overB > 0) return overB - overA;
+    const balA = a[1].reduce((s,r)=>s+r.balance, 0);
+    const balB = b[1].reduce((s,r)=>s+r.balance, 0);
+    return balB - balA;
   });
 
   // Рендерим клиентов
