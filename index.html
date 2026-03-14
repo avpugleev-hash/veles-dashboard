@@ -3892,7 +3892,7 @@ document.getElementById('fullMonthPlan').textContent =
 // 7. ОБНОВЛЕНИЕ ПО КНОПКЕ
 // ==========================
 
-const ELS_CSV_URL = 'https://docs.google.com/spreadsheets/d/17lGV4E7-MFkak3iYHoajViH8fJk20HvGN4SJw0Et7yg/export?format=csv&gid=1639673932';
+const ELS_CSV_URL = 'https://docs.google.com/spreadsheets/d/17lGV4E7-MFkak3iYHoajViH8fJk20HvGN4SJw0Et7yg/export?format=csv&gid=985785018';
 
 async function loadElsData() {
   function splitCsvLine(line) {
@@ -3905,35 +3905,44 @@ async function loadElsData() {
     }
     res.push(cur); return res;
   }
+  function toNum(s) { return parseFloat(String(s||'').replace(/[\s\u00a0]/g,'').replace(',','.')) || 0; }
+  function toSortable(s) {
+    const m = s.match(/(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}:\d{2})/);
+    return m ? `${m[3]}-${m[2]}-${m[1]} ${m[4]}` : s;
+  }
   try {
     const res = await fetch(ELS_CSV_URL, {cache:'no-store'});
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const text = await res.text();
     const lines = text.trim().split(/\r?\n/).filter(l => l.trim());
     if (lines.length < 2) return;
-    let lastCells = null;
-    for (let i = lines.length - 1; i >= 1; i--) {
-      const cells = splitCsvLine(lines[i]);
-      if ((cells[2] || '').trim() || (cells[3] || '').trim()) { lastCells = cells; break; }
-    }
-    if (!lastCells) return;
-    const rawDate = (lastCells[1] || '').replace(/"/g, '').trim();
-    const raw22 = (lastCells[2] || '').replace(/"/g, '').trim();
-    const raw0  = (lastCells[3] || '').replace(/"/g, '').trim();
-    const n22 = parseFloat(raw22.replace(/\s/g,'').replace(',','.')) || 0;
-    const n0  = parseFloat(raw0.replace(/\s/g,'').replace(',','.')) || 0;
-    const fmt = n => n >= 1e6
+    const hdr       = splitCsvLine(lines[0]);
+    const iReqDate  = hdr.indexOf('Дата запроса');
+    const iDataDate = hdr.indexOf('Дата данных');
+    const iSubacc   = hdr.indexOf('Субсчёт');
+    const iSaldo    = hdr.indexOf('Сальдо');
+    const reqDates  = lines.slice(1).map(l => splitCsvLine(l)[iReqDate]).filter(Boolean);
+    const latestReq = reqDates.sort((a,b) => toSortable(a) > toSortable(b) ? -1 : 1)[0] || '';
+    const timeMatch = latestReq.match(/(\d{2}:\d{2})$/);
+    const elsTime   = timeMatch ? timeMatch[1] : '';
+    let els22 = 0, els0 = 0, elsDate = '';
+    lines.slice(1).forEach(line => {
+      const c = splitCsvLine(line);
+      if ((c[iReqDate] || '').trim() !== latestReq) return;
+      if (!elsDate) elsDate = (c[iDataDate] || '').trim();
+      const sub = (c[iSubacc] || '').trim();
+      if (sub.includes('облагаются НДС')) els22 = toNum(c[iSaldo]);
+      if (sub.includes('НДС 0%'))          els0  = toNum(c[iSaldo]);
+    });
+    const fmt = n => Math.abs(n) >= 1e6
       ? (n/1e6).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' млн ₽'
       : (n/1e3).toLocaleString('ru-RU',{minimumFractionDigits:0,maximumFractionDigits:0}) + ' тыс ₽';
     const el22 = document.getElementById('elsVal22');
     const el0  = document.getElementById('elsVal0');
     const elDt = document.getElementById('elsDate');
-    if (el22) el22.textContent = n22 ? fmt(n22) : (raw22 || '—');
-    if (el0)  el0.textContent  = n0  ? fmt(n0)  : (raw0  || '—');
-    if (elDt && rawDate) {
-      const dp = rawDate.split('/');
-      elDt.textContent = dp.length === 3 ? `на ${dp[1]}.${dp[0]}.${dp[2]}` : rawDate;
-    }
+    if (el22) el22.textContent = els22 ? fmt(els22) : '—';
+    if (el0)  el0.textContent  = els0  ? fmt(els0)  : '—';
+    if (elDt) elDt.textContent = elsDate ? `на ${elsDate}${elsTime ? ' в ' + elsTime : ''}` : '';
   } catch(e) { console.warn('ЕЛС не загружен:', e.message); }
 }
 
