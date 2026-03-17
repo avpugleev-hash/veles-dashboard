@@ -235,7 +235,7 @@
             <th class="r">Сумма документа</th>
             <th class="r">Остаток</th>
             <th class="r">Просрочка</th>
-            <th class="r">Дней просрочки</th>
+            <th class="r">Отсрочка (факт)</th>
           </tr>
         </thead>
         <tbody id="mainBody"></tbody>
@@ -565,6 +565,7 @@ function renderSupplierRows(tbody, supName, docList, groupGId, isFirst, isLast) 
     trDoc.dataset.supplier = doc.supplier || '';
     if (groupGId) trDoc.dataset.grp = groupGId;
     const daysBadge = doc.days_over > 0 ? `<span class="days-badge">${Math.round(doc.days_over)} дн.</span>` : '';
+    const factDays = doc.doc_date ? Math.floor((today - new Date(doc.doc_date)) / 86400000) : null;
     const dueStyle  = doc.is_over ? 'color:var(--purple);font-weight:600' : '';
     const escSup = (doc.supplier||'').replace(/"/g,'&quot;');
     const escNum = (doc.doc_num||'').replace(/"/g,'&quot;');
@@ -581,7 +582,7 @@ function renderSupplierRows(tbody, supName, docList, groupGId, isFirst, isLast) 
       <td class="r">${fmt(doc.doc_amt)}</td>
       <td class="r">${fmt(doc.balance)}</td>
       <td class="r">${doc.over_amt > 0 ? '<span class="badge-over">'+fmt(doc.over_amt)+'</span>' : '—'}</td>
-      <td class="r">${doc.days_over > 0 ? daysBadge : '—'}</td>`;
+      <td class="r">${factDays !== null && factDays >= 0 ? `<span class="days-badge">${factDays} дн.</span>` : '—'}</td>`;
     tbody.appendChild(trDoc);
     const chk = trDoc.querySelector('.reg-chk');
     if (chk) chk.addEventListener('change', e => { e.stopPropagation(); updateRegistryPanel(); });
