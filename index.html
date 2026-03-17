@@ -4089,7 +4089,8 @@ async function tryLogin(login, password) {
     return null;
   }
 
-  const data = await resp.json().catch(() => null);
+  const raw = await resp.json().catch(() => null);
+  const data = Array.isArray(raw) ? raw[0] : raw;
   if (!data || data.ok !== true) return null;
   return data; // { ok: true, must_change_password: bool }
 }
