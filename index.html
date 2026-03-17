@@ -250,6 +250,14 @@ body {
   justify-content: center;
 }
 
+/* Change Password overlay */
+.change-pwd-hint {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+
 /* Header */
 .dashboard-header {
     background: var(--navy-primary);
@@ -998,6 +1006,29 @@ body {
 </head>
 <body>
 
+  <!-- Оверлей смены пароля -->
+  <div class="login-overlay" id="changePwdOverlay" style="display:none; z-index:1001;">
+    <div class="login-box">
+      <h2>Смена пароля</h2>
+      <p class="login-subtitle">При первом входе необходимо установить свой пароль.</p>
+      <form id="changePwdForm">
+        <label class="login-label" for="cpOldPassword">Текущий пароль</label>
+        <input class="login-input" type="password" id="cpOldPassword" autocomplete="current-password">
+
+        <label class="login-label" for="cpNewPassword">Новый пароль</label>
+        <input class="login-input" type="password" id="cpNewPassword" autocomplete="new-password">
+        <div class="change-pwd-hint">Минимум 6 символов</div>
+
+        <label class="login-label" for="cpConfirmPassword">Повторите новый пароль</label>
+        <input class="login-input" type="password" id="cpConfirmPassword" autocomplete="new-password">
+
+        <div class="login-error" id="changePwdError" style="display:none;"></div>
+
+        <button type="submit" class="refresh-btn login-btn">Сохранить пароль</button>
+      </form>
+    </div>
+  </div>
+
   <!-- Оверлей логина -->
   <div class="login-overlay" id="loginOverlay">
     <div class="login-box">
@@ -1479,6 +1510,7 @@ const SHEET_COMM_NAT_CSV_URL =
 const SHEET_COMM_CLIENTS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=1437651939&single=true&output=csv';
 const DASHBOARD_API_URL = 'https://alekseipugleev.app.n8n.cloud/webhook/dashboard-data';
 const LOGIN_API_URL = 'https://alekseipugleev.app.n8n.cloud/webhook/dashboard-login';
+const CHANGE_PASSWORD_API_URL = 'https://alekseipugleev.app.n8n.cloud/webhook/dashboard-change-password';
 let isAuthenticated = false;
 // --- Настройки "запоминания" логина ---
 const AUTH_STORAGE_KEY = 'veles_dashboard_auth_v1'; // ключ в localStorage
@@ -4054,11 +4086,12 @@ async function tryLogin(login, password) {
   });
 
   if (!resp.ok) {
-    return false;
+    return null;
   }
 
   const data = await resp.json().catch(() => null);
-  return data && data.ok === true;
+  if (!data || data.ok !== true) return null;
+  return data; // { ok: true, must_change_password: bool }
 }
 
 async function handleLoginSubmit(event) {
@@ -4077,24 +4110,80 @@ async function handleLoginSubmit(event) {
   }
 
   try {
-    const ok = await tryLogin(login, password);
+    const result = await tryLogin(login, password);
 
-    if (!ok) {
+    if (!result) {
       errorEl.textContent = 'Неверный логин или пароль';
       errorEl.style.display = 'block';
       return;
     }
 
-        // успех
-    isAuthenticated = true;
-    saveAuthSession(login); // <-- запомнили, кто залогинился и время
-    document.getElementById('loginOverlay').style.display = 'none';
+    if (result.must_change_password) {
+      // Нужна смена пароля — показываем оверлей смены
+      document.getElementById('loginOverlay').style.display = 'none';
+      const cpOverlay = document.getElementById('changePwdOverlay');
+      cpOverlay.dataset.login = login;
+      cpOverlay.dataset.oldPassword = password;
+      cpOverlay.style.display = 'flex';
+      return;
+    }
 
-    // теперь можно подгружать данные дашборда
+    // успех
+    isAuthenticated = true;
+    saveAuthSession(login);
+    document.getElementById('loginOverlay').style.display = 'none';
     await refreshData();
   } catch (e) {
     console.error(e);
     errorEl.textContent = 'Ошибка подключения к серверу авторизации';
+    errorEl.style.display = 'block';
+  }
+}
+
+async function handleChangePwdSubmit(event) {
+  event.preventDefault();
+  const overlay = document.getElementById('changePwdOverlay');
+  const login = overlay.dataset.login;
+  const oldPassword = overlay.dataset.oldPassword;
+  const newPassword = document.getElementById('cpNewPassword').value;
+  const confirmPassword = document.getElementById('cpConfirmPassword').value;
+  const errorEl = document.getElementById('changePwdError');
+
+  errorEl.style.display = 'none';
+
+  if (newPassword.length < 6) {
+    errorEl.textContent = 'Пароль должен содержать минимум 6 символов';
+    errorEl.style.display = 'block';
+    return;
+  }
+  if (newPassword !== confirmPassword) {
+    errorEl.textContent = 'Пароли не совпадают';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    const resp = await fetch(CHANGE_PASSWORD_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ login, old_password: oldPassword, new_password: newPassword })
+    });
+    const data = await resp.json().catch(() => null);
+
+    if (!data || data.ok !== true) {
+      errorEl.textContent = 'Ошибка смены пароля. Попробуйте войти заново.';
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    // Успех — входим
+    overlay.style.display = 'none';
+    isAuthenticated = true;
+    saveAuthSession(login);
+    await refreshData();
+  } catch (e) {
+    console.error(e);
+    errorEl.textContent = 'Ошибка подключения к серверу';
     errorEl.style.display = 'block';
   }
 }
@@ -4126,6 +4215,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const loginForm = document.getElementById('loginForm');
   if (loginForm) {
     loginForm.addEventListener('submit', handleLoginSubmit);
+  }
+
+  const changePwdForm = document.getElementById('changePwdForm');
+  if (changePwdForm) {
+    changePwdForm.addEventListener('submit', handleChangePwdSubmit);
   }
   // 2.1) Кнопка "Выйти"
   const logoutBtn = document.getElementById('logoutBtn');
