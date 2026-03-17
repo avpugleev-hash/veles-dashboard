@@ -1063,6 +1063,7 @@ body {
                         <span id="dataUpdatedAt">Данные обновлены: —</span>
                     </div>
                     <button class="refresh-btn" onclick="refreshData()">🔄 Обновить данные</button>
+                    <span id="currentUserName" style="font-size:13px;color:var(--text-secondary);white-space:nowrap;"></span>
                     <button class="logout-btn" id="logoutBtn" type="button">⎋ Выйти</button>
                 </div>
 
@@ -1524,11 +1525,17 @@ function applyRoleVisibility(role) {
   if (cashEl) cashEl.style.display = role === 'admin' ? '' : 'none';
 }
 
-function saveAuthSession(login, role) {
+function setCurrentUserName(fullName, login) {
+  const el = document.getElementById('currentUserName');
+  if (el) el.textContent = fullName || login || '';
+}
+
+function saveAuthSession(login, role, fullName) {
   try {
     const payload = {
       login,
       role: role || 'manager',
+      full_name: fullName || null,
       ts: Date.now()
     };
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(payload));
@@ -4135,14 +4142,16 @@ async function handleLoginSubmit(event) {
       cpOverlay.dataset.login = login;
       cpOverlay.dataset.oldPassword = password;
       cpOverlay.dataset.role = result.role || 'manager';
+      cpOverlay.dataset.fullName = result.full_name || '';
       cpOverlay.style.display = 'flex';
       return;
     }
 
     // успех
     isAuthenticated = true;
-    saveAuthSession(login, result.role);
+    saveAuthSession(login, result.role, result.full_name);
     applyRoleVisibility(result.role);
+    setCurrentUserName(result.full_name, login);
     document.getElementById('loginOverlay').style.display = 'none';
     await refreshData();
   } catch (e) {
@@ -4192,8 +4201,10 @@ async function handleChangePwdSubmit(event) {
     overlay.style.display = 'none';
     isAuthenticated = true;
     const role = overlay.dataset.role || 'manager';
-    saveAuthSession(login, role);
+    const fullName = overlay.dataset.fullName || null;
+    saveAuthSession(login, role, fullName);
     applyRoleVisibility(role);
+    setCurrentUserName(fullName, login);
     await refreshData();
   } catch (e) {
     console.error(e);
@@ -4216,6 +4227,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Сессия жива — считаем пользователя авторизованным
     isAuthenticated = true;
     applyRoleVisibility(saved.role || 'manager');
+    setCurrentUserName(saved.full_name, saved.login);
     if (overlay) overlay.style.display = 'none';
 
     // Сразу грузим данные дашборда
