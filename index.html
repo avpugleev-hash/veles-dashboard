@@ -1169,12 +1169,14 @@ body {
   <div class="card-icon">💳</div>
   <div class="card-header-text">
     <h2 class="card-title">ЗАДОЛЖЕННОСТЬ</h2>
-    <!-- Остатки ДС сразу под заголовком -->
-   <div id="cashSummary" class="card-subtitle"></div>
-    <div class="card-subtitle" style="display:flex;gap:16px;flex-wrap:wrap;">
-      <span>ЕЛС 22%: <strong id="elsVal22">—</strong></span>
-      <span>ЕЛС 0%: <strong id="elsVal0">—</strong></span>
-      <span id="elsDate" style="color:var(--text-secondary)"></span>
+    <!-- Остатки ДС и ЕЛС — только для admin -->
+    <div id="els-cash-section">
+      <div id="cashSummary" class="card-subtitle"></div>
+      <div class="card-subtitle" style="display:flex;gap:16px;flex-wrap:wrap;">
+        <span>ЕЛС 22%: <strong id="elsVal22">—</strong></span>
+        <span>ЕЛС 0%: <strong id="elsVal0">—</strong></span>
+        <span id="elsDate" style="color:var(--text-secondary)"></span>
+      </div>
     </div>
   </div>
 </div>
@@ -1515,11 +1517,19 @@ let isAuthenticated = false;
 // --- Настройки "запоминания" логина ---
 const AUTH_STORAGE_KEY = 'veles_dashboard_auth_v1'; // ключ в localStorage
 const AUTH_TTL_MS = 8 * 60 * 60 * 1000; // срок жизни сессии: 8 часов
+let userRole = null;
 
-function saveAuthSession(login) {
+function applyRoleVisibility(role) {
+  userRole = role;
+  const elsSection = document.getElementById('els-cash-section');
+  if (elsSection) elsSection.style.display = role === 'admin' ? '' : 'none';
+}
+
+function saveAuthSession(login, role) {
   try {
     const payload = {
       login,
+      role: role || 'manager',
       ts: Date.now()
     };
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(payload));
@@ -3987,7 +3997,9 @@ async function refreshData() {
     if (btn) btn.disabled = true;
 
     try {
-        await Promise.all([loadDataFromSheet(), loadElsData()]);
+        const tasks = [loadDataFromSheet()];
+        if (userRole === 'admin') tasks.push(loadElsData());
+        await Promise.all(tasks);
         populateDashboard();
 
         // ставим время последнего успешного обновления
@@ -4125,13 +4137,15 @@ async function handleLoginSubmit(event) {
       const cpOverlay = document.getElementById('changePwdOverlay');
       cpOverlay.dataset.login = login;
       cpOverlay.dataset.oldPassword = password;
+      cpOverlay.dataset.role = result.role || 'manager';
       cpOverlay.style.display = 'flex';
       return;
     }
 
     // успех
     isAuthenticated = true;
-    saveAuthSession(login);
+    saveAuthSession(login, result.role);
+    applyRoleVisibility(result.role);
     document.getElementById('loginOverlay').style.display = 'none';
     await refreshData();
   } catch (e) {
@@ -4180,7 +4194,9 @@ async function handleChangePwdSubmit(event) {
     // Успех — входим
     overlay.style.display = 'none';
     isAuthenticated = true;
-    saveAuthSession(login);
+    const role = overlay.dataset.role || 'manager';
+    saveAuthSession(login, role);
+    applyRoleVisibility(role);
     await refreshData();
   } catch (e) {
     console.error(e);
@@ -4202,6 +4218,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (saved) {
     // Сессия жива — считаем пользователя авторизованным
     isAuthenticated = true;
+    applyRoleVisibility(saved.role || 'manager');
     if (overlay) overlay.style.display = 'none';
 
     // Сразу грузим данные дашборда
