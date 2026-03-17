@@ -525,6 +525,7 @@ function getFiltered() {
 }
 
 function renderSupplierRows(tbody, supName, docList, groupGId, isFirst, isLast) {
+  const today   = new Date(); today.setHours(0,0,0,0);
   const supBal  = docList.reduce((s,r)=>s+r.balance, 0);
   const supOver = docList.reduce((s,r)=>s+r.over_amt, 0);
   const maxDays = Math.max(0, ...docList.filter(r=>r.over_amt>0).map(r=>r.days_over));
