@@ -363,6 +363,44 @@ body {
 .logout-btn:hover {
     background: rgba(255, 255, 255, 0.1);
 }
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+}
+.user-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--gold-accent);
+    color: var(--navy-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+    letter-spacing: 0.5px;
+}
+.user-details {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.3;
+}
+.user-name {
+    font-size: 13px;
+    color: #f9fafb;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.user-role {
+    font-size: 11px;
+    color: rgba(255,255,255,0.55);
+    white-space: nowrap;
+}
     
 .repairs-totals-grid {
   display: grid;
@@ -1063,8 +1101,14 @@ body {
                         <span id="dataUpdatedAt">Данные обновлены: —</span>
                     </div>
                     <button class="refresh-btn" onclick="refreshData()">🔄 Обновить данные</button>
-                    <span id="currentUserName" style="font-size:13px;color:var(--text-secondary);white-space:nowrap;"></span>
-                    <button class="logout-btn" id="logoutBtn" type="button">⎋ Выйти</button>
+                    <div class="user-info" id="userInfoBlock" style="display:none">
+                        <div class="user-avatar" id="userAvatar">—</div>
+                        <div class="user-details">
+                            <span class="user-name" id="currentUserName"></span>
+                            <span class="user-role" id="currentUserRole"></span>
+                        </div>
+                    </div>
+                    <button class="logout-btn" id="logoutBtn" type="button">Выйти</button>
                 </div>
 
             </div>
@@ -1525,9 +1569,22 @@ function applyRoleVisibility(role) {
   if (cashEl) cashEl.style.display = role === 'admin' ? '' : 'none';
 }
 
-function setCurrentUserName(fullName, login) {
-  const el = document.getElementById('currentUserName');
-  if (el) el.textContent = fullName || login || '';
+function setCurrentUserName(fullName, login, role) {
+  const nameEl   = document.getElementById('currentUserName');
+  const roleEl   = document.getElementById('currentUserRole');
+  const avatarEl = document.getElementById('userAvatar');
+  const block    = document.getElementById('userInfoBlock');
+
+  const displayName = fullName || login || '';
+
+  // Инициалы: первые буквы первых двух слов
+  const initials = displayName.split(' ').filter(Boolean).slice(0, 2)
+    .map(w => w[0].toUpperCase()).join('');
+
+  if (nameEl)   nameEl.textContent   = displayName;
+  if (roleEl)   roleEl.textContent   = role === 'admin' ? 'Администратор' : 'Менеджер';
+  if (avatarEl) avatarEl.textContent = initials || '?';
+  if (block)    block.style.display  = displayName ? 'flex' : 'none';
 }
 
 function saveAuthSession(login, role, fullName) {
@@ -1574,8 +1631,9 @@ function clearAuthSession() {
   }
 }
 function logout() {
-  // Сбрасываем флаг авторизации и чистим localStorage
   isAuthenticated = false;
+  const block = document.getElementById('userInfoBlock');
+  if (block) block.style.display = 'none';
   clearAuthSession();
 
   // Очищаем поля логина/пароля и ошибки
@@ -4151,7 +4209,7 @@ async function handleLoginSubmit(event) {
     isAuthenticated = true;
     saveAuthSession(login, result.role, result.full_name);
     applyRoleVisibility(result.role);
-    setCurrentUserName(result.full_name, login);
+    setCurrentUserName(result.full_name, login, result.role);
     document.getElementById('loginOverlay').style.display = 'none';
     await refreshData();
   } catch (e) {
@@ -4204,7 +4262,7 @@ async function handleChangePwdSubmit(event) {
     const fullName = overlay.dataset.fullName || null;
     saveAuthSession(login, role, fullName);
     applyRoleVisibility(role);
-    setCurrentUserName(fullName, login);
+    setCurrentUserName(fullName, login, role);
     await refreshData();
   } catch (e) {
     console.error(e);
@@ -4227,7 +4285,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Сессия жива — считаем пользователя авторизованным
     isAuthenticated = true;
     applyRoleVisibility(saved.role || 'manager');
-    setCurrentUserName(saved.full_name, saved.login);
+    setCurrentUserName(saved.full_name, saved.login, saved.role);
     if (overlay) overlay.style.display = 'none';
 
     // Сразу грузим данные дашборда
