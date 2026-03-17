@@ -1169,14 +1169,13 @@ body {
   <div class="card-icon">💳</div>
   <div class="card-header-text">
     <h2 class="card-title">ЗАДОЛЖЕННОСТЬ</h2>
-    <!-- Остатки ДС и ЕЛС — только для admin -->
-    <div id="els-cash-section" style="display:none">
-      <div id="cashSummary" class="card-subtitle"></div>
-      <div class="card-subtitle" style="display:flex;gap:16px;flex-wrap:wrap;">
-        <span>ЕЛС 22%: <strong id="elsVal22">—</strong></span>
-        <span>ЕЛС 0%: <strong id="elsVal0">—</strong></span>
-        <span id="elsDate" style="color:var(--text-secondary)"></span>
-      </div>
+    <!-- Остатки ДС — только для admin -->
+    <div id="cashSummary" class="card-subtitle" style="display:none"></div>
+    <!-- ЕЛС — видно всем -->
+    <div class="card-subtitle" style="display:flex;gap:16px;flex-wrap:wrap;">
+      <span>ЕЛС 22%: <strong id="elsVal22">—</strong></span>
+      <span>ЕЛС 0%: <strong id="elsVal0">—</strong></span>
+      <span id="elsDate" style="color:var(--text-secondary)"></span>
     </div>
   </div>
 </div>
@@ -1521,8 +1520,8 @@ let userRole = null;
 
 function applyRoleVisibility(role) {
   userRole = role;
-  const elsSection = document.getElementById('els-cash-section');
-  if (elsSection) elsSection.style.display = role === 'admin' ? '' : 'none';
+  const cashEl = document.getElementById('cashSummary');
+  if (cashEl) cashEl.style.display = role === 'admin' ? '' : 'none';
 }
 
 function saveAuthSession(login, role) {
@@ -3997,9 +3996,7 @@ async function refreshData() {
     if (btn) btn.disabled = true;
 
     try {
-        const tasks = [loadDataFromSheet()];
-        if (userRole === 'admin') tasks.push(loadElsData());
-        await Promise.all(tasks);
+        await Promise.all([loadDataFromSheet(), loadElsData()]);
         populateDashboard();
 
         // ставим время последнего успешного обновления
