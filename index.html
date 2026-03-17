@@ -364,11 +364,21 @@ body {
     background: rgba(255, 255, 255, 0.1);
 }
 
-.user-info {
+.header-actions {
     display: flex;
     align-items: center;
     gap: 8px;
     margin-top: 8px;
+    justify-content: flex-end;
+}
+.header-actions .refresh-btn,
+.header-actions .logout-btn {
+    margin-top: 0;
+}
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 .user-avatar {
     width: 34px;
@@ -1100,14 +1110,16 @@ body {
                         <span>🕒</span>
                         <span id="dataUpdatedAt">Данные обновлены: —</span>
                     </div>
-                    <button class="refresh-btn" onclick="refreshData()">🔄 Обновить данные</button>
-                    <div class="user-info" id="userInfoBlock" style="display:none">
-                        <div class="user-avatar" id="userAvatar">—</div>
-                        <div class="user-details">
-                            <span class="user-name" id="currentUserName"></span>
+                    <div class="header-actions">
+                        <button class="refresh-btn" onclick="refreshData()">🔄 Обновить данные</button>
+                        <div class="user-info" id="userInfoBlock" style="display:none">
+                            <div class="user-avatar" id="userAvatar">—</div>
+                            <div class="user-details">
+                                <span class="user-name" id="currentUserName"></span>
+                            </div>
                         </div>
+                        <button class="logout-btn" id="logoutBtn" type="button">Выйти</button>
                     </div>
-                    <button class="logout-btn" id="logoutBtn" type="button">Выйти</button>
                 </div>
 
             </div>
