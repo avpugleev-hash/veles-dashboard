@@ -3868,57 +3868,34 @@ document.getElementById('fullMonthPlan').textContent =
 // 7. ОБНОВЛЕНИЕ ПО КНОПКЕ
 // ==========================
 
-const ELS_CSV_URL = 'https://docs.google.com/spreadsheets/d/17lGV4E7-MFkak3iYHoajViH8fJk20HvGN4SJw0Et7yg/export?format=csv&gid=985785018';
+const ELS_API_URL = 'https://147-45-166-133.nip.io:8443/api/v1/els';
 
 async function loadElsData() {
-  function splitCsvLine(line) {
-    const res = []; let cur = '', inQ = false;
-    for (let i = 0; i < line.length; i++) {
-      const c = line[i];
-      if (c === '"') { if (inQ && line[i+1]==='"') { cur+='"'; i++; } else inQ=!inQ; }
-      else if (c === ',' && !inQ) { res.push(cur); cur=''; }
-      else cur += c;
-    }
-    res.push(cur); return res;
-  }
-  function toNum(s) { return parseFloat(String(s||'').replace(/[\s\u00a0]/g,'').replace(',','.')) || 0; }
-  function toSortable(s) {
-    const m = s.match(/(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}:\d{2})/);
-    return m ? `${m[3]}-${m[2]}-${m[1]} ${m[4]}` : s;
-  }
   try {
-    const res = await fetch(ELS_CSV_URL, {cache:'no-store'});
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const text = await res.text();
-    const lines = text.trim().split(/\r?\n/).filter(l => l.trim());
-    if (lines.length < 2) return;
-    const hdr       = splitCsvLine(lines[0]);
-    const iReqDate  = hdr.indexOf('Дата запроса');
-    const iDataDate = hdr.indexOf('Дата данных');
-    const iSubacc   = hdr.indexOf('Субсчёт');
-    const iSaldo    = hdr.indexOf('Сальдо');
-    const reqDates  = lines.slice(1).map(l => splitCsvLine(l)[iReqDate]).filter(Boolean);
-    const latestReq = reqDates.sort((a,b) => toSortable(a) > toSortable(b) ? -1 : 1)[0] || '';
-    const timeMatch = latestReq.match(/(\d{2}:\d{2})$/);
-    const elsTime   = timeMatch ? timeMatch[1] : '';
-    let els22 = 0, els0 = 0, elsDate = '';
-    lines.slice(1).forEach(line => {
-      const c = splitCsvLine(line);
-      if ((c[iReqDate] || '').trim() !== latestReq) return;
-      if (!elsDate) elsDate = (c[iDataDate] || '').trim();
-      const sub = (c[iSubacc] || '').trim();
-      if (sub.includes('облагаются НДС')) els22 = toNum(c[iSaldo]);
-      if (sub.includes('НДС 0%'))          els0  = toNum(c[iSaldo]);
+    const token = localStorage.getItem('veles_jwt');
+    const res = await fetch(ELS_API_URL, {
+      cache: 'no-store',
+      headers: token ? { 'Authorization': 'Bearer ' + token } : {}
     });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    const summary = json.summary || [];
     const fmt = n => Math.abs(n) >= 1e6
       ? (n/1e6).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' млн ₽'
       : (n/1e3).toLocaleString('ru-RU',{minimumFractionDigits:0,maximumFractionDigits:0}) + ' тыс ₽';
+    const row11 = summary.find(r => r.subaccount === '11');
+    const row0  = summary.find(r => r.subaccount === '16' || r.subaccount === '17');
+    const els22 = row11 ? row11.saldo_end : 0;
+    const els0  = row0  ? row0.saldo_end  : 0;
+    const elsDate = json.latest_date
+      ? new Date(json.latest_date).toLocaleDateString('ru-RU', {day:'2-digit',month:'2-digit',year:'numeric'})
+      : '';
     const el22 = document.getElementById('elsVal22');
     const el0  = document.getElementById('elsVal0');
     const elDt = document.getElementById('elsDate');
     if (el22) el22.textContent = els22 ? fmt(els22) : '—';
     if (el0)  el0.textContent  = els0  ? fmt(els0)  : '—';
-    if (elDt) elDt.textContent = elsDate ? `на ${elsDate}${elsTime ? ' в ' + elsTime : ''}` : '';
+    if (elDt) elDt.textContent = elsDate ? `на ${elsDate}` : '';
   } catch(e) { console.warn('ЕЛС не загружен:', e.message); }
 }
 
