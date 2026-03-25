@@ -4027,6 +4027,7 @@ async function loadElsData() {
       cache: 'no-store',
       headers: token ? { 'Authorization': 'Bearer ' + token } : {}
     });
+    if (res.status === 401) { isAuthenticated = false; localStorage.removeItem('veles_jwt'); document.getElementById('loginOverlay').style.display = 'flex'; return; }
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const json = await res.json();
     const summary = json.summary || [];
