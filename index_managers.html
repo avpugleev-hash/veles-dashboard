@@ -3884,7 +3884,7 @@ async function loadElsData() {
       ? (n/1e6).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' млн ₽'
       : (n/1e3).toLocaleString('ru-RU',{minimumFractionDigits:0,maximumFractionDigits:0}) + ' тыс ₽';
     const row11 = summary.find(r => r.subaccount === '11');
-    const row0  = summary.find(r => r.subaccount === '16' || r.subaccount === '17');
+    const row0  = summary.find(r => r.subaccount === '14');
     const els22 = row11 ? row11.saldo_end : 0;
     const els0  = row0  ? row0.saldo_end  : 0;
     const elsDate = json.latest_date
