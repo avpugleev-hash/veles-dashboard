@@ -3887,15 +3887,20 @@ async function loadElsData() {
     const row0  = summary.find(r => r.subaccount === '14');
     const els22 = row11 ? row11.saldo_end : 0;
     const els0  = row0  ? row0.saldo_end  : 0;
-    const elsDate = json.latest_date
-      ? new Date(json.latest_date).toLocaleDateString('ru-RU', {day:'2-digit',month:'2-digit',year:'numeric'})
-      : '';
+    const fetchedAt = row11 ? row11.fetched_at : (summary[0] ? summary[0].fetched_at : null);
+    let elsDateStr = '';
+    if (fetchedAt) {
+      const d = new Date(fetchedAt);
+      const date = d.toLocaleDateString('ru-RU', {day:'2-digit', month:'2-digit', year:'numeric'});
+      const time = d.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
+      elsDateStr = `на ${date} в ${time}`;
+    }
     const el22 = document.getElementById('elsVal22');
     const el0  = document.getElementById('elsVal0');
     const elDt = document.getElementById('elsDate');
     if (el22) el22.textContent = els22 ? fmt(els22) : '—';
     if (el0)  el0.textContent  = els0  ? fmt(els0)  : '—';
-    if (elDt) elDt.textContent = elsDate ? `на ${elsDate}` : '';
+    if (elDt) elDt.textContent = elsDateStr;
   } catch(e) { console.warn('ЕЛС не загружен:', e.message); }
 }
 
