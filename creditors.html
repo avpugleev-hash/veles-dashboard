@@ -278,7 +278,7 @@
 </div>
 
 <script>
-const LOGIN_API_URL = 'https://alekseipugleev.app.n8n.cloud/webhook/dashboard-login';
+const LOGIN_API_URL = 'https://147-45-166-133.nip.io:8443/api/v1/auth/login';
 const AUTH_KEY      = 'veles_dashboard_auth_v1';
 const AUTH_TTL      = 8 * 3600 * 1000;
 const CSV_URL       = 'https://docs.google.com/spreadsheets/d/1LWplKTlBOJB-5TycHmsReHX-jLDik1TnerdByVCxiUo/export?format=csv&gid=0';
@@ -378,9 +378,10 @@ document.getElementById('loginForm').addEventListener('submit', async e => {
   err.style.display = 'none';
   if (!login || !pwd) { err.textContent='Введите логин и пароль'; err.style.display='block'; return; }
   try {
-    const r = await fetch(LOGIN_API_URL, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({login, password:pwd})});
+    const r = await fetch(LOGIN_API_URL, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:new URLSearchParams({username:login, password:pwd})});
     const d = await r.json().catch(()=>null);
-    if (!d || d.ok !== true) { err.textContent='Неверный логин или пароль'; err.style.display='block'; return; }
+    if (!d || !d.access_token) { err.textContent='Неверный логин или пароль'; err.style.display='block'; return; }
+    if (d.access_token) localStorage.setItem('veles_jwt', d.access_token);
     saveSession(login);
     document.getElementById('loginOverlay').style.display = 'none';
     loadData();

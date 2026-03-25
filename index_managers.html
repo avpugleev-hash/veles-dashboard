@@ -1473,7 +1473,7 @@ const SHEET_COMM_NAT_CSV_URL =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=78706492&single=true&output=csv';
 const SHEET_COMM_CLIENTS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=1437651939&single=true&output=csv';
 const DASHBOARD_API_URL = 'https://alekseipugleev.app.n8n.cloud/webhook/dashboard-data';
-const LOGIN_API_URL = 'https://alekseipugleev.app.n8n.cloud/webhook/dashboard-login';
+const LOGIN_API_URL = 'https://147-45-166-133.nip.io:8443/api/v1/auth/login';
 let isAuthenticated = false;
 // --- Настройки "запоминания" логина ---
 const AUTH_STORAGE_KEY = 'veles_dashboard_auth_v1'; // ключ в localStorage
@@ -4025,8 +4025,8 @@ function renderPaymentsByClient(paymentsData) {
 async function tryLogin(login, password) {
   const resp = await fetch(LOGIN_API_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ login, password })
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ username: login, password })
   });
 
   if (!resp.ok) {
@@ -4034,7 +4034,10 @@ async function tryLogin(login, password) {
   }
 
   const data = await resp.json().catch(() => null);
-  return data && data.ok === true;
+  if (data && data.access_token) {
+    localStorage.setItem('veles_jwt', data.access_token);
+  }
+  return data && !!data.access_token;
 }
 
 async function handleLoginSubmit(event) {
