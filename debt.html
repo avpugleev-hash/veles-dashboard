@@ -227,9 +227,10 @@
       <div class="hint">уникальных клиентов</div>
     </div>
     <div class="s-card">
-      <div class="lbl">Среднее дней просрочки</div>
+      <div class="lbl">Взвешенная отсрочка</div>
       <div class="val c-orange" id="sAvgDays">—</div>
-      <div class="hint">по просроченным документам</div>
+      <div class="hint" id="sAvgSimple">Среднее: —</div>
+      <div class="hint" id="sAvgMedian">Медиана: —</div>
     </div>
   </div>
 
@@ -636,14 +637,39 @@ async function toggleExclude(key) {
   renderTable();
 }
 
+function calcAvgStats(rows, keyFn) {
+  // Строим per-клиент: maxDays + sumOverAmt (с учётом исключений)
+  const byClient = rows
+    .filter(r => r.is_over && r.days_over > 0 && !excludedKeys.has(keyFn(r)))
+    .reduce((acc, r) => {
+      if (!acc[r.client]) acc[r.client] = { maxDays: 0, overAmt: 0 };
+      acc[r.client].maxDays  = Math.max(acc[r.client].maxDays, r.days_over);
+      acc[r.client].overAmt += r.over_amt;
+      return acc;
+    }, {});
+  const entries = Object.values(byClient);
+  if (!entries.length) return { weighted: 0, simple: 0, median: 0 };
+
+  // Взвешенное по сумме просрочки
+  const sumAmt  = entries.reduce((s, c) => s + c.overAmt, 0);
+  const weighted = sumAmt ? entries.reduce((s, c) => s + c.maxDays * c.overAmt, 0) / sumAmt : 0;
+
+  // Простое среднее
+  const simple = entries.reduce((s, c) => s + c.maxDays, 0) / entries.length;
+
+  // Медиана
+  const sorted = entries.map(c => c.maxDays).sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  const median = sorted.length % 2 ? sorted[mid] : (sorted[mid-1] + sorted[mid]) / 2;
+
+  return { weighted, simple, median };
+}
+
 function recalcAvg() {
-  const rows = allDocs;
-  const clientMaxDays = Object.values(
-    rows.filter(r => r.is_over && r.days_over > 0 && !excludedKeys.has(docKey(r)))
-        .reduce((acc,r) => { acc[r.client] = Math.max(acc[r.client]||0, r.days_over); return acc; }, {})
-  );
-  const avgDays = clientMaxDays.length ? clientMaxDays.reduce((s,v)=>s+v,0)/clientMaxDays.length : 0;
-  document.getElementById('sAvgDays').textContent = avgDays ? avgDays.toFixed(0)+' дн.' : '—';
+  const { weighted, simple, median } = calcAvgStats(allDocs, docKey);
+  document.getElementById('sAvgDays').textContent   = weighted ? weighted.toFixed(0)+' дн.' : '—';
+  document.getElementById('sAvgSimple').textContent = 'Среднее: ' + (simple  ? simple.toFixed(0)+' дн.' : '—');
+  document.getElementById('sAvgMedian').textContent = 'Медиана: ' + (median  ? median.toFixed(0)+' дн.' : '—');
 
   const totalOver = rows.reduce((s,r) => s + r.over_amt, 0);
   const totalBal  = rows.reduce((s,r) => s + r.balance, 0);
@@ -712,12 +738,7 @@ async function loadData() {
     const pct           = totalBal ? shownOver/totalBal*100 : 0;
     const cliOver       = new Set(rows.filter(r=>r.over_amt>0).map(r=>r.client)).size;
     const docsOver      = rows.filter(r=>r.is_over).length;
-    // Среднее по клиентам: берём макс. просрочку на клиента, затем среднее по клиентам
-    const clientMaxDays = Object.values(
-      rows.filter(r=>r.is_over && r.days_over > 0 && !excludedKeys.has(docKey(r)))
-          .reduce((acc,r)=>{ acc[r.client] = Math.max(acc[r.client]||0, r.days_over); return acc; }, {})
-    );
-    const avgDays = clientMaxDays.length ? clientMaxDays.reduce((s,v)=>s+v,0)/clientMaxDays.length : 0;
+    const { weighted: avgDays } = calcAvgStats(rows, docKey);
 
     const fmtMln = v => (v/1e6).toFixed(1) + ' млн';
 
@@ -726,7 +747,9 @@ async function loadData() {
     document.getElementById('sBar').style.width     = Math.min(pct,100)+'%';
     document.getElementById('sPct').textContent     = pct.toFixed(1)+'% от общего';
     document.getElementById('sCntOver').textContent = cliOver;
-    document.getElementById('sAvgDays').textContent = avgDays ? avgDays.toFixed(0)+' дн.' : '—';
+    document.getElementById('sAvgDays').textContent   = avgDays ? avgDays.toFixed(0)+' дн.' : '—';
+    document.getElementById('sAvgSimple').textContent = 'Среднее: —';
+    document.getElementById('sAvgMedian').textContent = 'Медиана: —';
     const exclEl = document.getElementById('sExcl');
     if (exclOver > 0) {
       exclEl.textContent = '(искл. из расчёта ' + fmtMln(exclOver) + ')';

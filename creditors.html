@@ -203,9 +203,10 @@
       <div class="hint">уникальных поставщиков</div>
     </div>
     <div class="s-card">
-      <div class="lbl">Среднее дней просрочки</div>
+      <div class="lbl">Взвешенная отсрочка</div>
       <div class="val c-purple" id="sAvgDays">—</div>
-      <div class="hint">по просроченным поставщикам</div>
+      <div class="hint" id="sAvgSimple">Среднее: —</div>
+      <div class="hint" id="sAvgMedian">Медиана: —</div>
     </div>
   </div>
 
@@ -479,19 +480,31 @@ async function loadData() {
     const pct       = totalBal ? totalOver/totalBal*100 : 0;
     const supOver   = new Set(rows.filter(r=>r.over_amt>0).map(r=>r.supplier)).size;
 
-    // Среднее по поставщикам: макс. просрочка на поставщика → среднее
-    const supMaxDays = Object.values(
-      rows.filter(r => r.over_amt > 0 && r.days_over > 0)
-          .reduce((acc,r) => { acc[r.supplier] = Math.max(acc[r.supplier]||0, r.days_over); return acc; }, {})
-    );
-    const avgDays = supMaxDays.length ? supMaxDays.reduce((s,v)=>s+v,0)/supMaxDays.length : 0;
+    // Взвешенное/среднее/медиана по поставщикам
+    const bySupplier = rows
+      .filter(r => r.over_amt > 0 && r.days_over > 0)
+      .reduce((acc, r) => {
+        if (!acc[r.supplier]) acc[r.supplier] = { maxDays: 0, overAmt: 0 };
+        acc[r.supplier].maxDays  = Math.max(acc[r.supplier].maxDays, r.days_over);
+        acc[r.supplier].overAmt += r.over_amt;
+        return acc;
+      }, {});
+    const supEntries = Object.values(bySupplier);
+    const sumAmt     = supEntries.reduce((s, c) => s + c.overAmt, 0);
+    const weighted   = sumAmt ? supEntries.reduce((s, c) => s + c.maxDays * c.overAmt, 0) / sumAmt : 0;
+    const simple     = supEntries.length ? supEntries.reduce((s, c) => s + c.maxDays, 0) / supEntries.length : 0;
+    const sortedDays = supEntries.map(c => c.maxDays).sort((a, b) => a - b);
+    const mid        = Math.floor(sortedDays.length / 2);
+    const median     = sortedDays.length ? (sortedDays.length % 2 ? sortedDays[mid] : (sortedDays[mid-1]+sortedDays[mid])/2) : 0;
 
     document.getElementById('sTotal').textContent   = fmt(totalBal);
     document.getElementById('sOverdue').textContent = fmt(totalOver);
     document.getElementById('sBar').style.width     = Math.min(pct,100)+'%';
     document.getElementById('sPct').textContent     = pct.toFixed(1)+'% от общего';
     document.getElementById('sCntOver').textContent = supOver;
-    document.getElementById('sAvgDays').textContent = avgDays ? avgDays.toFixed(0)+' дн.' : '—';
+    document.getElementById('sAvgDays').textContent   = weighted ? weighted.toFixed(0)+' дн.' : '—';
+    document.getElementById('sAvgSimple').textContent = 'Среднее: ' + (simple ? simple.toFixed(0)+' дн.' : '—');
+    document.getElementById('sAvgMedian').textContent = 'Медиана: ' + (median ? median.toFixed(0)+' дн.' : '—');
     if (snap) document.getElementById('sDate').textContent = 'Данные на ' + fmtDate(snap);
     document.getElementById('updTime').textContent  =
       'Обновлено: ' + new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
