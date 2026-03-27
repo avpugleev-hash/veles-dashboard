@@ -671,10 +671,10 @@ function recalcAvg() {
   document.getElementById('sAvgSimple').textContent = 'Среднее: ' + (simple  ? simple.toFixed(0)+' дн.' : '—');
   document.getElementById('sAvgMedian').textContent = 'Медиана: ' + (median  ? median.toFixed(0)+' дн.' : '—');
 
-  const totalOver = rows.reduce((s,r) => s + r.over_amt, 0);
-  const totalBal  = rows.reduce((s,r) => s + r.balance, 0);
-  const exclOver  = rows.filter(r => r.is_over && excludedKeys.has(docKey(r)))
-                        .reduce((s,r) => s + r.over_amt, 0);
+  const totalOver = allDocs.reduce((s,r) => s + r.over_amt, 0);
+  const totalBal  = allDocs.reduce((s,r) => s + r.balance, 0);
+  const exclOver  = allDocs.filter(r => r.is_over && excludedKeys.has(docKey(r)))
+                           .reduce((s,r) => s + r.over_amt, 0);
   const shownOver = totalOver - exclOver;
   const pct       = totalBal ? shownOver/totalBal*100 : 0;
   document.getElementById('sOverdue').textContent = fmt(shownOver);
