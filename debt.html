@@ -623,8 +623,12 @@ async function loadData() {
     const pct       = totalBal ? totalOver/totalBal*100 : 0;
     const cliOver   = new Set(rows.filter(r=>r.over_amt>0).map(r=>r.client)).size;
     const docsOver  = rows.filter(r=>r.is_over).length;
-    const overRows  = rows.filter(r=>r.is_over && r.days_over > 0);
-    const avgDays   = overRows.length ? overRows.reduce((s,r)=>s+r.days_over,0)/overRows.length : 0;
+    // Среднее по клиентам: берём макс. просрочку на клиента, затем среднее по клиентам
+    const clientMaxDays = Object.values(
+      rows.filter(r=>r.is_over && r.days_over > 0)
+          .reduce((acc,r)=>{ acc[r.client] = Math.max(acc[r.client]||0, r.days_over); return acc; }, {})
+    );
+    const avgDays = clientMaxDays.length ? clientMaxDays.reduce((s,v)=>s+v,0)/clientMaxDays.length : 0;
 
     document.getElementById('sTotal').textContent   = fmt(totalBal);
     document.getElementById('sOverdue').textContent = fmt(totalOver);
