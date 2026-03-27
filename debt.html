@@ -219,6 +219,7 @@
       <div class="val c-orange" id="sOverdue">—</div>
       <div class="bar-wrap"><div class="bar-fill" id="sBar" style="width:0%"></div></div>
       <div class="hint" id="sPct"></div>
+      <div class="hint" id="sExcl" style="display:none;color:#aaa"></div>
     </div>
     <div class="s-card">
       <div class="lbl">Клиентов с просрочкой</div>
@@ -621,12 +622,30 @@ async function toggleExclude(key) {
 }
 
 function recalcAvg() {
+  const rows = allDocs;
   const clientMaxDays = Object.values(
-    allDocs.filter(r => r.is_over && r.days_over > 0 && !excludedKeys.has(docKey(r)))
-           .reduce((acc,r) => { acc[r.client] = Math.max(acc[r.client]||0, r.days_over); return acc; }, {})
+    rows.filter(r => r.is_over && r.days_over > 0 && !excludedKeys.has(docKey(r)))
+        .reduce((acc,r) => { acc[r.client] = Math.max(acc[r.client]||0, r.days_over); return acc; }, {})
   );
   const avgDays = clientMaxDays.length ? clientMaxDays.reduce((s,v)=>s+v,0)/clientMaxDays.length : 0;
   document.getElementById('sAvgDays').textContent = avgDays ? avgDays.toFixed(0)+' дн.' : '—';
+
+  const totalOver = rows.reduce((s,r) => s + r.over_amt, 0);
+  const totalBal  = rows.reduce((s,r) => s + r.balance, 0);
+  const exclOver  = rows.filter(r => r.is_over && excludedKeys.has(docKey(r)))
+                        .reduce((s,r) => s + r.over_amt, 0);
+  const shownOver = totalOver - exclOver;
+  const pct       = totalBal ? shownOver/totalBal*100 : 0;
+  document.getElementById('sOverdue').textContent = fmt(shownOver);
+  document.getElementById('sBar').style.width     = Math.min(pct,100)+'%';
+  document.getElementById('sPct').textContent     = pct.toFixed(1)+'% от общего';
+  const exclEl = document.getElementById('sExcl');
+  if (exclOver > 0) {
+    exclEl.textContent = '(искл. из расчёта ' + (exclOver/1e6).toFixed(1) + ' млн)';
+    exclEl.style.display = '';
+  } else {
+    exclEl.style.display = 'none';
+  }
 }
 
 async function loadData() {
@@ -670,11 +689,14 @@ async function loadData() {
     allDocs = rows;
 
     // Итоги
-    const totalBal  = rows.reduce((s,r) => s + r.balance, 0);
-    const totalOver = rows.reduce((s,r) => s + r.over_amt, 0);
-    const pct       = totalBal ? totalOver/totalBal*100 : 0;
-    const cliOver   = new Set(rows.filter(r=>r.over_amt>0).map(r=>r.client)).size;
-    const docsOver  = rows.filter(r=>r.is_over).length;
+    const totalBal      = rows.reduce((s,r) => s + r.balance, 0);
+    const totalOver     = rows.reduce((s,r) => s + r.over_amt, 0);
+    const exclOver      = rows.filter(r => r.is_over && excludedKeys.has(docKey(r)))
+                              .reduce((s,r) => s + r.over_amt, 0);
+    const shownOver     = totalOver - exclOver;
+    const pct           = totalBal ? shownOver/totalBal*100 : 0;
+    const cliOver       = new Set(rows.filter(r=>r.over_amt>0).map(r=>r.client)).size;
+    const docsOver      = rows.filter(r=>r.is_over).length;
     // Среднее по клиентам: берём макс. просрочку на клиента, затем среднее по клиентам
     const clientMaxDays = Object.values(
       rows.filter(r=>r.is_over && r.days_over > 0 && !excludedKeys.has(docKey(r)))
@@ -682,12 +704,21 @@ async function loadData() {
     );
     const avgDays = clientMaxDays.length ? clientMaxDays.reduce((s,v)=>s+v,0)/clientMaxDays.length : 0;
 
+    const fmtMln = v => (v/1e6).toFixed(1) + ' млн';
+
     document.getElementById('sTotal').textContent   = fmt(totalBal);
-    document.getElementById('sOverdue').textContent = fmt(totalOver);
+    document.getElementById('sOverdue').textContent = fmt(shownOver);
     document.getElementById('sBar').style.width     = Math.min(pct,100)+'%';
     document.getElementById('sPct').textContent     = pct.toFixed(1)+'% от общего';
     document.getElementById('sCntOver').textContent = cliOver;
     document.getElementById('sAvgDays').textContent = avgDays ? avgDays.toFixed(0)+' дн.' : '—';
+    const exclEl = document.getElementById('sExcl');
+    if (exclOver > 0) {
+      exclEl.textContent = '(искл. из расчёта ' + fmtMln(exclOver) + ')';
+      exclEl.style.display = '';
+    } else {
+      exclEl.style.display = 'none';
+    }
     if (snap) document.getElementById('sDate').textContent = 'Данные на ' + fmtDate(snap);
     document.getElementById('updTime').textContent  =
       'Обновлено: ' + new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
