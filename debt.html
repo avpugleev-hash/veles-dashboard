@@ -354,6 +354,8 @@ let commentsMap = new Map(); // client_name → comment
 let serverCommentsLoaded = false; // true когда сервер ответил успешно
 let excludedKeys = new Set(); // doc_key исключённых из расчёта среднего
 
+function getJwt() { return localStorage.getItem('veles_jwt') || ''; }
+
 // ── Форматирование ──────────────────────────────────────────────
 function fmt(n) {
   if (!n) return '—';
