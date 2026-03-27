@@ -518,7 +518,7 @@ async function openHistoryModal(clientName) {
     if (!rows.length) {
       tbody.innerHTML = '<tr><td colspan="3" class="history-empty">История пуста</td></tr>';
     } else {
-      rows.slice().reverse().forEach(row => {
+      rows.forEach(row => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td class="h-date">${row.date || fmtDate((row.created_at||'').slice(0,10)) || '—'}</td>
