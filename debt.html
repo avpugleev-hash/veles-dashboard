@@ -226,11 +226,22 @@
       <div class="val c-orange" id="sCntOver">—</div>
       <div class="hint">уникальных клиентов</div>
     </div>
-    <div class="s-card">
-      <div class="lbl">Взвешенная отсрочка</div>
+    <div class="s-card" style="position:relative">
+      <div class="lbl">Взвешенная отсрочка
+        <span id="avgInfoBtn" style="cursor:pointer;color:#aaa;font-size:11px;margin-left:4px" title="Как считается">?</span>
+      </div>
       <div class="val c-orange" id="sAvgDays">—</div>
       <div class="hint" id="sAvgSimple">Среднее: —</div>
       <div class="hint" id="sAvgMedian">Медиана: —</div>
+      <div id="avgInfoBox" style="display:none;position:absolute;bottom:calc(100% + 6px);right:0;width:260px;background:#1a2a4a;color:#fff;font-size:11px;line-height:1.6;padding:10px 12px;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:100">
+        <div style="margin-bottom:6px"><b>Взвешенная</b> = Σ(сумма_просрочки × дней) / Σ(сумма_просрочки)<br>
+        Большие долги имеют больший вес.</div>
+        <div style="margin-bottom:6px"><b>Среднее</b> = сумма дней по клиентам / кол-во клиентов<br>
+        Каждый клиент с равным весом.</div>
+        <div><b>Медиана</b> = средний клиент по дням просрочки<br>
+        Не искажается выбросами.</div>
+        <div style="margin-top:6px;opacity:.6">Берётся макс. просрочка на клиента.</div>
+      </div>
     </div>
   </div>
 
@@ -1008,6 +1019,13 @@ document.addEventListener('DOMContentLoaded', () => {
   if (loadSession()) {
     document.getElementById('loginOverlay').style.display = 'none';
     loadData();
+  }
+
+  const btn = document.getElementById('avgInfoBtn');
+  const box = document.getElementById('avgInfoBox');
+  if (btn && box) {
+    btn.addEventListener('click', e => { e.stopPropagation(); box.style.display = box.style.display === 'none' ? '' : 'none'; });
+    document.addEventListener('click', () => { box.style.display = 'none'; });
   }
 });
 </script>
