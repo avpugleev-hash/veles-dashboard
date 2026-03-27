@@ -344,6 +344,7 @@ const COMMENTS_GET_URL      = 'https://147-45-166-133.nip.io:8443/api/v1/comment
 const COMMENTS_SAVE_URL     = 'https://147-45-166-133.nip.io:8443/api/v1/comments';
 const COMMENT_HISTORY_URL   = 'https://147-45-166-133.nip.io:8443/api/v1/comments/history';
 const GENERATE_EMAIL_URL    = 'https://alekseipugleev.app.n8n.cloud/webhook/generate-email';
+const AVG_EXCLUDE_URL  = 'https://147-45-166-133.nip.io:8443/api/v1/debt/avg-exclude';
 const AUTH_KEY         = 'veles_dashboard_auth_v1';
 const AUTH_TTL         = 8 * 3600 * 1000;
 const UPD_CSV_URL      = 'https://docs.google.com/spreadsheets/d/1D9-uViFll7h3SUT01lvlHKTF0VnQCx46h8569zSpaCQ/export?format=csv&gid=1164788937';
@@ -351,6 +352,7 @@ const UPD_CSV_URL      = 'https://docs.google.com/spreadsheets/d/1D9-uViFll7h3SU
 let allDocs = [];        // все строки УПД
 let commentsMap = new Map(); // client_name → comment
 let serverCommentsLoaded = false; // true когда сервер ответил успешно
+let excludedUids = new Set(); // doc_uid исключённых из расчёта среднего
 
 // ── Форматирование ──────────────────────────────────────────────
 function fmt(n) {
@@ -578,6 +580,48 @@ document.getElementById('loginForm').addEventListener('submit', async e => {
 
 
 // ── Загрузка данных ─────────────────────────────────────────────
+async function loadExcluded() {
+  const jwt = getJwt();
+  if (!jwt) return;
+  try {
+    const r = await fetch(AVG_EXCLUDE_URL, {cache:'no-store', headers:{'Authorization':'Bearer '+jwt}});
+    if (r.ok) {
+      const data = await r.json();
+      excludedUids = new Set(data.map(d => d.doc_uid));
+    }
+  } catch(e) { /* тихо игнорируем */ }
+}
+
+async function toggleExclude(doc_uid) {
+  const jwt = getJwt();
+  if (!jwt) return;
+  const isExcluded = excludedUids.has(doc_uid);
+  try {
+    if (isExcluded) {
+      await fetch(AVG_EXCLUDE_URL + '/' + encodeURIComponent(doc_uid),
+        {method:'DELETE', headers:{'Authorization':'Bearer '+jwt}});
+      excludedUids.delete(doc_uid);
+    } else {
+      await fetch(AVG_EXCLUDE_URL,
+        {method:'POST', headers:{'Authorization':'Bearer '+jwt,'Content-Type':'application/json'},
+         body: JSON.stringify({doc_uid})});
+      excludedUids.add(doc_uid);
+    }
+  } catch(e) { alert('Ошибка: ' + e.message); return; }
+  recalcAvg();
+  renderTable();
+}
+
+function recalcAvg() {
+  const rows = allDocs;
+  const clientMaxDays = Object.values(
+    rows.filter(r => r.is_over && r.days_over > 0 && !excludedUids.has(r.doc_uid))
+        .reduce((acc,r) => { acc[r.client] = Math.max(acc[r.client]||0, r.days_over); return acc; }, {})
+  );
+  const avgDays = clientMaxDays.length ? clientMaxDays.reduce((s,v)=>s+v,0)/clientMaxDays.length : 0;
+  document.getElementById('sAvgDays').textContent = avgDays ? avgDays.toFixed(0)+' дн.' : '—';
+}
+
 async function loadData() {
   showState('<div class="spin"></div><div>Загрузка данных...</div>');
 
@@ -600,6 +644,7 @@ async function loadData() {
       const due_date = r.due_date || calcDueDate(r.doc_date, creditDays);
       const over_amt = toNum(r.overdue_amount);
       return {
+        doc_uid:     r.doc_uid        || '',
         client:      r.client_name    || '',
         contract:    r.contract_name  || '',
         doc_num:     r.doc_number     || '',
@@ -625,7 +670,7 @@ async function loadData() {
     const docsOver  = rows.filter(r=>r.is_over).length;
     // Среднее по клиентам: берём макс. просрочку на клиента, затем среднее по клиентам
     const clientMaxDays = Object.values(
-      rows.filter(r=>r.is_over && r.days_over > 0)
+      rows.filter(r=>r.is_over && r.days_over > 0 && !excludedUids.has(r.doc_uid))
           .reduce((acc,r)=>{ acc[r.client] = Math.max(acc[r.client]||0, r.days_over); return acc; }, {})
     );
     const avgDays = clientMaxDays.length ? clientMaxDays.reduce((s,v)=>s+v,0)/clientMaxDays.length : 0;
@@ -641,7 +686,7 @@ async function loadData() {
       'Обновлено: ' + new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
 
     hideState();
-    await loadComments();
+    await Promise.all([loadComments(), loadExcluded()]);
     renderTable();
 
   } catch(e) {
@@ -762,6 +807,11 @@ function renderTable() {
       const daysBadge = doc.days_total > 0
         ? `<span class="days-badge">${Math.round(doc.days_total)} дн.</span>` : '';
 
+      const isExcl = excludedUids.has(doc.doc_uid);
+      if (isExcl) trDoc.style.opacity = '0.45';
+      const exclBtn = doc.doc_uid ? `<button onclick="toggleExclude('${doc.doc_uid.replace(/'/g,"\\'")}')"
+        title="${isExcl ? 'Включить в расчёт среднего' : 'Исключить из расчёта среднего'}"
+        style="border:none;background:none;cursor:pointer;font-size:13px;padding:0 4px">${isExcl ? '↩' : '✕'}</button>` : '';
       trDoc.innerHTML = `
         <td class="doc-num" style="padding-left:32px">УПД ${doc.doc_num}</td>
         <td>${fmtDate(doc.doc_date)}</td>
@@ -770,7 +820,7 @@ function renderTable() {
         <td class="r">${doc.over_amt > 0 ? '<span class="badge-over">'+fmt(doc.over_amt)+'</span>' : '—'}</td>
         <td class="r" style="color:var(--text2)">${doc.credit_days > 0 ? doc.credit_days+' дн.' : '—'}</td>
         <td class="r">${doc.days_total > 0 ? daysBadge : '—'}</td>
-        <td></td>`;
+        <td style="text-align:center">${exclBtn}</td>`;
       tbody.appendChild(trDoc);
     });
   });
