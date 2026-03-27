@@ -202,21 +202,18 @@
       <div class="val c-purple" id="sCntOver">—</div>
       <div class="hint">уникальных поставщиков</div>
     </div>
-    <div class="s-card" style="position:relative">
+    <div class="s-card">
       <div class="lbl">Взвешенная отсрочка
-        <span id="avgInfoBtn" style="cursor:pointer;color:#aaa;font-size:11px;margin-left:4px" title="Как считается">?</span>
+        <span id="avgInfoBtn" style="cursor:pointer;color:#aaa;font-size:11px;margin-left:4px;text-decoration:underline dotted">?</span>
       </div>
       <div class="val c-purple" id="sAvgDays">—</div>
       <div class="hint" id="sAvgSimple">Среднее: —</div>
       <div class="hint" id="sAvgMedian">Медиана: —</div>
-      <div id="avgInfoBox" style="display:none;position:absolute;top:calc(100% + 6px);left:0;width:260px;background:#1a2a4a;color:#fff;font-size:11px;line-height:1.6;padding:10px 12px;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:100">
-        <div style="margin-bottom:6px"><b>Взвешенная</b> = Σ(сумма_просрочки × дней) / Σ(сумма_просрочки)<br>
-        Большие долги имеют больший вес.</div>
-        <div style="margin-bottom:6px"><b>Среднее</b> = сумма дней по поставщикам / кол-во поставщиков<br>
-        Каждый поставщик с равным весом.</div>
-        <div><b>Медиана</b> = средний поставщик по дням просрочки<br>
-        Не искажается выбросами.</div>
-        <div style="margin-top:6px;opacity:.6">Берётся макс. просрочка на поставщика.</div>
+      <div id="avgInfoBox" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid #e5e7eb;font-size:11px;line-height:1.6;color:#6b7280">
+        <div style="margin-bottom:4px"><b style="color:#1a2a4a">Взвешенная</b> — Σ(сумма × дней) / Σ(сумма). Крупные долги весят больше.</div>
+        <div style="margin-bottom:4px"><b style="color:#1a2a4a">Среднее</b> — каждый поставщик с равным весом.</div>
+        <div><b style="color:#1a2a4a">Медиана</b> — середина списка, не искажается выбросами.</div>
+        <div style="margin-top:4px;font-style:italic">По каждому поставщику берётся макс. кол-во дней.</div>
       </div>
     </div>
   </div>
