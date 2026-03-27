@@ -815,9 +815,6 @@ function renderTable() {
       const dk = docKey(doc);
       const isExcl = excludedKeys.has(dk);
       if (isExcl) trDoc.style.opacity = '0.45';
-      const exclBtn = `<button onclick="toggleExclude('${dk.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')"
-        title="${isExcl ? 'Включить в расчёт среднего' : 'Исключить из расчёта среднего'}"
-        style="border:none;background:none;cursor:pointer;font-size:13px;padding:0 4px">${isExcl ? '↩' : '✕'}</button>`;
       trDoc.innerHTML = `
         <td class="doc-num" style="padding-left:32px">УПД ${doc.doc_num}</td>
         <td>${fmtDate(doc.doc_date)}</td>
@@ -826,7 +823,13 @@ function renderTable() {
         <td class="r">${doc.over_amt > 0 ? '<span class="badge-over">'+fmt(doc.over_amt)+'</span>' : '—'}</td>
         <td class="r" style="color:var(--text2)">${doc.credit_days > 0 ? doc.credit_days+' дн.' : '—'}</td>
         <td class="r">${doc.days_total > 0 ? daysBadge : '—'}</td>
-        <td style="text-align:center">${exclBtn}</td>`;
+        <td style="text-align:center">
+          <button class="excl-btn" data-key=""
+            title="${isExcl ? 'Включить в расчёт среднего' : 'Исключить из расчёта среднего'}"
+            style="border:none;background:none;cursor:pointer;font-size:13px;padding:0 4px">${isExcl ? '↩' : '✕'}</button>
+        </td>`;
+      trDoc.querySelector('.excl-btn').dataset.key = dk;
+      trDoc.querySelector('.excl-btn').addEventListener('click', () => toggleExclude(dk));
       tbody.appendChild(trDoc);
     });
   });
