@@ -521,7 +521,7 @@ async function openHistoryModal(clientName) {
       rows.slice().reverse().forEach(row => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td class="h-date">${row.date || '—'}</td>
+          <td class="h-date">${row.date || fmtDate((row.created_at||'').slice(0,10)) || '—'}</td>
           <td class="h-login">${row.login || '—'}</td>
           <td>${row.comment || '—'}</td>`;
         tbody.appendChild(tr);
