@@ -352,7 +352,7 @@ const UPD_CSV_URL      = 'https://docs.google.com/spreadsheets/d/1D9-uViFll7h3SU
 let allDocs = [];        // все строки УПД
 let commentsMap = new Map(); // client_name → comment
 let serverCommentsLoaded = false; // true когда сервер ответил успешно
-let excludedUids = new Set(); // doc_uid исключённых из расчёта среднего
+let excludedKeys = new Set(); // doc_key исключённых из расчёта среднего
 
 // ── Форматирование ──────────────────────────────────────────────
 function fmt(n) {
@@ -580,6 +580,12 @@ document.getElementById('loginForm').addEventListener('submit', async e => {
 
 
 // ── Загрузка данных ─────────────────────────────────────────────
+function docKey(doc) {
+  // client|contract|doc_number|doc_dmy — стабильный ключ без даты среза
+  const dmy = (doc.doc_date || '').split('-').reverse().join('.');
+  return [doc.client, doc.contract, doc.doc_num, dmy].join('|');
+}
+
 async function loadExcluded() {
   const jwt = getJwt();
   if (!jwt) return;
@@ -587,25 +593,25 @@ async function loadExcluded() {
     const r = await fetch(AVG_EXCLUDE_URL, {cache:'no-store', headers:{'Authorization':'Bearer '+jwt}});
     if (r.ok) {
       const data = await r.json();
-      excludedUids = new Set(data.map(d => d.doc_uid));
+      excludedKeys = new Set(data.map(d => d.doc_key));
     }
   } catch(e) { /* тихо игнорируем */ }
 }
 
-async function toggleExclude(doc_uid) {
+async function toggleExclude(key) {
   const jwt = getJwt();
   if (!jwt) return;
-  const isExcluded = excludedUids.has(doc_uid);
+  const isExcluded = excludedKeys.has(key);
   try {
     if (isExcluded) {
-      await fetch(AVG_EXCLUDE_URL + '/' + encodeURIComponent(doc_uid),
+      await fetch(AVG_EXCLUDE_URL + '/' + encodeURIComponent(key),
         {method:'DELETE', headers:{'Authorization':'Bearer '+jwt}});
-      excludedUids.delete(doc_uid);
+      excludedKeys.delete(key);
     } else {
       await fetch(AVG_EXCLUDE_URL,
         {method:'POST', headers:{'Authorization':'Bearer '+jwt,'Content-Type':'application/json'},
-         body: JSON.stringify({doc_uid})});
-      excludedUids.add(doc_uid);
+         body: JSON.stringify({doc_key: key})});
+      excludedKeys.add(key);
     }
   } catch(e) { alert('Ошибка: ' + e.message); return; }
   recalcAvg();
@@ -613,10 +619,9 @@ async function toggleExclude(doc_uid) {
 }
 
 function recalcAvg() {
-  const rows = allDocs;
   const clientMaxDays = Object.values(
-    rows.filter(r => r.is_over && r.days_over > 0 && !excludedUids.has(r.doc_uid))
-        .reduce((acc,r) => { acc[r.client] = Math.max(acc[r.client]||0, r.days_over); return acc; }, {})
+    allDocs.filter(r => r.is_over && r.days_over > 0 && !excludedKeys.has(docKey(r)))
+           .reduce((acc,r) => { acc[r.client] = Math.max(acc[r.client]||0, r.days_over); return acc; }, {})
   );
   const avgDays = clientMaxDays.length ? clientMaxDays.reduce((s,v)=>s+v,0)/clientMaxDays.length : 0;
   document.getElementById('sAvgDays').textContent = avgDays ? avgDays.toFixed(0)+' дн.' : '—';
@@ -670,7 +675,7 @@ async function loadData() {
     const docsOver  = rows.filter(r=>r.is_over).length;
     // Среднее по клиентам: берём макс. просрочку на клиента, затем среднее по клиентам
     const clientMaxDays = Object.values(
-      rows.filter(r=>r.is_over && r.days_over > 0 && !excludedUids.has(r.doc_uid))
+      rows.filter(r=>r.is_over && r.days_over > 0 && !excludedKeys.has(docKey(r)))
           .reduce((acc,r)=>{ acc[r.client] = Math.max(acc[r.client]||0, r.days_over); return acc; }, {})
     );
     const avgDays = clientMaxDays.length ? clientMaxDays.reduce((s,v)=>s+v,0)/clientMaxDays.length : 0;
@@ -807,11 +812,12 @@ function renderTable() {
       const daysBadge = doc.days_total > 0
         ? `<span class="days-badge">${Math.round(doc.days_total)} дн.</span>` : '';
 
-      const isExcl = excludedUids.has(doc.doc_uid);
+      const dk = docKey(doc);
+      const isExcl = excludedKeys.has(dk);
       if (isExcl) trDoc.style.opacity = '0.45';
-      const exclBtn = doc.doc_uid ? `<button onclick="toggleExclude('${doc.doc_uid.replace(/'/g,"\\'")}')"
+      const exclBtn = `<button onclick="toggleExclude('${dk.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')"
         title="${isExcl ? 'Включить в расчёт среднего' : 'Исключить из расчёта среднего'}"
-        style="border:none;background:none;cursor:pointer;font-size:13px;padding:0 4px">${isExcl ? '↩' : '✕'}</button>` : '';
+        style="border:none;background:none;cursor:pointer;font-size:13px;padding:0 4px">${isExcl ? '↩' : '✕'}</button>`;
       trDoc.innerHTML = `
         <td class="doc-num" style="padding-left:32px">УПД ${doc.doc_num}</td>
         <td>${fmtDate(doc.doc_date)}</td>
