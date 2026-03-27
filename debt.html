@@ -589,7 +589,20 @@ function docKey(doc) {
   return [doc.client, doc.contract, doc.doc_num, dmy].join('|');
 }
 
+const LS_EXCL_KEY = 'veles_excl_keys';
+
+function saveExclToLS() {
+  try { localStorage.setItem(LS_EXCL_KEY, JSON.stringify([...excludedKeys])); } catch(e) {}
+}
+
 async function loadExcluded() {
+  // 1. Сразу грузим из localStorage — страница рендерится правильно до ответа сервера
+  try {
+    const cached = JSON.parse(localStorage.getItem(LS_EXCL_KEY) || '[]');
+    excludedKeys = new Set(cached);
+  } catch(e) {}
+
+  // 2. Синхронизируем с сервером если есть JWT
   const jwt = getJwt();
   if (!jwt) return;
   try {
@@ -597,8 +610,9 @@ async function loadExcluded() {
     if (r.ok) {
       const data = await r.json();
       excludedKeys = new Set(data.map(d => d.doc_key));
+      saveExclToLS();
     }
-  } catch(e) { /* тихо игнорируем */ }
+  } catch(e) { /* сервер недоступен — используем кэш из localStorage */ }
 }
 
 async function toggleExclude(key) {
@@ -617,6 +631,7 @@ async function toggleExclude(key) {
       excludedKeys.add(key);
     }
   } catch(e) { alert('Ошибка: ' + e.message); return; }
+  saveExclToLS();
   recalcAvg();
   renderTable();
 }
