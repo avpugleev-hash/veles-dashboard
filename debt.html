@@ -335,9 +335,9 @@
 
 <script>
 const LOGIN_API_URL    = 'https://147-45-166-133.nip.io:8443/api/v1/auth/login';
-const COMMENTS_GET_URL      = 'https://alekseipugleev.app.n8n.cloud/webhook/get-comments';
-const COMMENTS_SAVE_URL     = 'https://alekseipugleev.app.n8n.cloud/webhook/save-comment';
-const COMMENT_HISTORY_URL   = 'https://alekseipugleev.app.n8n.cloud/webhook/get-comment-history';
+const COMMENTS_GET_URL      = 'https://147-45-166-133.nip.io:8443/api/v1/comments';
+const COMMENTS_SAVE_URL     = 'https://147-45-166-133.nip.io:8443/api/v1/comments';
+const COMMENT_HISTORY_URL   = 'https://147-45-166-133.nip.io:8443/api/v1/comments/history';
 const GENERATE_EMAIL_URL    = 'https://alekseipugleev.app.n8n.cloud/webhook/generate-email';
 const AUTH_KEY         = 'veles_dashboard_auth_v1';
 const AUTH_TTL         = 8 * 3600 * 1000;
@@ -423,7 +423,8 @@ function lsSaveComment(clientName, text) {
 // Загрузка всех комментариев с сервера
 async function loadComments() {
   try {
-    const r = await fetch(COMMENTS_GET_URL, {cache:'no-store'});
+    const jwt = localStorage.getItem('veles_jwt') || '';
+    const r = await fetch(COMMENTS_GET_URL, {cache:'no-store', headers: jwt ? {'Authorization':'Bearer '+jwt} : {}});
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const data = await r.json();
     commentsMap.clear();
@@ -453,15 +454,11 @@ async function saveCommentRemote(clientName, text) {
   commentsMap.set(clientName, text);
   lsSaveComment(clientName, text);
   try {
+    const jwt = localStorage.getItem('veles_jwt') || '';
     await fetch(COMMENTS_SAVE_URL, {
       method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({
-        client_name: clientName,
-        comment:     text,
-        login:       getSessionLogin(),
-        updated_at:  new Date().toISOString()
-      })
+      headers: {'Content-Type':'application/json', ...(jwt ? {'Authorization':'Bearer '+jwt} : {})},
+      body: JSON.stringify({ client_name: clientName, comment: text })
     });
   } catch(e) {
     console.warn('Ошибка сохранения комментария на сервере:', e.message);
@@ -511,7 +508,8 @@ async function openHistoryModal(clientName) {
   document.getElementById('historyModal').classList.remove('hidden');
 
   try {
-    const r = await fetch(`${COMMENT_HISTORY_URL}?client=${encodeURIComponent(clientName)}`, {cache:'no-store'});
+    const jwt = localStorage.getItem('veles_jwt') || '';
+    const r = await fetch(`${COMMENT_HISTORY_URL}?client_name=${encodeURIComponent(clientName)}`, {cache:'no-store', headers: jwt ? {'Authorization':'Bearer '+jwt} : {}});
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const data = await r.json();
     console.log('[history] clientName:', clientName, '| response:', JSON.stringify(data).slice(0, 300));
