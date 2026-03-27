@@ -801,8 +801,8 @@ function renderTable() {
   // Рендерим клиентов
   sortedClients.forEach(([clientName, docList]) => {
     const cliBal    = docList.reduce((s,r)=>s+r.balance, 0);
-    const cliOver   = docList.reduce((s,r)=>s+r.over_amt, 0);
-    const maxDays   = Math.max(0, ...docList.filter(r=>r.over_amt>0).map(r=>r.days_over));
+    const cliOver   = docList.filter(r=>!excludedKeys.has(docKey(r))).reduce((s,r)=>s+r.over_amt, 0);
+    const maxDays   = Math.max(0, ...docList.filter(r=>r.over_amt>0 && !excludedKeys.has(docKey(r))).map(r=>r.days_over));
     const cliAlert  = alertLevel(maxDays, cliOver);
     const cliId     = 'c_' + Math.random().toString(36).slice(2);
 
