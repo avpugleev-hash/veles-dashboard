@@ -740,6 +740,7 @@ async function loadData() {
 
     hideState();
     await Promise.all([loadComments(), loadExcluded()]);
+    recalcAvg();
     renderTable();
 
   } catch(e) {
