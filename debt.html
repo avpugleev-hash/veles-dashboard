@@ -722,9 +722,12 @@ function fmtDaysStat(value, hasData, label) {
 
 function recalcAvg() {
   const { hasData, weighted, simple, median } = calcAvgStats(allDocs, docKey);
+  const latestStats = calcLatestDocStats(allDocs, docKey);
   document.getElementById('sAvgDays').textContent   = hasData ? weighted.toFixed(0)+' дн.' : '—';
   document.getElementById('sAvgSimple').textContent = fmtDaysStat(simple, hasData, 'Среднее');
   document.getElementById('sAvgMedian').textContent = fmtDaysStat(median, hasData, 'Медиана');
+  document.getElementById('sLatestAvg').textContent = latestStats.hasData ? latestStats.average.toFixed(0) + ' дн.' : '—';
+  document.getElementById('sLatestMedian').textContent = fmtDaysStat(latestStats.median, latestStats.hasData, 'Медиана');
 
   const totalOver = allDocs.reduce((s,r) => s + r.over_amt, 0);
   const totalBal  = allDocs.reduce((s,r) => s + r.balance, 0);
