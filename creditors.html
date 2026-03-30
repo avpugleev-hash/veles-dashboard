@@ -50,10 +50,8 @@
 
     /* ИТОГИ */
     .summary-block { margin-bottom:16px; }
-    .summary-title { font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text2); margin:0 0 8px 2px; }
-    .summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; }
-    .summary-discipline { display:grid; grid-template-columns:minmax(260px, 360px); gap:14px; }
-    @media(max-width:900px){ .summary{ grid-template-columns:repeat(2,1fr); } .summary-discipline{ grid-template-columns:1fr; } }
+    .summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+    @media(max-width:900px){ .summary{ grid-template-columns:repeat(2,1fr); } }
     @media(max-width:500px){ .summary{ grid-template-columns:1fr; } }
     .s-card { background:var(--card); border-radius:var(--r-lg); padding:16px 18px; border:1px solid var(--border); box-shadow:0 1px 4px rgba(0,0,0,.05); }
     .s-card.kpi-main { border-color:rgba(26,42,74,.14); box-shadow:0 8px 20px rgba(26,42,74,.08); }
@@ -191,12 +189,17 @@
 
   <!-- Итоги -->
   <div class="summary-block">
-    <div class="summary-title">Срок Денег</div>
     <div class="summary">
       <div class="s-card">
         <div class="lbl">Общая задолженность</div>
         <div class="val c-navy" id="sTotal">—</div>
         <div class="hint" id="sDate"></div>
+      </div>
+      <div class="s-card kpi-discipline">
+        <div class="lbl">Просроченная задолженность</div>
+        <div class="val c-purple" id="sOverdue">—</div>
+        <div class="bar-wrap"><div class="bar-fill" id="sBar" style="width:0%"></div></div>
+        <div class="hint" id="sPct"></div>
       </div>
       <div class="s-card kpi-main">
         <div class="lbl">Средний срок оплаты поставщикам
@@ -214,18 +217,6 @@
       </div>
     </div>
   </div>
-  <div class="summary-block">
-    <div class="summary-title">Контроль Дисциплины</div>
-    <div class="summary-discipline">
-      <div class="s-card kpi-discipline">
-        <div class="lbl">Просроченная задолженность</div>
-        <div class="val c-purple" id="sOverdue">—</div>
-        <div class="bar-wrap"><div class="bar-fill" id="sBar" style="width:0%"></div></div>
-        <div class="hint" id="sPct"></div>
-      </div>
-    </div>
-  </div>
-
   <!-- Фильтры -->
   <div class="filters">
     <span class="f-lbl">Поиск:</span>
