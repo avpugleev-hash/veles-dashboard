@@ -50,7 +50,7 @@
     /* ИТОГИ */
     .summary-block { margin-bottom:16px; }
     .summary-title { font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text2); margin:0 0 8px 2px; }
-    .summary { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+    .summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; }
     .summary-discipline { display:grid; grid-template-columns:minmax(260px, 360px); gap:14px; }
     @media(max-width:900px){ .summary{ grid-template-columns:repeat(2,1fr); } .summary-discipline{ grid-template-columns:1fr; } }
     @media(max-width:500px){ .summary{ grid-template-columns:1fr; } }
@@ -221,12 +221,17 @@
         <div class="val c-navy" id="sTotal">—</div>
         <div class="hint" id="sDate"></div>
       </div>
+      <div class="s-card kpi-main">
+        <div class="lbl">Эквивалент отсрочки</div>
+        <div class="val c-navy" id="sEqDelay">—</div>
+        <div class="hint" id="sEqDelayHint">по выручке последнего месяца</div>
+      </div>
       <div class="s-card">
         <div class="lbl">Клиентов с долгом</div>
         <div class="val c-orange" id="sCntOver">—</div>
         <div class="hint">уникальных клиентов</div>
       </div>
-      <div class="s-card kpi-main">
+      <div class="s-card">
         <div class="lbl">Средний срок денег у клиентов
           <span id="avgInfoBtn" style="cursor:pointer;color:#aaa;font-size:11px;margin-left:4px;text-decoration:underline dotted">?</span>
         </div>
@@ -377,6 +382,7 @@ const AVG_EXCLUDE_URL  = 'https://147-45-166-133.nip.io:8443/api/v1/debt/avg-exc
 const AUTH_KEY         = 'veles_dashboard_auth_v1';
 const AUTH_TTL         = 8 * 3600 * 1000;
 const UPD_CSV_URL      = 'https://docs.google.com/spreadsheets/d/1D9-uViFll7h3SUT01lvlHKTF0VnQCx46h8569zSpaCQ/export?format=csv&gid=1164788937';
+const COMM_CLIENTS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=1437651939&single=true&output=csv';
 
 let allDocs = [];        // все строки УПД
 let commentsMap = new Map(); // client_name → comment
@@ -716,6 +722,35 @@ function calcLatestDocStats(rows, keyFn) {
   return { hasData: true, average, median, count: entries.length };
 }
 
+function calcEquivalentDelay(totalBalance, revenueRows) {
+  if (!Array.isArray(revenueRows) || !revenueRows.length) {
+    return { hasData: false, delayDays: 0, revenue: 0, year: null, month: null };
+  }
+
+  const totals = new Map();
+  revenueRows.forEach(r => {
+    const year = Number(r.year) || 0;
+    const month = Number(r.month) || 0;
+    if (!year || !month) return;
+    const key = `${year}-${String(month).padStart(2, '0')}`;
+    totals.set(key, (totals.get(key) || 0) + toNum(r.revenue));
+  });
+
+  const latestKey = [...totals.keys()].sort().pop();
+  if (!latestKey) {
+    return { hasData: false, delayDays: 0, revenue: 0, year: null, month: null };
+  }
+
+  const [yearStr, monthStr] = latestKey.split('-');
+  const year = Number(yearStr);
+  const month = Number(monthStr);
+  const revenue = totals.get(latestKey) || 0;
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const delayDays = revenue > 0 ? (totalBalance / revenue) * daysInMonth : 0;
+
+  return { hasData: revenue > 0, delayDays, revenue, year, month };
+}
+
 function fmtDaysStat(value, hasData, label) {
   return label + ': ' + (hasData ? value.toFixed(0) + ' дн.' : '—');
 }
@@ -751,10 +786,15 @@ async function loadData() {
   showState('<div class="spin"></div><div>Загрузка данных...</div>');
 
   try {
-    const res = await fetch(UPD_CSV_URL, {cache:'no-store'});
+    const [res, commRes] = await Promise.all([
+      fetch(UPD_CSV_URL, {cache:'no-store'}),
+      fetch(COMM_CLIENTS_CSV_URL, {cache:'no-store'})
+    ]);
     if (!res.ok) throw new Error('HTTP ' + res.status);
+    if (!commRes.ok) throw new Error('HTTP ' + commRes.status);
     const text = await res.text();
     const raw  = parseCSV(text);
+    const commRaw = parseCSV(await commRes.text());
 
     // Берём дату среза
     const dates = raw.map(r => r.as_of_date).filter(Boolean).sort();
@@ -800,10 +840,15 @@ async function loadData() {
     const docsOver      = rows.filter(r=>r.is_over).length;
     const { hasData, weighted: avgDays, simple, median } = calcAvgStats(rows, docKey);
     const latestStats = calcLatestDocStats(rows, docKey);
+    const eqDelayStats = calcEquivalentDelay(totalBal, commRaw);
 
     const fmtMln = v => (v/1e6).toFixed(1) + ' млн';
 
     document.getElementById('sTotal').textContent   = fmt(totalBal);
+    document.getElementById('sEqDelay').textContent = eqDelayStats.hasData ? eqDelayStats.delayDays.toFixed(0) + ' дн.' : '—';
+    document.getElementById('sEqDelayHint').textContent = eqDelayStats.hasData
+      ? `выручка ${String(eqDelayStats.month).padStart(2, '0')}.${eqDelayStats.year}: ${fmt(eqDelayStats.revenue)}`
+      : 'по выручке последнего месяца';
     document.getElementById('sOverdue').textContent = fmt(shownOver);
     document.getElementById('sBar').style.width     = Math.min(pct,100)+'%';
     document.getElementById('sPct').textContent     = pct.toFixed(1)+'% от общего';
