@@ -249,7 +249,7 @@
         <div class="lbl">Текущая клиентская отсрочка оплаты</div>
         <div class="val c-navy" id="sLatestAvg">—</div>
         <div class="hint" id="sLatestMedian">Медиана: —</div>
-        <div class="hint">по последнему открытому УПД каждого клиента</div>
+        <div class="hint">по первому открытому УПД каждого клиента</div>
       </div>
     </div>
   </div>
@@ -706,7 +706,7 @@ function calcLatestDocStats(rows, keyFn) {
     if (!dt || isNaN(dt.getTime())) return;
 
     const prev = byClient.get(r.client);
-    if (!prev || dt > prev.docDate || (dt.getTime() === prev.docDate.getTime() && r.balance > prev.balance)) {
+    if (!prev || dt < prev.docDate || (dt.getTime() === prev.docDate.getTime() && r.balance > prev.balance)) {
       byClient.set(r.client, { ageDays: r.age_days, docDate: dt, balance: r.balance });
     }
   });
