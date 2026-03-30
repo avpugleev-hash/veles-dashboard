@@ -50,7 +50,7 @@
     /* ИТОГИ */
     .summary-block { margin-bottom:16px; }
     .summary-title { font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text2); margin:0 0 8px 2px; }
-    .summary { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+    .summary { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
     .summary-discipline { display:grid; grid-template-columns:minmax(260px, 360px); gap:14px; }
     @media(max-width:900px){ .summary{ grid-template-columns:repeat(2,1fr); } .summary-discipline{ grid-template-columns:1fr; } }
     @media(max-width:500px){ .summary{ grid-template-columns:1fr; } }
@@ -239,6 +239,12 @@
           <div><b style="color:#1a2a4a">Медиана</b> — центральное значение возраста УПД, помогает увидеть типичный срок без влияния крупных выбросов.</div>
           <div style="margin-top:4px;font-style:italic">Считается от даты УПД до сегодняшнего дня только по документам с положительным остатком долга.</div>
         </div>
+      </div>
+      <div class="s-card">
+        <div class="lbl">Текущая клиентская отсрочка</div>
+        <div class="val c-navy" id="sLatestAvg">—</div>
+        <div class="hint" id="sLatestMedian">Медиана: —</div>
+        <div class="hint">по последнему открытому УПД каждого клиента</div>
       </div>
     </div>
   </div>
@@ -684,6 +690,31 @@ function calcAvgStats(rows, keyFn) {
   return { hasData: true, weighted, simple, median };
 }
 
+function calcLatestDocStats(rows) {
+  const byClient = new Map();
+
+  rows.forEach(r => {
+    if (!(r.balance > 0 && r.age_days > 0)) return;
+    const dt = parseDdMmYyyy(r.doc_date);
+    if (!dt || isNaN(dt.getTime())) return;
+
+    const prev = byClient.get(r.client);
+    if (!prev || dt > prev.docDate || (dt.getTime() === prev.docDate.getTime() && r.balance > prev.balance)) {
+      byClient.set(r.client, { ageDays: r.age_days, docDate: dt, balance: r.balance });
+    }
+  });
+
+  const entries = [...byClient.values()];
+  if (!entries.length) return { hasData: false, average: 0, median: 0, count: 0 };
+
+  const average = entries.reduce((s, c) => s + c.ageDays, 0) / entries.length;
+  const sorted = entries.map(c => c.ageDays).sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  const median = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+
+  return { hasData: true, average, median, count: entries.length };
+}
+
 function fmtDaysStat(value, hasData, label) {
   return label + ': ' + (hasData ? value.toFixed(0) + ' дн.' : '—');
 }
@@ -764,6 +795,7 @@ async function loadData() {
     const cliOver       = new Set(rows.filter(r=>r.balance>0).map(r=>r.client)).size;
     const docsOver      = rows.filter(r=>r.is_over).length;
     const { hasData, weighted: avgDays, simple, median } = calcAvgStats(rows, docKey);
+    const latestStats = calcLatestDocStats(rows);
 
     const fmtMln = v => (v/1e6).toFixed(1) + ' млн';
 
@@ -775,6 +807,8 @@ async function loadData() {
     document.getElementById('sAvgDays').textContent   = hasData ? avgDays.toFixed(0)+' дн.' : '—';
     document.getElementById('sAvgSimple').textContent = fmtDaysStat(simple, hasData, 'Среднее');
     document.getElementById('sAvgMedian').textContent = fmtDaysStat(median, hasData, 'Медиана');
+    document.getElementById('sLatestAvg').textContent = latestStats.hasData ? latestStats.average.toFixed(0) + ' дн.' : '—';
+    document.getElementById('sLatestMedian').textContent = fmtDaysStat(latestStats.median, latestStats.hasData, 'Медиана');
     const exclEl = document.getElementById('sExcl');
     if (exclOver > 0) {
       exclEl.textContent = '(искл. из расчёта ' + fmtMln(exclOver) + ')';
