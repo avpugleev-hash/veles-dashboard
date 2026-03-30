@@ -49,10 +49,15 @@
     .wrap { max-width:1440px; margin:0 auto; padding:22px; }
 
     /* ИТОГИ */
-    .summary { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:14px; }
-    @media(max-width:900px){ .summary{ grid-template-columns:repeat(2,1fr); } }
+    .summary-block { margin-bottom:16px; }
+    .summary-title { font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text2); margin:0 0 8px 2px; }
+    .summary { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+    .summary-discipline { display:grid; grid-template-columns:minmax(260px, 360px); gap:14px; }
+    @media(max-width:900px){ .summary{ grid-template-columns:repeat(2,1fr); } .summary-discipline{ grid-template-columns:1fr; } }
     @media(max-width:500px){ .summary{ grid-template-columns:1fr; } }
     .s-card { background:var(--card); border-radius:var(--r-lg); padding:16px 18px; border:1px solid var(--border); box-shadow:0 1px 4px rgba(0,0,0,.05); }
+    .s-card.kpi-main { border-color:rgba(26,42,74,.14); box-shadow:0 8px 20px rgba(26,42,74,.08); }
+    .s-card.kpi-discipline { border-color:rgba(124,58,237,.18); background:linear-gradient(180deg, rgba(124,58,237,.04), #fff 48%); }
     .s-card .lbl { font-size:11px; color:var(--text2); font-weight:500; margin-bottom:5px; }
     .s-card .val { font-size:24px; font-weight:700; line-height:1; }
     .s-card .hint { font-size:11px; color:var(--text2); margin-top:4px; }
@@ -185,35 +190,43 @@
 <div class="wrap">
 
   <!-- Итоги -->
-  <div class="summary">
-    <div class="s-card">
-      <div class="lbl">Общая задолженность</div>
-      <div class="val c-navy" id="sTotal">—</div>
-      <div class="hint" id="sDate"></div>
-    </div>
-    <div class="s-card">
-      <div class="lbl">Просроченная</div>
-      <div class="val c-purple" id="sOverdue">—</div>
-      <div class="bar-wrap"><div class="bar-fill" id="sBar" style="width:0%"></div></div>
-      <div class="hint" id="sPct"></div>
-    </div>
-    <div class="s-card">
-      <div class="lbl">Поставщиков с просрочкой</div>
-      <div class="val c-purple" id="sCntOver">—</div>
-      <div class="hint">уникальных поставщиков</div>
-    </div>
-    <div class="s-card">
-      <div class="lbl">Взвешенная отсрочка
-        <span id="avgInfoBtn" style="cursor:pointer;color:#aaa;font-size:11px;margin-left:4px;text-decoration:underline dotted">?</span>
+  <div class="summary-block">
+    <div class="summary-title">Срок Денег</div>
+    <div class="summary">
+      <div class="s-card">
+        <div class="lbl">Общая задолженность</div>
+        <div class="val c-navy" id="sTotal">—</div>
+        <div class="hint" id="sDate"></div>
       </div>
-      <div class="val c-purple" id="sAvgDays">—</div>
-      <div class="hint" id="sAvgSimple">Среднее: —</div>
-      <div class="hint" id="sAvgMedian">Медиана: —</div>
-      <div id="avgInfoBox" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid #e5e7eb;font-size:11px;line-height:1.6;color:#6b7280">
-        <div style="margin-bottom:4px"><b style="color:#1a2a4a">Взвешенная</b> — Σ(сумма × дней) / Σ(сумма). Крупные долги весят больше.</div>
-        <div style="margin-bottom:4px"><b style="color:#1a2a4a">Среднее</b> — каждый поставщик с равным весом.</div>
-        <div><b style="color:#1a2a4a">Медиана</b> — середина списка, не искажается выбросами.</div>
-        <div style="margin-top:4px;font-style:italic">По каждому поставщику берётся макс. кол-во дней.</div>
+      <div class="s-card">
+        <div class="lbl">Поставщиков с долгом</div>
+        <div class="val c-purple" id="sCntOver">—</div>
+        <div class="hint">уникальных поставщиков</div>
+      </div>
+      <div class="s-card kpi-main">
+        <div class="lbl">Средний срок неплатежа поставщикам
+          <span id="avgInfoBtn" style="cursor:pointer;color:#aaa;font-size:11px;margin-left:4px;text-decoration:underline dotted">?</span>
+        </div>
+        <div class="val c-purple" id="sAvgDays">—</div>
+        <div class="hint" id="sAvgMedian">Медиана: —</div>
+        <div class="hint" id="sAvgSimple" style="display:none">Среднее: —</div>
+        <div id="avgInfoBox" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid #e5e7eb;font-size:11px;line-height:1.6;color:#6b7280">
+          <div style="margin-bottom:4px"><b style="color:#1a2a4a">Основной KPI</b> — Σ(остаток × возраст документа) / Σ(остаток). Показывает, сколько суток в среднем мы держим деньги поставщиков.</div>
+          <div style="margin-bottom:4px"><b style="color:#1a2a4a">Среднее</b> — средний возраст открытых документов без учёта суммы, полезно как справочный ориентир.</div>
+          <div><b style="color:#1a2a4a">Медиана</b> — центральное значение возраста документов, помогает увидеть типичный срок без влияния крупных выбросов.</div>
+          <div style="margin-top:4px;font-style:italic">Считается от даты документа до сегодняшнего дня только по документам с положительным остатком долга.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="summary-block">
+    <div class="summary-title">Контроль Дисциплины</div>
+    <div class="summary-discipline">
+      <div class="s-card kpi-discipline">
+        <div class="lbl">Просроченная задолженность</div>
+        <div class="val c-purple" id="sOverdue">—</div>
+        <div class="bar-wrap"><div class="bar-fill" id="sBar" style="width:0%"></div></div>
+        <div class="hint" id="sPct"></div>
       </div>
     </div>
   </div>
@@ -249,7 +262,7 @@
             <th class="r">Сумма документа</th>
             <th class="r">Остаток</th>
             <th class="r">Просрочка</th>
-            <th class="r">Отсрочка (факт)</th>
+            <th class="r">Возраст обязательства</th>
           </tr>
         </thead>
         <tbody id="mainBody"></tbody>
@@ -367,6 +380,36 @@ function parseDdMmYyyy(s) {
   return isNaN(dt.getTime()) ? null : dt;
 }
 
+function calcAgeDays(docDateStr, refDate = new Date()) {
+  const docDt = parseDdMmYyyy(docDateStr);
+  if (!docDt) return 0;
+  const ref = new Date(refDate);
+  ref.setHours(0,0,0,0);
+  docDt.setHours(0,0,0,0);
+  const diff = Math.floor((ref - docDt) / 86400000);
+  return diff >= 0 ? diff : 0;
+}
+
+function calcAgeStats(rows) {
+  const entries = rows
+    .filter(r => r.balance > 0 && r.age_days > 0)
+    .map(r => ({ ageDays: r.age_days, bal: r.balance }));
+  if (!entries.length) return { hasData: false, weighted: 0, simple: 0, median: 0 };
+
+  const sumAmt = entries.reduce((s, c) => s + c.bal, 0);
+  const weighted = sumAmt ? entries.reduce((s, c) => s + c.ageDays * c.bal, 0) / sumAmt : 0;
+  const simple = entries.reduce((s, c) => s + c.ageDays, 0) / entries.length;
+  const sortedDays = entries.map(c => c.ageDays).sort((a, b) => a - b);
+  const mid = Math.floor(sortedDays.length / 2);
+  const median = sortedDays.length % 2 ? sortedDays[mid] : (sortedDays[mid - 1] + sortedDays[mid]) / 2;
+
+  return { hasData: true, weighted, simple, median };
+}
+
+function fmtDaysStat(value, hasData, label) {
+  return label + ': ' + (hasData ? value.toFixed(0) + ' дн.' : '—');
+}
+
 // ── Авторизация ─────────────────────────────────────────────────
 function saveSession(login) { try { localStorage.setItem(AUTH_KEY, JSON.stringify({login, ts:Date.now()})); } catch(e){} }
 function loadSession() {
@@ -441,6 +484,7 @@ async function loadData() {
       const credit_days = creditDaysMap.get(normName(supplier) + '|' + normName(contract)) || null;
       const group       = supplierGroupMap.get(normName(supplier)) || '';
       const doc_date    = r.doc_date || '';
+      const age_days    = calcAgeDays(doc_date);
       // Срок оплаты: считаем из doc_date + credit_days (due_date из CSV всегда пустой)
       const due_date    = credit_days ? addDays(doc_date, credit_days) : (r.due_date || '');
       // Пересчитываем просрочку на основе due_date
@@ -470,6 +514,7 @@ async function loadData() {
         over_amt:     overAmt,
         is_over:      isOver,
         days_over:    daysOver,
+        age_days,
         credit_days,
         group,
       };
@@ -486,33 +531,18 @@ async function loadData() {
     const totalBal  = rows.reduce((s,r) => s + r.balance, 0);
     const totalOver = rows.reduce((s,r) => s + r.over_amt, 0);
     const pct       = totalBal ? totalOver/totalBal*100 : 0;
-    const supOver   = new Set(rows.filter(r=>r.over_amt>0).map(r=>r.supplier)).size;
+    const supOver   = new Set(rows.filter(r=>r.balance>0).map(r=>r.supplier)).size;
 
-    // Взвешенное/среднее/медиана по поставщикам
-    const bySupplier = rows
-      .filter(r => r.over_amt > 0 && r.days_over > 0)
-      .reduce((acc, r) => {
-        if (!acc[r.supplier]) acc[r.supplier] = { maxDays: 0, overAmt: 0 };
-        acc[r.supplier].maxDays  = Math.max(acc[r.supplier].maxDays, r.days_over);
-        acc[r.supplier].overAmt += r.over_amt;
-        return acc;
-      }, {});
-    const supEntries = Object.values(bySupplier);
-    const sumAmt     = supEntries.reduce((s, c) => s + c.overAmt, 0);
-    const weighted   = sumAmt ? supEntries.reduce((s, c) => s + c.maxDays * c.overAmt, 0) / sumAmt : 0;
-    const simple     = supEntries.length ? supEntries.reduce((s, c) => s + c.maxDays, 0) / supEntries.length : 0;
-    const sortedDays = supEntries.map(c => c.maxDays).sort((a, b) => a - b);
-    const mid        = Math.floor(sortedDays.length / 2);
-    const median     = sortedDays.length ? (sortedDays.length % 2 ? sortedDays[mid] : (sortedDays[mid-1]+sortedDays[mid])/2) : 0;
+    const { hasData, weighted, simple, median } = calcAgeStats(rows);
 
     document.getElementById('sTotal').textContent   = fmt(totalBal);
     document.getElementById('sOverdue').textContent = fmt(totalOver);
     document.getElementById('sBar').style.width     = Math.min(pct,100)+'%';
     document.getElementById('sPct').textContent     = pct.toFixed(1)+'% от общего';
     document.getElementById('sCntOver').textContent = supOver;
-    document.getElementById('sAvgDays').textContent   = weighted ? weighted.toFixed(0)+' дн.' : '—';
-    document.getElementById('sAvgSimple').textContent = 'Среднее: ' + (simple ? simple.toFixed(0)+' дн.' : '—');
-    document.getElementById('sAvgMedian').textContent = 'Медиана: ' + (median ? median.toFixed(0)+' дн.' : '—');
+    document.getElementById('sAvgDays').textContent   = hasData ? weighted.toFixed(0)+' дн.' : '—';
+    document.getElementById('sAvgSimple').textContent = fmtDaysStat(simple, hasData, 'Среднее');
+    document.getElementById('sAvgMedian').textContent = fmtDaysStat(median, hasData, 'Медиана');
     if (snap) document.getElementById('sDate').textContent = 'Данные на ' + fmtDate(snap);
     document.getElementById('updTime').textContent  =
       'Обновлено: ' + new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
@@ -560,7 +590,6 @@ function getFiltered() {
 }
 
 function renderSupplierRows(tbody, supName, docList, groupGId, isFirst, isLast) {
-  const today   = new Date(); today.setHours(0,0,0,0);
   const supBal  = docList.reduce((s,r)=>s+r.balance, 0);
   const supOver = docList.reduce((s,r)=>s+r.over_amt, 0);
   const maxDays = Math.max(0, ...docList.filter(r=>r.over_amt>0).map(r=>r.days_over));
@@ -600,9 +629,6 @@ function renderSupplierRows(tbody, supName, docList, groupGId, isFirst, isLast) 
     trDoc.dataset.parent = gId;
     trDoc.dataset.supplier = doc.supplier || '';
     if (groupGId) trDoc.dataset.grp = groupGId;
-    const daysBadge = doc.days_over > 0 ? `<span class="days-badge">${Math.round(doc.days_over)} дн.</span>` : '';
-    const _docDt = parseDdMmYyyy(doc.doc_date);
-    const factDays = _docDt ? Math.floor((today - _docDt) / 86400000) : null;
     const dueStyle  = doc.is_over ? 'color:var(--purple);font-weight:600' : '';
     const escSup = (doc.supplier||'').replace(/"/g,'&quot;');
     const escNum = (doc.doc_num||'').replace(/"/g,'&quot;');
@@ -619,7 +645,7 @@ function renderSupplierRows(tbody, supName, docList, groupGId, isFirst, isLast) 
       <td class="r">${fmt(doc.doc_amt)}</td>
       <td class="r">${fmt(doc.balance)}</td>
       <td class="r">${doc.over_amt > 0 ? '<span class="badge-over">'+fmt(doc.over_amt)+'</span>' : '—'}</td>
-      <td class="r">${factDays !== null && factDays >= 0 ? `<span class="days-badge">${factDays} дн.</span>` : '—'}</td>`;
+      <td class="r">${doc.age_days > 0 ? `<span class="days-badge">${doc.age_days} дн.</span>` : '—'}</td>`;
     tbody.appendChild(trDoc);
     const chk = trDoc.querySelector('.reg-chk');
     if (chk) chk.addEventListener('change', e => { e.stopPropagation(); updateRegistryPanel(); });
@@ -640,13 +666,14 @@ function renderTable() {
   const totDocAmt = docs.reduce((s,r)=>s+r.doc_amt, 0);
   const totBal    = docs.reduce((s,r)=>s+r.balance, 0);
   const totOver   = docs.reduce((s,r)=>s+r.over_amt, 0);
-  const overDocs  = docs.filter(r=>r.days_over>0);
-  const totDays   = overDocs.length ? Math.round(overDocs.reduce((s,r)=>s+r.days_over,0)/overDocs.length) : 0;
+  const ageDocs   = docs.filter(r => r.balance > 0);
+  const ageBal    = ageDocs.reduce((s, r) => s + r.balance, 0);
+  const totDays   = ageBal ? Math.round(ageDocs.reduce((s, r) => s + r.age_days * r.balance, 0) / ageBal) : 0;
 
   document.getElementById('fDocAmt').textContent  = fmt(totDocAmt);
   document.getElementById('fBalance').textContent = fmt(totBal);
   document.getElementById('fOver').textContent    = fmt(totOver);
-  document.getElementById('fDays').textContent    = totDays ? totDays + ' д. (ср.)' : '—';
+  document.getElementById('fDays').textContent    = ageDocs.length ? totDays + ' д. (взвеш.)' : '—';
   document.getElementById('fCount').textContent   = `Поставщиков: ${supplierMap.size} / Документов: ${docs.length}`;
 
   // Разбиваем на группы и одиночных поставщиков
