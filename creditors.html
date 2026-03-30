@@ -211,11 +211,6 @@
           <div id="sAvgSimple" style="display:none">Среднее: —</div>
         </div>
       </div>
-      <div class="s-card">
-        <div class="lbl">Поставщиков с долгом</div>
-        <div class="val c-purple" id="sCntOver">—</div>
-        <div class="hint">уникальных поставщиков</div>
-      </div>
     </div>
   </div>
   <div class="summary-block">
@@ -593,7 +588,6 @@ async function loadData() {
     document.getElementById('sOverdue').textContent = fmt(totalOver);
     document.getElementById('sBar').style.width     = Math.min(pct,100)+'%';
     document.getElementById('sPct').textContent     = pct.toFixed(1)+'% от общего';
-    document.getElementById('sCntOver').textContent = supOver;
     document.getElementById('sAvgDays').textContent   = hasData ? weighted.toFixed(0)+' дн.' : '—';
     document.getElementById('sAvgSimple').textContent = fmtDaysStat(simple, hasData, 'Среднее');
     document.getElementById('sAvgMedian').textContent = fmtDaysStat(median, hasData, 'Медиана');
