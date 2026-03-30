@@ -51,7 +51,7 @@
     /* ИТОГИ */
     .summary-block { margin-bottom:16px; }
     .summary-title { font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text2); margin:0 0 8px 2px; }
-    .summary { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+    .summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; }
     .summary-discipline { display:grid; grid-template-columns:minmax(260px, 360px); gap:14px; }
     @media(max-width:900px){ .summary{ grid-template-columns:repeat(2,1fr); } .summary-discipline{ grid-template-columns:1fr; } }
     @media(max-width:500px){ .summary{ grid-template-columns:1fr; } }
@@ -198,24 +198,23 @@
         <div class="val c-navy" id="sTotal">—</div>
         <div class="hint" id="sDate"></div>
       </div>
+      <div class="s-card kpi-main">
+        <div class="lbl">Эквивалент отсрочки
+          <span id="avgInfoBtn" style="cursor:pointer;color:#aaa;font-size:11px;margin-left:4px;text-decoration:underline dotted">?</span>
+        </div>
+        <div class="val c-purple" id="sEqDelay">—</div>
+        <div class="hint" id="sEqDelayHint">по сумме документов последнего месяца</div>
+        <div id="avgInfoBox" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid #e5e7eb;font-size:11px;line-height:1.6;color:#6b7280">
+          <div style="margin-bottom:6px"><b style="color:#1a2a4a">Основной KPI</b> — эквивалент отсрочки: текущая кредиторка / сумма документов последнего месяца × число дней месяца.</div>
+          <div style="margin-bottom:6px"><b style="color:#1a2a4a">Возраст денег по документам</b> — <span id="sAvgDays">—</span>, <span id="sAvgMedian">Медиана: —</span>. Считается как Σ(остаток × возраст документа) / Σ(остаток).</div>
+          <div><b style="color:#1a2a4a">Текущая поставщицкая отсрочка оплаты</b> — <span id="sLatestAvg">—</span>, <span id="sLatestMedian">Медиана: —</span>. Считается по первому открытому документу каждого поставщика.</div>
+          <div id="sAvgSimple" style="display:none">Среднее: —</div>
+        </div>
+      </div>
       <div class="s-card">
         <div class="lbl">Поставщиков с долгом</div>
         <div class="val c-purple" id="sCntOver">—</div>
         <div class="hint">уникальных поставщиков</div>
-      </div>
-      <div class="s-card kpi-main">
-        <div class="lbl">Средний срок неплатежа поставщикам
-          <span id="avgInfoBtn" style="cursor:pointer;color:#aaa;font-size:11px;margin-left:4px;text-decoration:underline dotted">?</span>
-        </div>
-        <div class="val c-purple" id="sAvgDays">—</div>
-        <div class="hint" id="sAvgMedian">Медиана: —</div>
-        <div class="hint" id="sAvgSimple" style="display:none">Среднее: —</div>
-        <div id="avgInfoBox" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid #e5e7eb;font-size:11px;line-height:1.6;color:#6b7280">
-          <div style="margin-bottom:4px"><b style="color:#1a2a4a">Основной KPI</b> — Σ(остаток × возраст документа) / Σ(остаток). Показывает, сколько суток в среднем мы держим деньги поставщиков.</div>
-          <div style="margin-bottom:4px"><b style="color:#1a2a4a">Среднее</b> — средний возраст открытых документов без учёта суммы, полезно как справочный ориентир.</div>
-          <div><b style="color:#1a2a4a">Медиана</b> — центральное значение возраста документов, помогает увидеть типичный срок без влияния крупных выбросов.</div>
-          <div style="margin-top:4px;font-style:italic">Считается от даты документа до сегодняшнего дня только по документам с положительным остатком долга.</div>
-        </div>
       </div>
     </div>
   </div>
@@ -406,6 +405,55 @@ function calcAgeStats(rows) {
   return { hasData: true, weighted, simple, median };
 }
 
+function calcLatestSupplierDocStats(rows) {
+  const bySupplier = new Map();
+
+  rows.forEach(r => {
+    if (!(r.balance > 0 && r.age_days > 0)) return;
+    const dt = parseDdMmYyyy(r.doc_date);
+    if (!dt || isNaN(dt.getTime())) return;
+
+    const prev = bySupplier.get(r.supplier);
+    if (!prev || dt < prev.docDate || (dt.getTime() === prev.docDate.getTime() && r.balance > prev.balance)) {
+      bySupplier.set(r.supplier, { ageDays: r.age_days, docDate: dt, balance: r.balance });
+    }
+  });
+
+  const entries = [...bySupplier.values()];
+  if (!entries.length) return { hasData: false, average: 0, median: 0, count: 0 };
+
+  const average = entries.reduce((s, c) => s + c.ageDays, 0) / entries.length;
+  const sorted = entries.map(c => c.ageDays).sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  const median = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+
+  return { hasData: true, average, median, count: entries.length };
+}
+
+function calcEquivalentDelay(rows, totalBalance) {
+  const monthlyTotals = new Map();
+  rows.forEach(r => {
+    const dt = parseDdMmYyyy(r.doc_date);
+    if (!dt || isNaN(dt.getTime())) return;
+    const year = dt.getFullYear();
+    const month = dt.getMonth() + 1;
+    const key = `${year}-${String(month).padStart(2, '0')}`;
+    monthlyTotals.set(key, (monthlyTotals.get(key) || 0) + (r.doc_amt || 0));
+  });
+
+  const latestKey = [...monthlyTotals.keys()].sort().pop();
+  if (!latestKey) return { hasData: false, delayDays: 0, amount: 0, year: null, month: null };
+
+  const [yearStr, monthStr] = latestKey.split('-');
+  const year = Number(yearStr);
+  const month = Number(monthStr);
+  const amount = monthlyTotals.get(latestKey) || 0;
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const delayDays = amount > 0 ? (totalBalance / amount) * daysInMonth : 0;
+
+  return { hasData: amount > 0, delayDays, amount, year, month };
+}
+
 function fmtDaysStat(value, hasData, label) {
   return label + ': ' + (hasData ? value.toFixed(0) + ' дн.' : '—');
 }
@@ -534,8 +582,14 @@ async function loadData() {
     const supOver   = new Set(rows.filter(r=>r.balance>0).map(r=>r.supplier)).size;
 
     const { hasData, weighted, simple, median } = calcAgeStats(rows);
+    const latestStats = calcLatestSupplierDocStats(rows);
+    const eqDelayStats = calcEquivalentDelay(rows, totalBal);
 
     document.getElementById('sTotal').textContent   = fmt(totalBal);
+    document.getElementById('sEqDelay').textContent = eqDelayStats.hasData ? eqDelayStats.delayDays.toFixed(0)+' дн.' : '—';
+    document.getElementById('sEqDelayHint').textContent = eqDelayStats.hasData
+      ? `документы ${String(eqDelayStats.month).padStart(2, '0')}.${eqDelayStats.year}: ${fmt(eqDelayStats.amount)}`
+      : 'по сумме документов последнего месяца';
     document.getElementById('sOverdue').textContent = fmt(totalOver);
     document.getElementById('sBar').style.width     = Math.min(pct,100)+'%';
     document.getElementById('sPct').textContent     = pct.toFixed(1)+'% от общего';
@@ -543,6 +597,8 @@ async function loadData() {
     document.getElementById('sAvgDays').textContent   = hasData ? weighted.toFixed(0)+' дн.' : '—';
     document.getElementById('sAvgSimple').textContent = fmtDaysStat(simple, hasData, 'Среднее');
     document.getElementById('sAvgMedian').textContent = fmtDaysStat(median, hasData, 'Медиана');
+    document.getElementById('sLatestAvg').textContent = latestStats.hasData ? latestStats.average.toFixed(0)+' дн.' : '—';
+    document.getElementById('sLatestMedian').textContent = fmtDaysStat(latestStats.median, latestStats.hasData, 'Медиана');
     if (snap) document.getElementById('sDate').textContent = 'Данные на ' + fmtDate(snap);
     document.getElementById('updTime').textContent  =
       'Обновлено: ' + new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
