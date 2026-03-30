@@ -690,10 +690,11 @@ function calcAvgStats(rows, keyFn) {
   return { hasData: true, weighted, simple, median };
 }
 
-function calcLatestDocStats(rows) {
+function calcLatestDocStats(rows, keyFn) {
   const byClient = new Map();
 
   rows.forEach(r => {
+    if (excludedKeys.has(keyFn(r))) return;
     if (!(r.balance > 0 && r.age_days > 0)) return;
     const dt = parseDdMmYyyy(r.doc_date);
     if (!dt || isNaN(dt.getTime())) return;
@@ -795,7 +796,7 @@ async function loadData() {
     const cliOver       = new Set(rows.filter(r=>r.balance>0).map(r=>r.client)).size;
     const docsOver      = rows.filter(r=>r.is_over).length;
     const { hasData, weighted: avgDays, simple, median } = calcAvgStats(rows, docKey);
-    const latestStats = calcLatestDocStats(rows);
+    const latestStats = calcLatestDocStats(rows, docKey);
 
     const fmtMln = v => (v/1e6).toFixed(1) + ' млн';
 
