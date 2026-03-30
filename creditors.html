@@ -199,15 +199,15 @@
         <div class="hint" id="sDate"></div>
       </div>
       <div class="s-card kpi-main">
-        <div class="lbl">Эквивалент отсрочки
+        <div class="lbl">Текущая поставщицкая отсрочка оплаты
           <span id="avgInfoBtn" style="cursor:pointer;color:#aaa;font-size:11px;margin-left:4px;text-decoration:underline dotted">?</span>
         </div>
         <div class="val c-purple" id="sEqDelay">—</div>
-        <div class="hint" id="sEqDelayHint">по сумме документов последнего месяца</div>
+        <div class="hint" id="sEqDelayHint">Медиана: —</div>
         <div id="avgInfoBox" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid #e5e7eb;font-size:11px;line-height:1.6;color:#6b7280">
-          <div style="margin-bottom:6px"><b style="color:#1a2a4a">Основной KPI</b> — эквивалент отсрочки: текущая кредиторка / сумма документов последнего месяца × число дней месяца.</div>
+          <div style="margin-bottom:6px"><b style="color:#1a2a4a">Основной KPI</b> — средняя отсрочка оплаты по первому открытому документу каждого поставщика.</div>
           <div style="margin-bottom:6px"><b style="color:#1a2a4a">Возраст денег по документам</b> — <span id="sAvgDays">—</span>, <span id="sAvgMedian">Медиана: —</span>. Считается как Σ(остаток × возраст документа) / Σ(остаток).</div>
-          <div><b style="color:#1a2a4a">Текущая поставщицкая отсрочка оплаты</b> — <span id="sLatestAvg">—</span>, <span id="sLatestMedian">Медиана: —</span>. Считается по первому открытому документу каждого поставщика.</div>
+          <div><b style="color:#1a2a4a">Эквивалент отсрочки</b> — рассчитывается как текущая кредиторка / сумма документов последнего месяца × число дней месяца.</div>
           <div id="sAvgSimple" style="display:none">Среднее: —</div>
         </div>
       </div>
@@ -578,13 +578,9 @@ async function loadData() {
 
     const { hasData, weighted, simple, median } = calcAgeStats(rows);
     const latestStats = calcLatestSupplierDocStats(rows);
-    const eqDelayStats = calcEquivalentDelay(rows, totalBal);
-
     document.getElementById('sTotal').textContent   = fmt(totalBal);
-    document.getElementById('sEqDelay').textContent = eqDelayStats.hasData ? eqDelayStats.delayDays.toFixed(0)+' дн.' : '—';
-    document.getElementById('sEqDelayHint').textContent = eqDelayStats.hasData
-      ? `документы ${String(eqDelayStats.month).padStart(2, '0')}.${eqDelayStats.year}: ${fmt(eqDelayStats.amount)}`
-      : 'по сумме документов последнего месяца';
+    document.getElementById('sEqDelay').textContent = latestStats.hasData ? latestStats.average.toFixed(0)+' дн.' : '—';
+    document.getElementById('sEqDelayHint').textContent = fmtDaysStat(latestStats.median, latestStats.hasData, 'Медиана');
     document.getElementById('sOverdue').textContent = fmt(totalOver);
     document.getElementById('sBar').style.width     = Math.min(pct,100)+'%';
     document.getElementById('sPct').textContent     = pct.toFixed(1)+'% от общего';
