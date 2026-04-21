@@ -1693,6 +1693,7 @@ let yesterdayLoadingStations = []; // [{ station, count }]
 let yesterdayLoadingDate = null;
 let budgetProduction = null; // бюджет производственной службы
 let budgetCommercial = null;  // бюджет коммерческой службы
+let loadingPlanMonth = 0;     // план погрузки на месяц из comm_nat (col G)
 
 // ==========================
 // 2. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
@@ -4105,6 +4106,21 @@ async function loadBudgetData() {
     if (prodCsv) budgetProduction = buildBudgetProductionFromRows(parseCSV(prodCsv));
     if (kpiCsv && natCsv && clientsCsv)
       budgetCommercial = buildBudgetCommercialFromRows(parseCSV(kpiCsv), parseCSV(natCsv), parseCSV(clientsCsv));
+
+    // План погрузки на текущий месяц из колонки G (wagons_plan_actual)
+    if (natCsv) {
+      const now = new Date();
+      const yr = String(now.getFullYear());
+      const mo = String(now.getMonth() + 1);
+      let plan = 0;
+      for (const row of parseCSV(natCsv)) {
+        if (String(row.year) === yr && String(row.month) === mo) {
+          const v = parseFloat(String(row.wagons_plan_actual || '').replace(/[\s,]/g, '.'));
+          if (!isNaN(v)) plan += v;
+        }
+      }
+      if (plan > 0) loadingPlanMonth = plan;
+    }
   } catch(e) {
     console.warn('Бюджеты (Sheets) не загружены:', e.message);
   }
@@ -4155,6 +4171,12 @@ async function refreshData() {
 
     try {
         await Promise.all([loadDataFromSheet(), loadElsData(), loadBudgetData()]);
+        // Применяем план из Sheets к блоку погрузки
+        if (loadingPlanMonth > 0 && dashboardData && dashboardData.loading) {
+          dashboardData.loading.plan_month = loadingPlanMonth;
+          const fact = dashboardData.loading.loaded_wagons_month || 0;
+          dashboardData.loading.progress_percent = Math.round(fact / loadingPlanMonth * 100);
+        }
         populateDashboard();
 
         // ставим время последнего успешного обновления
