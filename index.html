@@ -3129,7 +3129,7 @@ async function loadDataFromSheet() {
           };
         }
         if (Array.isArray(vp.loading_by_station) && vp.loading_by_station.length) {
-          yesterdayLoadingStations = vp.loading_by_station.map(r => ({ station: r.station, wagons: r.wagons }));
+          yesterdayLoadingStations = vp.loading_by_station.map(r => ({ station: r.station, count: r.wagons }));
           yesterdayLoadingDate = vp.loading.loaded_wagons_yesterday > 0
             ? new Date(new Date().setDate(new Date().getDate() - 1))
             : null;
