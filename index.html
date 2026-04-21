@@ -1574,7 +1574,6 @@ const SHEET_COMM_KPI_CSV_URL =
 const SHEET_COMM_NAT_CSV_URL =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=78706492&single=true&output=csv';
 const SHEET_COMM_CLIENTS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=1437651939&single=true&output=csv';
-const DASHBOARD_API_URL = 'https://alekseipugleev.app.n8n.cloud/webhook/dashboard-data';
 const BUDGET_SHEETS = {
   budget_prod: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=0&single=true&output=csv',
   comm_kpi:    'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=463811978&single=true&output=csv',
@@ -1582,8 +1581,6 @@ const BUDGET_SHEETS = {
   comm_clients:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=1437651939&single=true&output=csv',
 };
 const VELES_PLATFORM_URL = 'https://147-45-166-133.nip.io:8443';
-// ← false = откат к N8N/Sheets данным для дебиторки, кредиторки, ДС
-const USE_VELES_PLATFORM_FOR_DEBT = true;
 const LOGIN_API_URL = 'https://147-45-166-133.nip.io:8443/api/v1/auth/login';
 const CHANGE_PASSWORD_API_URL = 'https://alekseipugleev.app.n8n.cloud/webhook/dashboard-change-password';
 let isAuthenticated = false;
@@ -2918,235 +2915,108 @@ const planMonth   = rowsThisMonth.reduce((sum, r) => sum + (r.planned_wagons || 
 
 
 async function loadDataFromSheet() {
-  let snapshotDate = null; // будет использоваться и для ремонтов
-
-  // 0) Забираем всё одним запросом (n8n агрегатор)
-  const url = DASHBOARD_API_URL + (DASHBOARD_API_URL.includes('?') ? '&' : '?') + '_ts=' + Date.now();
-  const apiRes = await fetch(url, { cache: 'no-store' });
-  if (!apiRes.ok) throw new Error('HTTP ' + apiRes.status);
-
-  const api = await apiRes.json().catch(() => null);
-  if (!api || api.ok !== true || !api.csv) {
-    throw new Error('Bad API response from dashboard-data');
-  }
-
-  const csvMap = api.csv || {};
-
-  // 1) основной raw_data
-  const csvText = csvMap.raw || '';
-  const rows = csvText ? parseCSV(csvText) : [];
-
-  // Ищем план на месяц в первой строке (как было)
-  let monthPlanFromHeader = 0;
-  if (rows.length) {
-    const headerRow = rows[0];
-    for (let i = headerRow.length - 1; i >= 0; i--) {
-      const cell = headerRow[i];
-      if (cell !== '') {
-        monthPlanFromHeader = toNumber(cell);
-        break;
-      }
-    }
-  }
-
-  const rowObjs = rowsToObjects(rows);
-  dashboardData = buildDashboardDataFromRaw(rowObjs, monthPlanFromHeader);
-
-  // 2) ar_payments_daily
-  if (csvMap.payments) {
-    try {
-      const rowsPay = parseCSV(csvMap.payments);
-      const payments = buildPaymentsFromRows(rowsPay);
-      paymentsLastDate = payments.lastDate;
-      paymentsByClient = payments.items;
-    } catch (e) {
-      console.error('Ошибка обработки ar_payments_daily:', e);
-    }
-  } else {
-    paymentsLastDate = null;
-    paymentsByClient = [];
-  }
-
-  // 3) структура просрочки по клиентам + суммы из ar_agg_client_contract
-  receivablesByClient = [];
-  if (csvMap.clients) {
-    try {
-      const rowsClients = parseCSV(csvMap.clients);
-
-      // дата среза (аналог G1 на листе ar_agg_client_contract)
-      snapshotDate = getSnapshotDateFromAggRows(rowsClients);
-      if (snapshotDate && dashboardData) {
-        dashboardData.receivables_date = snapshotDate;
-      }
-
-      // а) считаем общую и просроченную задолженность по agg-листу
-      const aggTotals = computeTotalsFromAggRows(rowsClients);
-      if (dashboardData && dashboardData.receivables) {
-        dashboardData.receivables.total_debt = aggTotals.total;
-        dashboardData.receivables.overdue_debt = aggTotals.overdue;
-        dashboardData.receivables.overdue_percent =
-          aggTotals.total ? Math.round(aggTotals.overdue / aggTotals.total * 100) : 0;
-      }
-
-      // б) строим структуру по клиентам (ТОП > 1 млн)
-      receivablesByClient = buildReceivablesByClientFromRows(rowsClients);
-    } catch (e) {
-      console.error('Ошибка обработки ar_agg_client_contract:', e);
-    }
-  }
-
-  // 4) Кредиторка: ap_suppliers
-  if (csvMap.ap_suppliers) {
-    try {
-      const rowsAp = parseCSV(csvMap.ap_suppliers);
-      const ap = buildPayablesFromRows(rowsAp);
-
-      if (!dashboardData.payables) dashboardData.payables = {};
-
-      dashboardData.payables.total_debt = ap.total;
-      dashboardData.payables.overdue_debt = ap.overdue;
-      dashboardData.payables.overdue_percent =
-        ap.total ? Math.round((ap.overdue / ap.total) * 100) : 0;
-      dashboardData.payables_date = ap.date;
-
-      payablesBySupplier = ap.suppliers;
-    } catch (e) {
-      console.error('Ошибка обработки ap_suppliers:', e);
-    }
-  } else {
-    payablesBySupplier = [];
-  }
-
-  // 5) Журнал погрузки: разбивка "вчера погружено" по станциям
+  // Инициализируем пустую структуру — все данные приходят из veles-platform
+  dashboardData = {
+    loading: {
+      loaded_wagons_month: 0,
+      loaded_wagons_yesterday: 0,
+      plan_month: 0,
+      progress_percent: 0,
+      daily_trend: [],
+      period_label: '',
+    },
+    receivables: { total_debt: 0, overdue_debt: 0, overdue_percent: 0 },
+    payables:    { total_debt: 0, overdue_debt: 0, overdue_percent: 0 },
+    repairs:     { tr_count: 0, kr_count: 0, tor_count: 0, fleet_total: 0 },
+    cash: null,
+  };
+  receivablesByClient   = [];
+  payablesBySupplier    = [];
+  paymentsByClient      = [];
+  paymentsLastDate      = null;
   yesterdayLoadingStations = [];
-  yesterdayLoadingDate = null;
+  yesterdayLoadingDate  = null;
 
-  if (csvMap.loading_journal) {
-    try {
-      const rowsLog = parseCSV(csvMap.loading_journal);
-      const result = buildYesterdayLoadingFromRows(rowsLog);
-      yesterdayLoadingDate = result.date;
-      yesterdayLoadingStations = result.items;
-    } catch (e) {
-      console.error('Ошибка обработки журнала погрузки:', e);
-    }
-  }
+  renderRepairsCard([], null);
 
-  // 6) Остатки денежных средств
-  if (csvMap.cash) {
-    try {
-      const rowsCash = parseCSV(csvMap.cash);
-      const cash = buildCashFromRows(rowsCash);
-      if (cash) {
-        if (!dashboardData) dashboardData = {};
-        dashboardData.cash = cash;
-      }
-    } catch (e) {
-      console.error('Ошибка обработки cash_balances:', e);
-    }
-  }
-
-  // 7-8) budget_prod / comm_* — загружаются напрямую из Google Sheets в loadBudgetData()
-  // ⚠️ не сбрасывать budgetProduction/budgetCommercial здесь — loadBudgetData() работает параллельно
-
-  // 9) repairs_snapshot (последним, когда уже есть snapshotDate)
+  // Загружаем всё из veles-platform (PostgreSQL)
   try {
-    if (csvMap.repairs) {
-      const repRows = parseCSV(csvMap.repairs);
-      const repairsData = buildRepairsFromSnapshot(repRows);
-      const repairsDate = repairsData.date || snapshotDate || null;
-      renderRepairsCard(repairsData.items, repairsDate);
-    } else {
-      renderRepairsCard([], snapshotDate);
+    const token = localStorage.getItem('veles_jwt');
+    const vpRes = await fetch(VELES_PLATFORM_URL + '/api/v1/dashboard', {
+      cache: 'no-store',
+      headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+    });
+    if (vpRes.status === 401) {
+      isAuthenticated = false;
+      localStorage.removeItem('veles_jwt');
+      document.getElementById('loginOverlay').style.display = 'flex';
+      return;
     }
+    if (!vpRes.ok) throw new Error('HTTP ' + vpRes.status);
+    const vp = await vpRes.json();
+
+    // Дебиторка
+    if (vp.receivables) {
+      dashboardData.receivables = {
+        total_debt:      vp.receivables.total_debt      || 0,
+        overdue_debt:    vp.receivables.overdue_debt    || 0,
+        overdue_percent: vp.receivables.overdue_percent || 0,
+      };
+      if (vp.receivables.as_of_date)
+        dashboardData.receivables_date = new Date(vp.receivables.as_of_date);
+    }
+    if (Array.isArray(vp.receivables_by_client))
+      receivablesByClient = vp.receivables_by_client;
+
+    // Кредиторка
+    if (vp.payables) {
+      dashboardData.payables = {
+        total_debt:      vp.payables.total_debt      || 0,
+        overdue_debt:    vp.payables.overdue_debt    || 0,
+        overdue_percent: vp.payables.overdue_percent || 0,
+      };
+      if (vp.payables.as_of_date)
+        dashboardData.payables_date = new Date(vp.payables.as_of_date);
+    }
+    if (Array.isArray(vp.payables_by_supplier))
+      payablesBySupplier = vp.payables_by_supplier;
+
+    // Остатки ДС
+    if (vp.cash) {
+      dashboardData.cash = {
+        total: vp.cash.total || 0,
+        date:  vp.cash.date ? new Date(vp.cash.date) : null,
+      };
+    }
+
+    // Погрузка
+    if (vp.loading) {
+      dashboardData.loading = {
+        loaded_wagons_month:     vp.loading.loaded_wagons_month     || 0,
+        loaded_wagons_yesterday: vp.loading.loaded_wagons_yesterday || 0,
+        plan_month:              vp.loading.plan_month              || 0,
+        progress_percent:        vp.loading.progress_percent        || 0,
+        daily_trend:             vp.loading.daily_trend             || [],
+        period_label:            vp.loading.period_label            || '',
+      };
+    }
+    if (Array.isArray(vp.loading_by_station) && vp.loading_by_station.length) {
+      yesterdayLoadingStations = vp.loading_by_station.map(r => ({ station: r.station, count: r.wagons }));
+      yesterdayLoadingDate = vp.loading && vp.loading.loaded_wagons_yesterday > 0
+        ? new Date(new Date().setDate(new Date().getDate() - 1))
+        : null;
+    }
+
+    // Поступило вчера
+    if (vp.payments && vp.payments.total_received != null) {
+      paymentsLastDate = vp.payments.as_of_date ? new Date(vp.payments.as_of_date) : null;
+      if (Array.isArray(vp.payments_by_client) && vp.payments_by_client.length)
+        paymentsByClient = vp.payments_by_client;
+    }
+
+    console.log('[veles-platform] все данные загружены из PostgreSQL');
   } catch (e) {
-    console.error('Ошибка обработки repairs_snapshot:', e);
-    renderRepairsCard([], snapshotDate);
-  }
-
-  // 10) Перезаписываем дебиторку / кредиторку / ДС из veles-platform (PostgreSQL напрямую)
-  //     Откат: установи USE_VELES_PLATFORM_FOR_DEBT = false
-  if (USE_VELES_PLATFORM_FOR_DEBT) {
-    try {
-      const token = localStorage.getItem('veles_jwt');
-      const vpRes = await fetch(VELES_PLATFORM_URL + '/api/v1/dashboard', {
-        cache: 'no-store',
-        headers: token ? { 'Authorization': 'Bearer ' + token } : {}
-      });
-      if (vpRes.ok) {
-        const vp = await vpRes.json();
-
-        // Дебиторка
-        if (vp.receivables && dashboardData) {
-          dashboardData.receivables = {
-            total_debt:     vp.receivables.total_debt     || 0,
-            overdue_debt:   vp.receivables.overdue_debt   || 0,
-            overdue_percent: vp.receivables.overdue_percent || 0,
-          };
-          if (vp.receivables.as_of_date) {
-            dashboardData.receivables_date = new Date(vp.receivables.as_of_date);
-          }
-        }
-        if (Array.isArray(vp.receivables_by_client)) {
-          receivablesByClient = vp.receivables_by_client;
-        }
-
-        // Кредиторка
-        if (vp.payables && dashboardData) {
-          dashboardData.payables = {
-            total_debt:     vp.payables.total_debt     || 0,
-            overdue_debt:   vp.payables.overdue_debt   || 0,
-            overdue_percent: vp.payables.overdue_percent || 0,
-          };
-          if (vp.payables.as_of_date) {
-            dashboardData.payables_date = new Date(vp.payables.as_of_date);
-          }
-        }
-        if (Array.isArray(vp.payables_by_supplier)) {
-          payablesBySupplier = vp.payables_by_supplier;
-        }
-
-        // Остатки ДС
-        if (vp.cash && dashboardData) {
-          dashboardData.cash = {
-            total: vp.cash.total || 0,
-            date:  vp.cash.date ? new Date(vp.cash.date) : null,
-          };
-        }
-
-        // Погрузка
-        if (vp.loading && dashboardData) {
-          dashboardData.loading = {
-            loaded_wagons_month:     vp.loading.loaded_wagons_month     || 0,
-            loaded_wagons_yesterday: vp.loading.loaded_wagons_yesterday || 0,
-            plan_month:              vp.loading.plan_month              || 0,
-            progress_percent:        vp.loading.progress_percent        || 0,
-            daily_trend:             vp.loading.daily_trend             || [],
-            period_label:            vp.loading.period_label            || '',
-          };
-        }
-        if (Array.isArray(vp.loading_by_station) && vp.loading_by_station.length) {
-          yesterdayLoadingStations = vp.loading_by_station.map(r => ({ station: r.station, count: r.wagons }));
-          yesterdayLoadingDate = vp.loading.loaded_wagons_yesterday > 0
-            ? new Date(new Date().setDate(new Date().getDate() - 1))
-            : null;
-        }
-
-        // Поступило вчера
-        if (vp.payments && vp.payments.total_received != null) {
-          paymentsLastDate = vp.payments.as_of_date ? new Date(vp.payments.as_of_date) : null;
-          if (Array.isArray(vp.payments_by_client) && vp.payments_by_client.length) {
-            paymentsByClient = vp.payments_by_client;
-          }
-        }
-
-        console.log('[veles-platform] дебиторка/кредиторка/ДС/поступления загружены из PostgreSQL');
-      } else {
-        console.warn('[veles-platform] /api/v1/dashboard вернул', vpRes.status, '— используются данные N8N/Sheets');
-      }
-    } catch (e) {
-      console.warn('[veles-platform] недоступен, используются данные N8N/Sheets:', e.message);
-    }
+    console.warn('[veles-platform] недоступен:', e.message);
   }
 }
 
