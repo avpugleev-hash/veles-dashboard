@@ -4048,10 +4048,15 @@ async function refreshData() {
     try {
         await Promise.all([loadDataFromSheet(), loadElsData(), loadBudgetData()]);
         // Применяем план из Sheets к блоку погрузки
+        // Прогресс считается по пропорциональному плану: plan * (день_месяца / дней_в_месяце)
         if (loadingPlanMonth > 0 && dashboardData && dashboardData.loading) {
+          const now = new Date();
+          const dayOfMonth = now.getDate();
+          const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+          const proportionalPlan = loadingPlanMonth * dayOfMonth / daysInMonth;
           dashboardData.loading.plan_month = loadingPlanMonth;
           const fact = dashboardData.loading.loaded_wagons_month || 0;
-          dashboardData.loading.progress_percent = Math.round(fact / loadingPlanMonth * 100);
+          dashboardData.loading.progress_percent = Math.round(fact / proportionalPlan * 100);
         }
         populateDashboard();
 
