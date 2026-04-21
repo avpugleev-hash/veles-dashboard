@@ -1575,6 +1575,12 @@ const SHEET_COMM_NAT_CSV_URL =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=78706492&single=true&output=csv';
 const SHEET_COMM_CLIENTS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=1437651939&single=true&output=csv';
 const DASHBOARD_API_URL = 'https://alekseipugleev.app.n8n.cloud/webhook/dashboard-data';
+const BUDGET_SHEETS = {
+  budget_prod: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=0&single=true&output=csv',
+  comm_kpi:    'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=463811978&single=true&output=csv',
+  comm_nat:    'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=78706492&single=true&output=csv',
+  comm_clients:'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJnp26wsUwxKZuBiPBGPpH1x1iIbvQvq1kJ1Z3l2YPARbiSsve1TOGteDxt-33auDN1h7ndNKfrq3m/pub?gid=1437651939&single=true&output=csv',
+};
 const VELES_PLATFORM_URL = 'https://147-45-166-133.nip.io:8443';
 // ← false = откат к N8N/Sheets данным для дебиторки, кредиторки, ДС
 const USE_VELES_PLATFORM_FOR_DEBT = true;
@@ -3043,26 +3049,7 @@ async function loadDataFromSheet() {
   budgetProduction = null;
   budgetCommercial = null; // 👈 обнуляем коммерческий бюджет перед загрузкой
 
-  if (csvMap.budget_prod) {
-    try {
-      const prodRows = parseCSV(csvMap.budget_prod);
-      budgetProduction = buildBudgetProductionFromRows(prodRows);
-    } catch (e) {
-      console.error('Ошибка обработки budget_production:', e);
-    }
-  }
-
-  // 8) comm_kpi / comm_nat / comm_clients (коммерческая служба)
-  if (csvMap.comm_kpi && csvMap.comm_nat && csvMap.comm_clients) {
-    try {
-      const kpiRows = parseCSV(csvMap.comm_kpi);
-      const natRows = parseCSV(csvMap.comm_nat);
-      const clientsRows = parseCSV(csvMap.comm_clients);
-      budgetCommercial = buildBudgetCommercialFromRows(kpiRows, natRows, clientsRows);
-    } catch (e) {
-      console.error('Ошибка обработки comm_*:', e);
-    }
-  }
+  // 7-8) budget_prod / comm_* — загружаются напрямую из Google Sheets в loadBudgetData()
 
   // 9) repairs_snapshot (последним, когда уже есть snapshotDate)
   try {
@@ -4108,6 +4095,21 @@ document.getElementById('fullMonthPlan').textContent =
 
 const ELS_API_URL = 'https://147-45-166-133.nip.io:8443/api/v1/els';
 
+async function loadBudgetData() {
+  try {
+    const [prodCsv, kpiCsv, natCsv, clientsCsv] = await Promise.all(
+      Object.values(BUDGET_SHEETS).map(url =>
+        fetch(url, { cache: 'no-store' }).then(r => r.ok ? r.text() : '')
+      )
+    );
+    if (prodCsv) budgetProduction = buildBudgetProductionFromRows(parseCSV(prodCsv));
+    if (kpiCsv && natCsv && clientsCsv)
+      budgetCommercial = buildBudgetCommercialFromRows(parseCSV(kpiCsv), parseCSV(natCsv), parseCSV(clientsCsv));
+  } catch(e) {
+    console.warn('Бюджеты (Sheets) не загружены:', e.message);
+  }
+}
+
 async function loadElsData() {
   try {
     const token = localStorage.getItem('veles_jwt');
@@ -4152,7 +4154,7 @@ async function refreshData() {
     if (btn) btn.disabled = true;
 
     try {
-        await Promise.all([loadDataFromSheet(), loadElsData()]);
+        await Promise.all([loadDataFromSheet(), loadElsData(), loadBudgetData()]);
         populateDashboard();
 
         // ставим время последнего успешного обновления
