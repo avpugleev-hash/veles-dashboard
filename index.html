@@ -3397,6 +3397,13 @@ function renderRepairsCard(items, dateStr) {
   if (!list) return;
   list.innerHTML = '';
 
+  if (!items || items.length === 0) {
+    list.innerHTML = '<div style="color:var(--text-secondary,#888);font-size:0.85rem;padding:8px 0">Данные недоступны</div>';
+    const toggleBtn = document.getElementById('toggleRepairsTable');
+    if (toggleBtn) toggleBtn.style.display = 'none';
+    return;
+  }
+
   const normalized = {};
   let totalInRepairs = 0;
 
