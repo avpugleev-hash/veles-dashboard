@@ -4107,16 +4107,25 @@ async function loadBudgetData() {
     if (kpiCsv && natCsv && clientsCsv)
       budgetCommercial = buildBudgetCommercialFromRows(parseCSV(kpiCsv), parseCSV(natCsv), parseCSV(clientsCsv));
 
-    // План погрузки на текущий месяц из колонки G (wagons_plan_actual)
+    // План погрузки на текущий месяц из колонки G (wagons_plan_actual, index 6)
     if (natCsv) {
       const now = new Date();
       const yr = String(now.getFullYear());
       const mo = String(now.getMonth() + 1);
+      const rows = parseCSV(natCsv);
+      // Первая строка — заголовок, ищем индекс нужных колонок
+      const header = rows[0] || [];
+      const idxYear = header.indexOf('year');
+      const idxMonth = header.indexOf('month');
+      const idxPlan = header.indexOf('wagons_plan_actual');
       let plan = 0;
-      for (const row of parseCSV(natCsv)) {
-        if (String(row.year) === yr && String(row.month) === mo) {
-          const v = parseFloat(String(row.wagons_plan_actual || '').replace(/[\s,]/g, '.'));
-          if (!isNaN(v)) plan += v;
+      if (idxYear >= 0 && idxMonth >= 0 && idxPlan >= 0) {
+        for (let i = 1; i < rows.length; i++) {
+          const r = rows[i];
+          if (String(r[idxYear]) === yr && String(r[idxMonth]) === mo) {
+            const v = parseFloat(String(r[idxPlan] || '').replace(/[\s,]/g, '.'));
+            if (!isNaN(v) && v > 0) plan += v;
+          }
         }
       }
       if (plan > 0) loadingPlanMonth = plan;
