@@ -3129,6 +3129,24 @@ async function loadDataFromSheet() {
           };
         }
 
+        // Погрузка
+        if (vp.loading && dashboardData) {
+          dashboardData.loading = {
+            loaded_wagons_month:     vp.loading.loaded_wagons_month     || 0,
+            loaded_wagons_yesterday: vp.loading.loaded_wagons_yesterday || 0,
+            plan_month:              vp.loading.plan_month              || 0,
+            progress_percent:        vp.loading.progress_percent        || 0,
+            daily_trend:             vp.loading.daily_trend             || [],
+            period_label:            vp.loading.period_label            || '',
+          };
+        }
+        if (Array.isArray(vp.loading_by_station) && vp.loading_by_station.length) {
+          yesterdayLoadingStations = vp.loading_by_station.map(r => ({ station: r.station, wagons: r.wagons }));
+          yesterdayLoadingDate = vp.loading.loaded_wagons_yesterday > 0
+            ? new Date(new Date().setDate(new Date().getDate() - 1))
+            : null;
+        }
+
         // Поступило вчера
         if (vp.payments && vp.payments.total_received != null) {
           paymentsLastDate = vp.payments.as_of_date ? new Date(vp.payments.as_of_date) : null;
