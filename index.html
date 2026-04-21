@@ -4028,8 +4028,9 @@ async function refreshData() {
           const now = new Date();
           const dayOfMonth = now.getDate();
           const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-          const proportionalPlan = loadingPlanMonth * dayOfMonth / daysInMonth;
-          dashboardData.loading.plan_month = loadingPlanMonth;
+          const proportionalPlan = Math.round(loadingPlanMonth * dayOfMonth / daysInMonth);
+          dashboardData.loading.plan_month = proportionalPlan;       // «По плану» = за прошедшие дни
+          dashboardData.loading.month_total_plan = loadingPlanMonth; // «План на месяц» = 3272
           const fact = dashboardData.loading.loaded_wagons_month || 0;
           dashboardData.loading.progress_percent = Math.round(fact / proportionalPlan * 100);
         }
