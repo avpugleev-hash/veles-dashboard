@@ -3046,11 +3046,8 @@ async function loadDataFromSheet() {
     }
   }
 
-  // 7) budget_production (бюджет производственной службы)
-  budgetProduction = null;
-  budgetCommercial = null; // 👈 обнуляем коммерческий бюджет перед загрузкой
-
   // 7-8) budget_prod / comm_* — загружаются напрямую из Google Sheets в loadBudgetData()
+  // ⚠️ не сбрасывать budgetProduction/budgetCommercial здесь — loadBudgetData() работает параллельно
 
   // 9) repairs_snapshot (последним, когда уже есть snapshotDate)
   try {
