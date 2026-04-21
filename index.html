@@ -3129,7 +3129,15 @@ async function loadDataFromSheet() {
           };
         }
 
-        console.log('[veles-platform] дебиторка/кредиторка/ДС загружены из PostgreSQL');
+        // Поступило вчера
+        if (vp.payments && vp.payments.total_received != null) {
+          paymentsLastDate = vp.payments.as_of_date ? new Date(vp.payments.as_of_date) : null;
+          if (Array.isArray(vp.payments_by_client) && vp.payments_by_client.length) {
+            paymentsByClient = vp.payments_by_client;
+          }
+        }
+
+        console.log('[veles-platform] дебиторка/кредиторка/ДС/поступления загружены из PostgreSQL');
       } else {
         console.warn('[veles-platform] /api/v1/dashboard вернул', vpRes.status, '— используются данные N8N/Sheets');
       }
